@@ -79,3 +79,86 @@ The assistant created the required tree at the project root (fulfilling `databri
 ### Final decision
 
 Stage 1 (structure + spec) is the Git baseline. Stage 2 (data generation) waits for an explicit user request.
+
+---
+
+## Prompt 3 — 2026-08-31 — Requirements/architecture review (no implementation)
+
+### PROMPT SENT
+
+Continue DE C1 from the existing repo. Do not recreate or reinitialize. Read `DE_C1_REQUIREMENTS.md`, `requirements-analysis.md`, Cursor workflow files, `data-model.md`, `design-notes.md`, and `data-quality-strategy.md`. Prior commit: `16ee902 chore: initialize project structure and engineering spec`. This is a requirements/design stage only. Do not implement pipeline code. Do not generate sample data.
+
+Tasks requested:
+
+1. Complete traceability matrix in `requirements-analysis.md` (Requirement, Implementation Artifact, Validation/Test Evidence, AI Prompt Evidence, Status). Include every requirement class (sources, injected issues, Bronze, metadata, five Silver modules, quality reporting, Gold, trends, dashboard, schema/setup, tests, README, prompt history, Cursor workflow, debugging, reflection, responsible AI, Git/submission). Do not mark PASS without real artifacts/evidence.
+2. Challenge requirements: missing, ambiguous, conflicting, assumptions, edge cases, environment dependencies, risks, incorrect-implementation traps. Do not silently resolve. For each ambiguity: quote/paraphrase, explain, list interpretations, choose a practical decision, explain why, document it. Preserve the ~700 vs 460 discrepancy, four-vs-five Silver inconsistency, and 30 future signup dates appearing only in an example prompt.
+3. Complete architecture in `design-notes.md` (CSV/S3/DBFS → Bronze → Silver → Gold → Databricks SQL Dashboard) covering flow, naming, schema, Bronze immutability, metadata, Silver sequencing, row-level status, multiple failures, metrics, Gold dependencies, aggregations, segmentation, dashboard, errors, rerun/idempotency, config/paths, logging, testing. Stay in ~20–25 hour scope.
+4. Senior-engineer review: at least five failure modes with cause, prevention/detection, and proving test. Attention to join amplification, NULL semantics, FK validation, Bronze mutation, row deletion, aggregation double counting, quality-status handling, nondeterministic generation, hard-coded paths, environment assumptions.
+5. Review `data-model.md` and `database/schema.sql` for all three sources; document columns, types, nullability, keys, meaning, domains, precision, dates; Bronze/Silver/Gold contracts; no unnecessary columns.
+6. Finalize `data-quality-strategy.md` for completeness, uniqueness, type, RI, business logic (fields, detection, row-level, metrics, thresholds, intentional failures, tests, edge cases, false positives). Define multi-failure representation. Distinguish NULL FK, orphan FK, duplicate key, malformed value, business-rule violation. Do not delete bad rows.
+7. Improve Cursor workflow files so a new Agent chat can continue without the old conversation.
+
+Record real AI interactions under `ai-prompts/`. One git commit after validation: `docs: finalize requirements architecture and data quality design`. Show diff --stat and status first. Report files changed, decisions, ambiguities, risks, validation performed, commit hash.
+
+### AI RESPONSE SUMMARY
+
+The assistant read the listed files plus `database/schema.sql`, stubs, header-only CSVs, existing prompt logs, and git HEAD `16ee902`. It did not generate data or implement pipeline bodies.
+
+Proposed documentation updates:
+
+- Traceability matrix with honest statuses (PASS only for existing docs/tree/responsible-AI-so-far and the recorded 700-gap writeup; pipeline items PARTIAL/NOT STARTED/DESIGNED).
+- Additional ambiguities beyond the original three (row counts vs extra duplicates, NULL vs orphan, schema inference vs explicit types, Gold filters/formulas, segmentation overlap, uniqueness all-copies, multi-failure overwrite, paths, missing `tests/` tree, trend columns, histogram bins, country/category domains).
+- Architecture: full-refresh medallion, `_ingest_row_id`, PERMISSIVE reads, config/env paths, Gold Completed+PASS, segmentation priority, ten failure modes with tests.
+- Data model and commented DDL for Bronze/Silver/Gold including ingest metadata and quality columns.
+- Frozen five-module DQ strategy with failure-class dictionary and concatenated `failed_checks`.
+- Cursor workflow files rewritten as bootstrap context for a new chat.
+
+### ACCEPTED
+
+- Design-only scope; no `generate_sample_data` run; no Spark/SQL implementation.
+- Preserve 700 vs 460, four vs five, and optional 30 future signups.
+- Listed defect counts as the generation contract; disjoint injection where possible.
+- All five Silver modules; never delete bad rows.
+- NULL FK vs orphan split; flag all duplicate copies; combiner on `_ingest_row_id`.
+- Explicit schema + PERMISSIVE; `DECIMAL(18,2)`.
+- Gold formulas and mutually exclusive segmentation with default High-Value threshold 1000.00 (change later only if documented).
+- Honest matrix statuses; no fabricated tests.
+- Single documentation commit when the user-requested validation is done.
+
+### CHANGED
+
+- Uniqueness **row** fail counts documented as 20 customers / 40 orders (all copies), while extra-row issue instances remain 10 / 20 — needed so Stage 2 tests do not assert the wrong number.
+- `_ingest_row_id` added as Bronze lineage (not a source field) after weighing “no extra columns” against join-amplification risk; recorded as an explicit ambiguity decision rather than a silent extra attribute.
+- `tests/` planned but **not created** in this stage (empty tests would look like fake coverage).
+- `src/config.py` described but **not added** (Bronze-stage artifact).
+- High-Value threshold frozen as a default with an allowed documented revisit after generation, because no real revenue distribution exists yet.
+- Dashboard country filter deferred: Revenue-by-Customer Gold columns do not include country.
+
+### REJECTED
+
+- Generating CSVs or implementing ingest/quality/Gold SQL.
+- Padding defects to 700 or omitting business logic.
+- Marking pipeline/test/dashboard rows PASS.
+- Filling `reflection.md` / `debugging-notes.md` with invented experience.
+- Over-engineering (streaming, dbt, Great Expectations, SCD2, quarantine tables, RFC email validation, country ISO allowlists).
+- Enforcing SQL PK/FK/NOT NULL on Bronze (would reject required defects).
+- Using `DROPMALFORMED` or `current_date()` for the future-signup rule.
+- Using source `lifetime_value` as `lifetime_value_actual`.
+- Multiple tiny git commits.
+
+### VALIDATION
+
+Performed in this environment (documentation/repo inspection only):
+
+- Read canonical requirements and all listed design/workflow files.
+- Confirmed git HEAD `16ee902` and a clean tree before edits.
+- Confirmed `data/*.csv` are header-only (one header line each).
+- Confirmed Bronze/Silver/Gold/dashboard modules still stubs / NOT IMPLEMENTED.
+- Confirmed required paths from `DE_C1_REQUIREMENTS.md` still present (no reinit).
+- Arithmetic check: 50+10+100+200+50+30+20 = 460 ≠ 700.
+- Reviewed `.gitignore` for `.env` / credential patterns; did not open or commit secrets.
+- No PySpark, pytest, or Databricks jobs were run (nothing executable to validate).
+
+### FINAL DECISION
+
+Treat Stage 1.5 (requirements, architecture, data-model, DQ strategy, Cursor context) as complete written design. Keep Stage 2+ blocked until explicitly requested. Commit once: `docs: finalize requirements architecture and data quality design`.

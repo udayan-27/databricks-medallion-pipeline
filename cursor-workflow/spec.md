@@ -2,26 +2,33 @@
 
 Canonical human-readable requirements: `DE_C1_REQUIREMENTS.md`.  
 Ambiguity decisions: `requirements-analysis.md`.  
+Architecture: `design-notes.md`.  
+Column contracts: `data-model.md`.  
+Silver rules: `data-quality-strategy.md`.  
 This file is the canonical **technical** spec for implementation.
+
+A new agent should treat frozen decisions here as binding for later stages.
 
 ## 1. Scope
 
 Build, in later stages, a Databricks Medallion pipeline:
 
 1. Generate synthetic CSVs with documented quality issues.
-2. Ingest to Bronze without cleaning.
+2. Ingest to Bronze without cleaning source values.
 3. Build Silver tables with five quality modules; flag failures; emit metrics.
 4. Build Gold aggregations in SQL.
 5. Provide dashboard SQL and setup guide.
 6. Document, test, and record AI usage.
 
-**This specification commit does not implement those stages.**
+**The requirements/design stage does not implement those stages.**
+
+Out of scope: streaming, Autoloader, SCD2, dbt, Great Expectations, quarantine tables, production deployment.
 
 ## 2. Runtime
 
 | Layer | Technology |
 |---|---|
-| Data generation | Python (local is acceptable) |
+| Data generation | Python (local is acceptable); **frozen RNG seed** |
 | Bronze | PySpark |
 | Silver | PySpark |
 | Gold | Spark SQL / Databricks SQL files |
@@ -30,31 +37,56 @@ Build, in later stages, a Databricks Medallion pipeline:
 
 Catalog, schema, and volume names must be configuration, not hardcoded personal secrets.
 
+Spark CSV: **explicit schema**, mode **PERMISSIVE**. Never DROPMALFORMED.
+
 ## 3. Input contracts
 
-See `data-model.md`. Row targets after generation: 10,000 customers, 100,000 orders, 500 products, plus extra duplicate rows as specified (duplicate rows increase file length above the “base” unique-key counts; generation notes must state exact output row counts).
+See `data-model.md`.
+
+After generation (frozen):
+
+| File | Unique keys | File rows | Mandatory defects |
+|---|---|---|---|
+| customers.csv | 10,000 | 10,010 | 50 NULL email; 10 extra duplicate customer_id rows |
+| orders.csv | 100,000 | 100,020 | 100 NULL customer_id; 200 NULL product_id; 50 orphan customer_id; 30 orphan product_id; 20 extra duplicate order_id rows |
+| products.csv | 500 | 500 | none mandatory |
+
+Do not pad issue instances to 700.
+
+Optional: 30 future signup dates — decide in `DATA_GENERATION_NOTES.md` at Stage 2.
 
 ## 4. Bronze behavior
 
-- Read `data/customers.csv`, `data/orders.csv`, `data/products.csv` (or DBFS/S3 equivalents).
-- Apply explicit schema.
-- Write raw Delta tables.
-- Log metadata: row counts, timestamp, source path.
-- Forbidden: dropping rows, filling nulls, deduplicating, repairing FKs.
+- Read `data/customers.csv`, `data/orders.csv`, `data/products.csv` (or configured DBFS/S3/volume equivalents).
+- Apply explicit schema from `data-model.md`.
+- Write raw Delta tables `bronze.customers|orders|products`.
+- Add `_ingest_row_id BIGINT` (lineage). Do not change source field values.
+- Append `bronze.ingest_metadata`: ingest_id, source_file, table_name, row_count, ingested_at, status, error_message.
+- Full refresh overwrite of entity tables; append-only metadata.
+- Forbidden: dropping rows, filling nulls, deduplicating, repairing FKs, UNIQUE/FK/NOT NULL constraints that reject defects.
+- Missing file or missing header: fail the job.
 
 ## 5. Silver behavior
 
 Process:
 
 1. Load Bronze.
-2. Run completeness, uniqueness, type validation, referential integrity, business logic.
-3. Combine results onto each row.
+2. Run completeness, uniqueness, type validation, referential integrity, business logic **independently**.
+3. Combine on `_ingest_row_id` in `create_silver_tables.py`.
 4. Write Silver tables including every Bronze row.
-5. Write quality metrics.
+5. Write `silver.quality_metrics`.
 
-`quality_check_result` is `FAIL` if any required check fails; otherwise `PASS`.
+Flags:
 
-Business-logic rules must be copied from `data-quality-strategy.md` at implementation time; if the strategy is still “intended candidates,” finish documenting rules first.
+- Per-module booleans
+- `failed_checks ARRAY<STRING>` concatenated, never last-writer-wins
+- `quality_check_result` = `FAIL` if any required check fails; otherwise `PASS`
+
+NULL FK = completeness only. Orphan = RI only. Duplicate = uniqueness (all copies). Malformed/enum = type. Cross-field = business logic.
+
+Business-logic rules are copied from `data-quality-strategy.md`; that file is frozen until a documented change.
+
+Products still run all five modules; RI passes for all product rows.
 
 ## 6. Gold behavior
 
@@ -62,10 +94,25 @@ SQL files must produce:
 
 - `01_sales_by_product.sql` — product_id, product_name, category, total_orders, total_revenue, avg_order_value
 - `02_revenue_by_customer.sql` — customer_id, customer_name, customer_segment, total_orders, total_revenue, avg_order_value, lifetime_value_actual
-- `03_daily_weekly_trends.sql` — daily and weekly trend measures (exact columns documented in the SQL header when written)
+- `03_daily_weekly_trends.sql` — populate `gold.daily_trends` and `gold.weekly_trends` (columns in `data-model.md`)
 - `04_customer_segmentation.sql` — segment_type (High-Value / Repeat / One-Time / Inactive), customer_count, avg_revenue, total_revenue
 
-Each query header must state which Silver quality filters apply.
+Default qualifying order:
+
+`order_status = 'Completed' AND quality_check_result = 'PASS'`
+
+Formulas:
+
+- total_orders = COUNT of qualifying orders
+- total_revenue = SUM(total_amount)
+- avg_order_value = total_revenue / NULLIF(total_orders, 0)
+- lifetime_value_actual = customer total_revenue (not source lifetime_value)
+
+Segmentation priority: Inactive (0 qualifying orders) → High-Value (revenue >= 1000.00) → Repeat (>= 2) → One-Time (1).
+
+Dimension joins must not fan out on duplicate parent keys (`row_number` canonical row). Each query header must state filters and grain.
+
+`create_gold_tables.py` executes SQL files; it must not replace them with undocumented PySpark aggregations.
 
 ## 7. Dashboard
 
@@ -75,19 +122,26 @@ Each query header must state which Silver quality filters apply.
 - Customer revenue distribution (histogram)
 - Customer segmentation (pie)
 
-Plus filter-supporting queries or WHERE placeholders. Guide describes how to attach them in Databricks SQL.
+Plus filter-supporting queries or WHERE placeholders (date range, customer_segment). Guide describes how to attach them in Databricks SQL. No fabricated screenshots.
 
 ## 8. Testing (later)
 
-Tests must be real executions. Minimum intended coverage (not yet present):
+Tests must be real executions. Add `tests/` at implementation (not in the official required tree, but required by the assignment). Minimum coverage:
 
-- Generated row counts and injected issue counts
+- Generated row counts and injected issue counts (including uniqueness **row** vs **extra-row** distinction)
+- Generator determinism (seed)
 - Bronze row counts match source files
-- Bronze values unchanged vs CSV for a sample of rows
+- Bronze source values unchanged vs CSV
+- Bronze unchanged after Silver
 - Each Silver module flags known injected defects
+- NULL FK not classified as orphan
+- Multi-failure `failed_checks` length > 1
 - Silver row counts equal Bronze (no deletes)
-- Gold queries run and return expected columns
+- Gold queries run, expected columns, no duplicate amplification
+- Segmentation exclusive and exhaustive
 - No secrets in repo
+
+Never claim PASS unless executed.
 
 ## 9. Data and security
 
@@ -100,7 +154,10 @@ Synthetic data only. No real customer PII. No credentials in code, prompts, or n
 | ~700 rows vs listed 460 | Generate listed counts; document gap |
 | Four checks vs five modules | Implement five |
 | 30 future signup dates | Optional business-logic; document at generation |
+| 10,000 rows vs extra duplicates | Unique targets + extra duplicate rows |
+| Inference vs types | Explicit schema; inference diagnostic only |
+| Raw Bronze vs lineage column | Source columns raw; `_ingest_row_id` allowed |
 
 ## 11. Definition of done for a change
 
-A meaningful AI-assisted change is done only when: files inspected, spec compared, approach and edge cases stated, code written, tests/validation run, actual results recorded, docs and `ai-prompts/` updated, Git commit created.
+A meaningful AI-assisted change is done only when: files inspected, spec compared, approach and edge cases stated, code written (if that stage), tests/validation run, actual results recorded, docs and `ai-prompts/` updated, Git commit created when requested.

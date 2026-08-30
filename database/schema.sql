@@ -1,11 +1,16 @@
 -- Planned Databricks / Spark SQL schema for the medallion pipeline.
 -- Status: NOT APPLIED. These statements are the intended contract, not evidence of created tables.
+-- Do not copy personal catalog names. Substitute ${catalog} at apply time.
+-- Bronze has no PK / FK / NOT NULL constraints so required defects can be ingested.
 
 -- CREATE SCHEMA IF NOT EXISTS bronze;
 -- CREATE SCHEMA IF NOT EXISTS silver;
 -- CREATE SCHEMA IF NOT EXISTS gold;
 
--- Bronze (raw; columns match CSV headers)
+-- ---------------------------------------------------------------------------
+-- Bronze (raw source columns + ingest lineage)
+-- ---------------------------------------------------------------------------
+
 -- CREATE TABLE bronze.customers (
 --   customer_id INT,
 --   customer_name STRING,
@@ -13,7 +18,8 @@
 --   country STRING,
 --   signup_date DATE,
 --   customer_segment STRING,
---   lifetime_value DECIMAL(18, 2)
+--   lifetime_value DECIMAL(18, 2),
+--   _ingest_row_id BIGINT
 -- );
 
 -- CREATE TABLE bronze.orders (
@@ -25,7 +31,8 @@
 --   unit_price DECIMAL(18, 2),
 --   total_amount DECIMAL(18, 2),
 --   order_status STRING,
---   payment_date DATE
+--   payment_date DATE,
+--   _ingest_row_id BIGINT
 -- );
 
 -- CREATE TABLE bronze.products (
@@ -35,18 +42,130 @@
 --   price DECIMAL(18, 2),
 --   cost DECIMAL(18, 2),
 --   stock_quantity INT,
---   reorder_level INT
+--   reorder_level INT,
+--   _ingest_row_id BIGINT
 -- );
 
 -- CREATE TABLE bronze.ingest_metadata (
+--   ingest_id STRING,
 --   source_file STRING,
+--   table_name STRING,
 --   row_count BIGINT,
 --   ingested_at TIMESTAMP,
---   ingest_id STRING
+--   status STRING,
+--   error_message STRING
 -- );
 
--- Silver tables copy Bronze columns and add quality_check_result and related flags.
--- Exact DDL will be updated when create_silver_tables.py is implemented.
+-- ---------------------------------------------------------------------------
+-- Silver (all Bronze rows + quality attributes)
+-- ---------------------------------------------------------------------------
 
--- Gold tables/views match src/gold/*.sql outputs.
--- Exact DDL will be updated when Gold SQL is implemented.
+-- CREATE TABLE silver.customers (
+--   customer_id INT,
+--   customer_name STRING,
+--   email STRING,
+--   country STRING,
+--   signup_date DATE,
+--   customer_segment STRING,
+--   lifetime_value DECIMAL(18, 2),
+--   _ingest_row_id BIGINT,
+--   completeness_pass BOOLEAN,
+--   uniqueness_pass BOOLEAN,
+--   type_validation_pass BOOLEAN,
+--   referential_integrity_pass BOOLEAN,
+--   business_logic_pass BOOLEAN,
+--   failed_checks ARRAY<STRING>,
+--   quality_check_result STRING
+-- );
+
+-- CREATE TABLE silver.orders (
+--   order_id INT,
+--   customer_id INT,
+--   order_date DATE,
+--   product_id INT,
+--   quantity INT,
+--   unit_price DECIMAL(18, 2),
+--   total_amount DECIMAL(18, 2),
+--   order_status STRING,
+--   payment_date DATE,
+--   _ingest_row_id BIGINT,
+--   completeness_pass BOOLEAN,
+--   uniqueness_pass BOOLEAN,
+--   type_validation_pass BOOLEAN,
+--   referential_integrity_pass BOOLEAN,
+--   business_logic_pass BOOLEAN,
+--   failed_checks ARRAY<STRING>,
+--   quality_check_result STRING
+-- );
+
+-- CREATE TABLE silver.products (
+--   product_id INT,
+--   product_name STRING,
+--   category STRING,
+--   price DECIMAL(18, 2),
+--   cost DECIMAL(18, 2),
+--   stock_quantity INT,
+--   reorder_level INT,
+--   _ingest_row_id BIGINT,
+--   completeness_pass BOOLEAN,
+--   uniqueness_pass BOOLEAN,
+--   type_validation_pass BOOLEAN,
+--   referential_integrity_pass BOOLEAN,
+--   business_logic_pass BOOLEAN,
+--   failed_checks ARRAY<STRING>,
+--   quality_check_result STRING
+-- );
+
+-- CREATE TABLE silver.quality_metrics (
+--   table_name STRING,
+--   check_name STRING,
+--   pass_count BIGINT,
+--   fail_count BIGINT,
+--   pass_pct DECIMAL(7, 4),
+--   fail_pct DECIMAL(7, 4),
+--   computed_at TIMESTAMP
+-- );
+
+-- ---------------------------------------------------------------------------
+-- Gold (aggregations; quality filters belong in the SQL that populates these)
+-- ---------------------------------------------------------------------------
+
+-- CREATE TABLE gold.sales_by_product (
+--   product_id INT,
+--   product_name STRING,
+--   category STRING,
+--   total_orders BIGINT,
+--   total_revenue DECIMAL(18, 2),
+--   avg_order_value DECIMAL(18, 2)
+-- );
+
+-- CREATE TABLE gold.revenue_by_customer (
+--   customer_id INT,
+--   customer_name STRING,
+--   customer_segment STRING,
+--   total_orders BIGINT,
+--   total_revenue DECIMAL(18, 2),
+--   avg_order_value DECIMAL(18, 2),
+--   lifetime_value_actual DECIMAL(18, 2)
+-- );
+
+-- CREATE TABLE gold.daily_trends (
+--   trend_date DATE,
+--   total_orders BIGINT,
+--   total_revenue DECIMAL(18, 2),
+--   avg_order_value DECIMAL(18, 2)
+-- );
+
+-- CREATE TABLE gold.weekly_trends (
+--   week_start_date DATE,
+--   total_orders BIGINT,
+--   total_revenue DECIMAL(18, 2),
+--   avg_order_value DECIMAL(18, 2)
+-- );
+
+-- CREATE TABLE gold.customer_segmentation (
+--   segment_type STRING,
+--   customer_count BIGINT,
+--   avg_revenue DECIMAL(18, 2),
+--   total_revenue DECIMAL(18, 2)
+-- );

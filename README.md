@@ -4,7 +4,7 @@ This repository is the DE C1 AI Capability Exercise submission. It implements (w
 
 `CSV -> Bronze -> Silver -> Gold -> Dashboard`
 
-The current commit initializes the required engineering structure, specifications, and stubs. **The pipeline is not implemented yet. Sample data has not been generated yet.**
+Requirements and architecture are written. **The pipeline is not implemented yet. Sample data has not been generated yet.**
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 
@@ -13,7 +13,7 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Area | Status |
 |---|---|
 | Repository structure | Initialized |
-| Requirements analysis and technical spec | Written |
+| Requirements analysis, architecture, data model, DQ strategy | Written (design stage) |
 | Sample CSV data | Not generated (header-only placeholders) |
 | Bronze / Silver / Gold / Dashboard code | Stubs only |
 | Tests and validation evidence | Not run (nothing executable yet) |
