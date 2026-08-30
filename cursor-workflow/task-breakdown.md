@@ -55,9 +55,9 @@ Commit message (this stage): `feat: add Bronze ingestion pipeline`
 - Shared PySpark ingest in `src/bronze/ingest_core.py`; CLIs in `01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py`.
 - Config: `src/config.py` (env/CLI; no personal paths).
 - Explicit schema, PERMISSIVE, raw write, `_ingest_row_id` (per-execution), append-only `bronze.ingest_metadata`.
-- Tests: `tests/test_bronze_contract.py` (always run); `tests/test_bronze_ingest.py` (skipped without PySpark).
-- Databricks / local Spark execution: **BLOCKED** in the implementation environment (no PySpark, no JDK).
-- `ai-prompts/bronze-layer.md` updated with the real interaction.
+- Tests: `tests/test_bronze_contract.py` (always run); `tests/test_bronze_ingest.py` (requires local PySpark+JDK).
+- Local Spark environment (2026-08-31): Python 3.11.9 `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. In-memory smoke test passed. Spark ingest tests **ran and failed** (Windows `%20` file URIs + no Hadoop/winutils). Contract tests 33/33 OK. Databricks / Delta / UC still **not** executed.
+- `ai-prompts/bronze-layer.md` updated with the Bronze implementation interaction; environment setup is in `ai-prompts/documentation.md`.
 
 Do not start Silver until that stage is requested.
 
@@ -110,4 +110,4 @@ Assert Silver row counts equal Bronze. Multi-failure rows keep multiple codes. U
 
 ## Explicitly not started after Bronze code
 
-Silver/Gold/Dashboard implementation. Generator tests and Bronze contract tests exist; Spark ingest tests skip without PySpark.
+Silver/Gold/Dashboard implementation. Generator tests and Bronze contract tests exist. Local Spark JVM+PySpark is installed; Spark ingest tests now run and currently fail on Windows Hadoop path/winutils. Databricks Bronze tables have not been created.

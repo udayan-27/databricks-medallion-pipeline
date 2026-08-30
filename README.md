@@ -16,9 +16,11 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Requirements analysis, architecture, data model, DQ strategy | Written (design stage) |
 | Sample CSV data | Generated (10,010 / 100,020 / 500 rows; seed 42) |
 | Bronze ingest code | Implemented (`src/bronze/`, `src/config.py`) |
-| Bronze Spark / Databricks execution | **BLOCKED** here (no PySpark, no JDK) |
+| Local Spark runtime | Python 3.11 `.venv` + Temurin JDK 17 + PySpark 3.5.6 (isolated from system Python 3.12) |
+| Local Spark validation | In-memory smoke test **passed**. Bronze parquet ingest tests **failed** (Windows Hadoop path encoding + missing winutils). Not Databricks. |
+| Bronze Databricks / Delta / Unity Catalog | **Not run** from this environment |
 | Silver / Gold / Dashboard code | Stubs only |
-| Tests | Generator tests run; Bronze contract tests run; Spark ingest tests skipped |
+| Tests | Generator tests run; Bronze contract tests 33/33 OK; Spark ingest tests ran (not skipped) and failed |
 
 Do not treat stub Silver/Gold modules or placeholder SQL as a working pipeline. The CSVs in `data/` are real generated inputs.
 
@@ -71,14 +73,37 @@ python src/bronze/ingest_all.py --data-path /Volumes/<catalog>/<schema>/<volume>
 
 Individual datasets: `python src/bronze/01_ingest_customers.py` (same flags). `ingest_all.py` preflights all three files, then overwrites the three entity tables and appends three metadata rows sharing one `ingest_id`.
 
-**Local Spark (optional):** install PySpark and JDK 11 or 17. Delta is not assumed locally:
+**Local Spark (this machine):** an isolated project `.venv` is used so PySpark is not installed into system Python 3.12 (or 3.7). `.gitignore` already ignores `.venv/`.
+
+| Component | Actual |
+|---|---|
+| Python for Spark | 3.11.9 (`py -3.11`), venv `.venv\Scripts\python.exe` |
+| System Python | 3.12.7 (unchanged; no PySpark) |
+| JDK | Eclipse Temurin 17.0.20.1 (locate the installed `jdk-17*-hotspot` directory; do not assume a patch path) |
+| PySpark | 3.5.6 inside `.venv` only (`py4j==0.10.9.7` came in as its dependency) |
+
+Create and use the venv from the repo root:
 
 ```
-python src/bronze/ingest_all.py --table-format parquet
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install "pyspark==3.5.6"
+$env:JAVA_HOME = (Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object { $_.Name -like "jdk-17*" } | Select-Object -First 1).FullName
+$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+$env:PYSPARK_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
 python -m unittest tests.test_bronze_ingest -v
 ```
 
-This environment did **not** have PySpark or Java. Spark ingest tests skipped. That is not a Databricks pass.
+Do **not** install delta-spark, pandas, pyarrow, Jupyter, standalone Spark, or Hadoop/winutils for this stack. Default `--table-format` is still `delta` (Databricks). Local attempts use `--table-format parquet`.
+
+**What this environment actually proved (2026-08-31):**
+
+- `createDataFrame` + `count()` + `collect()` + `stop()` in `local[2]` **succeeded**.
+- `python -m unittest tests.test_bronze_contract -v` → **33 tests OK**.
+- `python -m unittest tests.test_bronze_ingest -v` → **FAILED** (1 failure, 2 errors). Spark could not read `file:/...%20...` URIs produced by `Path.as_uri()`, and Hadoop `mkdirs`/`saveAsTable` need winutils on Windows. Bronze logic was not changed to hide that. See `debugging-notes.md`.
+- `python src/bronze/ingest_all.py --table-format parquet` was **not** run, because the ingest test suite did not succeed.
+- None of the above is Databricks, Delta, DBFS, or Unity Catalog validation.
 
 **Rerun:** entity tables overwrite from the current CSVs; `_ingest_row_id` values change; `bronze.ingest_metadata` appends. Do not run overlapping jobs.
 

@@ -31,7 +31,7 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 1 Repository structure + engineering spec | Done (`16ee902`) |
 | 1.5 Requirements traceability, architecture, DQ strategy | Done (`3fa1c57`) |
 | 2 Data generation | **Done** (seed 42; `data/*.csv` populated; tests run) |
-| 3 Bronze ingest | **Code complete.** Local Spark and Databricks execution are **BLOCKED** (no PySpark/JDK in this environment). |
+| 3 Bronze ingest | **Code complete.** Local Python 3.11 `.venv` + JDK 17 + PySpark 3.5.6 installed. In-memory smoke passed. Local parquet ingest tests **failed** (Windows Hadoop `%20` URIs + no winutils). Databricks / Delta / UC **not** run. |
 | 4–10 Silver through submission | **Not started** |
 
 `data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). Silver / Gold / Dashboard remain stubs.

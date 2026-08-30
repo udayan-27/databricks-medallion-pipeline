@@ -162,3 +162,53 @@ Performed in this environment (documentation/repo inspection only):
 ### FINAL DECISION
 
 Treat Stage 1.5 (requirements, architecture, data-model, DQ strategy, Cursor context) as complete written design. Keep Stage 2+ blocked until explicitly requested. Commit once: `docs: finalize requirements architecture and data quality design`.
+
+---
+
+## Prompt 4 — 2026-08-31 — Local Spark environment (Python 3.11 / JDK 17 / PySpark 3.5.6)
+
+### PROMPT SENT
+
+Prepare the local development environment for DE C1. Re-check the machine first. Install Python 3.11 (`winget` user scope) and Eclipse Temurin JDK 17 (`winget` user scope). Create project `.venv` with Python 3.11, upgrade pip, install only `pyspark==3.5.6`. Do not install delta-spark, pandas, pyarrow, Jupyter, standalone Spark, Hadoop/winutils, or PySpark into system Python 3.12. Do not change Python 3.12 or 3.7. Do not alter Git history or Bronze/CSV source. Set session `JAVA_HOME` to the actual JDK path. Run a local[2] Spark smoke test (`createDataFrame`, `count()`, `collect()`, `stop()`). Then `python -m unittest tests.test_bronze_ingest -v` and `python -m unittest tests.test_bronze_contract tests.test_bronze_ingest -v`. Optional local Bronze parquet run only if tests succeed. Document facts. Commit only if the repository actually changed. Do not start Silver.
+
+### AI RESPONSE SUMMARY
+
+Re-check matched the prior inspection: Windows 11, Python 3.12.7 system-wide, 3.11 missing, 3.7.9 present, no JDK, no PySpark, Git clean at Bronze HEAD `a581cbc`, `.gitignore` already ignores `.venv/`.
+
+Installed Python 3.11.9 user-scope via the requested winget command. Temurin 17 `--scope user` failed (no user installer); installed `--scope machine` after approval. JDK path: `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot` (17.0.20.1). Created `.venv` with `py -3.11`; pip upgraded; `pyspark==3.5.6` only (plus dependency `py4j==0.10.9.7`). System 3.12 still has no pyspark.
+
+Smoke test passed. Contract tests 33/33 OK. Spark ingest tests ran (not skipped) and failed: Hadoop cannot read percent-encoded `file:` URIs from `Path.as_uri()`, and writes need winutils (not installed). Bronze source was not changed. Optional `ingest_all.py --table-format parquet` was not run. Silver was not started.
+
+### ACCEPTED
+
+- Isolated `.venv` on Python 3.11; PySpark not installed into 3.12.
+- Session `JAVA_HOME` / `PATH` for the actual Temurin directory; no extra packages.
+- Honest local vs Databricks distinction.
+- No Bronze logic change to hide Windows Hadoop failures.
+- No `.venv` commit; `.gitignore` already lists `.venv/`.
+
+### CHANGED
+
+- JDK install used `--scope machine` because winget has no user-scope Temurin 17 installer. The MSI also set machine `JAVA_HOME`.
+- Optional local Bronze parquet job skipped after ingest tests failed.
+
+### REJECTED
+
+- Hadoop/winutils, delta-spark, pandas, pyarrow, Jupyter, standalone Spark.
+- Editing `spark_input_path()` / ingest code just to make Windows tests green.
+- Claiming Databricks, Delta, DBFS, or Unity Catalog validation from the smoke test.
+- Starting Silver.
+
+### VALIDATION
+
+- `py -3.11 --version` → 3.11.9; `.venv` executable is `.venv\Scripts\python.exe`.
+- `java -version` / `javac -version` → 17.0.20.1.
+- `import pyspark` in `.venv` → 3.5.6; system 3.12 → `ModuleNotFoundError`.
+- Smoke: `SMOKE_COUNT=2`, collect two rows, Spark stopped.
+- Contract: `Ran 33 tests` OK.
+- Ingest: `Ran 5 tests` FAILED (failures=1, errors=2); combined `Ran 38 tests` FAILED (failures=1, errors=2).
+- `git check-ignore` confirms `.venv/` is ignored. No generated parquet/warehouse in git. Stage 2 CSVs unchanged.
+
+### FINAL DECISION
+
+Local Spark **runtime** is installed. Local parquet Bronze **ingest validation is not complete**. Databricks remains blocked until a workspace job is actually run. Stop after environment setup; do not start Silver.
