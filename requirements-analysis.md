@@ -2,7 +2,7 @@
 
 Canonical source: `DE_C1_REQUIREMENTS.md`. This document records how those requirements are interpreted, which human decisions resolve ambiguities, and how each requirement traces to artifacts. It does not claim that the pipeline has been implemented or validated.
 
-**Stage status:** requirements and architecture review complete. Data generation and pipeline implementation have **not** started.
+**Stage status:** requirements and architecture review complete. **Stage 2 data generation is complete** (seed 42). Pipeline implementation has **not** started.
 
 ## 1. Problem statement
 
@@ -190,7 +190,7 @@ The assignment contains contradictions and gaps. They are recorded here rather t
 
 **Possible interpretations:** (A) inject 30 rows and count them toward 700; (B) skip entirely; (C) implement the Silver rule and decide injection at generation time.
 
-**Implementation decision:** Treat future signup dates as an **optional, explicitly documented business-logic check**. If injected, they will be 30 rows, documented in data-generation notes, and evaluated by the business-logic module. They will not be used to silently pad the mandatory 460-count list toward 700. Whether to inject them will be decided at data-generation time and recorded then. Until then, the check is in scope for Silver business logic as a rule (`signup_date` must not be after the documented as-of date), even if zero such rows exist.
+**Implementation decision:** Treat future signup dates as an **optional, explicitly documented business-logic check**. **Stage 2 injected 30 rows** (`2026-09-01` through `2026-09-30`), documented in `DATA_GENERATION_NOTES.md`, disjoint from mandatory customer defects, and excluded from the order purchaser pool. They are not counted toward the mandatory 460. Silver still evaluates `signup_date` against the frozen as-of date `2026-08-31`.
 
 **Why:** Mandatory counts are enumerated. Example-prompt-only defects must not be smuggled into the contract.
 
@@ -459,7 +459,7 @@ If Databricks is unavailable during a later coding stage, local PySpark tests ma
 A later complete submission should include:
 
 - [ ] End-to-end working pipeline (Bronze -> Silver -> Gold -> dashboard queries)
-- [ ] Intentional quality issues present in source data at the listed counts
+- [x] Intentional quality issues present in source data at the listed counts
 - [ ] All five Silver quality modules implemented
 - [ ] Bad rows flagged, not deleted; Bronze unchanged
 - [ ] Quality metrics with pass/fail counts and percentages
@@ -467,14 +467,14 @@ A later complete submission should include:
 - [ ] Dashboard with 3+ required tiles and filters
 - [ ] Schema, setup, and seed-data notes
 - [ ] README setup instructions that match the actual project
-- [ ] Meaningful tests that were actually run
+- [x] Meaningful tests that were actually run
 - [ ] Full prompt history in `ai-prompts/`
 - [ ] Requirement, design, and data-quality artifacts
 - [ ] Debugging / code-review notes and reflection
 - [ ] Responsible AI: synthetic data only; no secrets in repo or prompts
 - [ ] Meaningful Git history (not a single dump of finished work)
 
-**Current status of these checkboxes:** none of the pipeline, data, dashboard, or test items are complete. This requirements/design stage completes the written analysis, architecture, data-model contracts, quality strategy, and Cursor workflow context. Checkboxes stay unchecked until the matching work exists.
+**Current status of these checkboxes:** source CSVs now contain the listed quality issues (Stage 2). Pipeline, dashboard, and remaining checkboxes stay unchecked until that work exists.
 
 ## 12. Requirements traceability matrix
 
@@ -492,18 +492,18 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Requirement | Implementation Artifact | Validation/Test Evidence | AI Prompt Evidence | Status |
 |---|---|---|---|---|
 | Medallion flow CSV/S3/DBFS → Bronze → Silver → Gold → Dashboard | `README.md`, `design-notes.md`, `cursor-workflow/spec.md` | None (pipeline not run) | `ai-prompts/documentation.md` Prompts 1–3 | DESIGNED |
-| Source dataset `customers.csv` (10k unique + documented extras; required columns) | `data/customers.csv` (header only); generator stub `src/data_generation/generate_sample_data.py` | Header present; **0 data rows**; no count test | `ai-prompts/data-generation.md` (empty of Stage 2 prompts) | PARTIAL |
-| Source dataset `orders.csv` (100k unique + documented extras; required columns) | `data/orders.csv` (header only); generator stub | Header present; **0 data rows** | `ai-prompts/data-generation.md` | PARTIAL |
-| Source dataset `products.csv` (500 rows; required columns) | `data/products.csv` (header only); generator stub | Header present; **0 data rows** | `ai-prompts/data-generation.md` | PARTIAL |
-| Intentional DQ: 50 NULL emails | Generator (not implemented); `DATA_GENERATION_NOTES.md` plan | Not generated; not counted | none yet | NOT STARTED |
-| Intentional DQ: 10 duplicate `customer_id` rows | Generator (not implemented) | Not generated | none yet | NOT STARTED |
-| Intentional DQ: 100 NULL order `customer_id` | Generator (not implemented) | Not generated | none yet | NOT STARTED |
-| Intentional DQ: 200 NULL order `product_id` | Generator (not implemented) | Not generated | none yet | NOT STARTED |
-| Intentional DQ: 50 orphan `customer_id` | Generator (not implemented) | Not generated | none yet | NOT STARTED |
-| Intentional DQ: 30 orphan `product_id` | Generator (not implemented) | Not generated | none yet | NOT STARTED |
-| Intentional DQ: 20 duplicate `order_id` rows | Generator (not implemented) | Not generated | none yet | NOT STARTED |
+| Source dataset `customers.csv` (10k unique + documented extras; required columns) | `data/customers.csv`; `src/data_generation/generate_sample_data.py` | Generator validation + `tests/test_generate_sample_data.py` (14 tests OK) | `ai-prompts/data-generation.md` Prompt 1 | PASS |
+| Source dataset `orders.csv` (100k unique + documented extras; required columns) | `data/orders.csv`; generator | Same | `ai-prompts/data-generation.md` | PASS |
+| Source dataset `products.csv` (500 rows; required columns) | `data/products.csv`; generator | Same | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 50 NULL emails | Generator | Counted 50 on generating run and tests | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 10 duplicate `customer_id` rows | Generator | 10 extra rows; 20 uniqueness-fail rows | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 100 NULL order `customer_id` | Generator | Counted 100 | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 200 NULL order `product_id` | Generator | Counted 200 | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 50 orphan `customer_id` | Generator | Counted 50; NULL ≠ orphan | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 30 orphan `product_id` | Generator | Counted 30 | `ai-prompts/data-generation.md` | PASS |
+| Intentional DQ: 20 duplicate `order_id` rows | Generator | 20 extra rows; 40 uniqueness-fail rows | `ai-prompts/data-generation.md` | PASS |
 | Record ~700 vs listed-count discrepancy | `requirements-analysis.md` §§6.1, 14; `cursor-workflow/project-context.md` | Document review only (arithmetic 50+10+100+200+50+30+20=460) | `ai-prompts/documentation.md` Prompts 1–3 | PASS (documentation of the ambiguity) |
-| Optional 30 future signup dates (example prompt only) | `requirements-analysis.md` §6.3; `data-quality-strategy.md`; generation decision deferred | No rows injected | `ai-prompts/documentation.md` | DESIGNED |
+| Optional 30 future signup dates (example prompt only) | `DATA_GENERATION_NOTES.md`; generator | Counted 30; not in the 460 | `ai-prompts/data-generation.md` | PASS (optional injection, documented) |
 | Bronze: read CSVs into Databricks | `src/bronze/01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py` | Stubs raise `NotImplementedError`; no Spark job | `ai-prompts/bronze-layer.md` (no implementation prompts) | PARTIAL |
 | Bronze: create Bronze tables | Planned `bronze.customers/orders/products` in `database/schema.sql`, `data-model.md` | DDL **not applied** | `ai-prompts/documentation.md` (design) | DESIGNED |
 | Bronze: raw/unchanged; no cleaning | `design-notes.md` Bronze immutability; ingest stubs | No checksum/except test | `ai-prompts/documentation.md` | DESIGNED |
@@ -524,15 +524,15 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Dashboard: 3+ tiles (bar, histogram, pie) | `src/dashboard/dashboard_queries.sql`; `DASHBOARD_GUIDE.md` | Not built; no workspace dashboard | `ai-prompts/dashboard.md` empty of impl prompts | PARTIAL |
 | Dashboard filters | Planned in §6.4 and `DASHBOARD_GUIDE.md` | Not configured | `ai-prompts/documentation.md` | DESIGNED |
 | Schema / setup | `database/schema.sql`, `database/setup-notes.md` | Schema not applied to a warehouse | `ai-prompts/documentation.md` | DESIGNED |
-| Seed-data notes | `database/seed-data-notes.md` | Honest “not loaded” status | `ai-prompts/documentation.md` | PARTIAL |
-| Tests (“meaningful tests”) | None present; planned `tests/` | **No tests executed** | none | NOT STARTED |
-| README setup instructions | `README.md` | Instructions marked planned/unverified | `ai-prompts/documentation.md` | PARTIAL |
-| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Files exist; only documentation-stage prompts are real | `ai-prompts/documentation.md` | PARTIAL (structure PASS for init+design; other areas empty by design) |
+| Seed-data notes | `database/seed-data-notes.md` | Records generator command, counts, synthetic confirmation; Bronze not loaded | `ai-prompts/data-generation.md` | PASS for generation notes; Bronze seed still pending |
+| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py` | **14 tests OK** (`python -m unittest tests.test_generate_sample_data -v`) | `ai-prompts/data-generation.md` | PARTIAL (generator only; pipeline tests not started) |
+| README setup instructions | `README.md` | Generation commands documented and were run | `ai-prompts/data-generation.md` | PARTIAL (generation verified; Databricks setup not) |
+| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Init/design prompts plus Stage 2 `ai-prompts/data-generation.md` | `ai-prompts/documentation.md`; `ai-prompts/data-generation.md` | PARTIAL (Bronze–dashboard logs still empty) |
 | Cursor workflow artifacts | `cursor-workflow/project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | Files exist and were reviewed this stage | `ai-prompts/documentation.md` Prompt 3 | PASS (artifacts exist and are current for this stage) |
 | Debugging notes | `debugging-notes.md` | Placeholder; no runtime defects | `ai-prompts/debugging.md` empty | PARTIAL |
 | Reflection | `reflection.md` | Explicitly not filled with fabricated experience | `ai-prompts/documentation.md` | PARTIAL |
 | Final AI usage summary | `final-ai-usage-summary.md` | Initialization + this design stage only | `ai-prompts/documentation.md` | PARTIAL |
-| Responsible AI (no real PII/secrets in repo or prompts) | Policy in README, rules, `.gitignore`; `candidate-info.md` omits emails/tokens | `.gitignore` reviewed; no `.env` committed; CSVs header-only | `ai-prompts/documentation.md` | PASS for this stage’s contents (must be re-checked after data generation) |
+| Responsible AI (no real PII/secrets in repo or prompts) | Policy in README, rules, `.gitignore`; `candidate-info.md` omits emails/tokens | `.gitignore` reviewed; no `.env`; CSVs use `@example.com` synthetic names | `ai-prompts/data-generation.md` | PASS for Stage 2 contents (re-check after later stages) |
 | Git / submission (meaningful history; org account process; repo link) | Git repo; commit `16ee902`; this stage’s commit when created | `git log` exists; **no submission URL**; not a complete history yet | `ai-prompts/documentation.md` | PARTIAL |
 | Working rule: spec → test → review → prompt log → commit | `tool-workflow.md`, `cursor-workflow/spec.md` §definition of done | Followed for init; followed for this docs stage (no code tests because no code) | `ai-prompts/documentation.md` | PARTIAL (process in use; not done for implementation stages) |
 | Required repository file tree | Paths listed in `DE_C1_REQUIREMENTS.md` | Tree verified at init (`16ee902`) and re-checked this stage | `ai-prompts/documentation.md` Prompts 2–3 | PASS (paths exist; bodies remain stubs where required) |
@@ -570,11 +570,10 @@ Do not read DESIGNED or PARTIAL as PASS.
 
 This satisfies the explicit repository structure and the Silver paragraph that already mentions business logic. The “four checks” wording is recorded as inconsistent documentation, not as a reason to drop a required module.
 
-## 15. Out of scope for this stage
+## 15. Out of scope for the requirements/design stage (historical)
 
-- Data generation
+That stage did not implement generation or the pipeline. **Stage 2 later completed data generation and generator tests.** Still out of scope until requested:
+
 - Pipeline implementation (Bronze / Silver / Gold bodies)
-- Tests
 - Dashboard construction
-- Any claimed runtime validation results
-- Filling `reflection.md` or `debugging-notes.md` with invented experience
+- Fabricated runtime results, reflection, or debugging stories

@@ -6,8 +6,8 @@ If this is a **new chat**, read `cursor-workflow/project-context.md` first.
 
 ## Stage discipline
 
-- Current completed work: repository init + requirements/architecture/DQ design.
-- Do not generate sample data until Stage 2 is requested.
+- Current completed work: repository init + requirements/architecture/DQ design + **Stage 2 sample data generation**.
+- Do not regenerate sample data unless asked.
 - Do not implement Bronze/Silver/Gold bodies until those stages are requested.
 - Stubs may raise `NotImplementedError` until that stage is requested.
 

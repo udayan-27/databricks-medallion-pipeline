@@ -4,7 +4,7 @@ This repository is the DE C1 AI Capability Exercise submission. It implements (w
 
 `CSV -> Bronze -> Silver -> Gold -> Dashboard`
 
-Requirements and architecture are written. **The pipeline is not implemented yet. Sample data has not been generated yet.**
+Requirements and architecture are written. **Stage 2 sample data has been generated.** Bronze / Silver / Gold / Dashboard code is still stubs.
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 
@@ -14,11 +14,11 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 |---|---|
 | Repository structure | Initialized |
 | Requirements analysis, architecture, data model, DQ strategy | Written (design stage) |
-| Sample CSV data | Not generated (header-only placeholders) |
+| Sample CSV data | Generated (10,010 / 100,020 / 500 rows; seed 42) |
 | Bronze / Silver / Gold / Dashboard code | Stubs only |
-| Tests and validation evidence | Not run (nothing executable yet) |
+| Tests and validation evidence | Generator tests run (`tests/test_generate_sample_data.py`) |
 
-Do not treat stub modules, placeholder SQL, or header-only CSVs as a working pipeline.
+Do not treat stub Bronze/Silver/Gold modules or placeholder SQL as a working pipeline. The CSVs in `data/` are real generated inputs.
 
 ## What this exercise evaluates
 
@@ -35,13 +35,20 @@ The submission must demonstrate requirement analysis, architecture, AI-assisted 
 
 See `cursor-workflow/spec.md` and `cursor-workflow/task-breakdown.md` for the staged plan. Required paths match `DE_C1_REQUIREMENTS.md`.
 
-## Setup (planned — not verified)
+## Setup (partial — generation verified)
 
-Setup commands will be added after data generation and pipeline implementation exist. Intended runtime:
+### Sample data
 
-- Databricks workspace with Spark / PySpark
-- Databricks SQL for Gold queries and the dashboard
-- Python 3.x for the data-generation script
+From the repository root (Python 3.12 used when this was run):
+
+```
+python src/data_generation/generate_sample_data.py --output-dir data --seed 42
+python -m unittest tests.test_generate_sample_data -v
+```
+
+Default seed is **42**. The default `--output-dir` is the repo `data/` directory (resolved from the script path, not a hardcoded Windows or Databricks path). Same seed produces byte-identical UTF-8/LF CSVs. See `src/data_generation/DATA_GENERATION_NOTES.md`.
+
+Databricks Spark / SQL warehouse setup remains planned and unverified until Bronze.
 
 No real PII, credentials, secrets, tokens, or private production connection details belong in this repository.
 

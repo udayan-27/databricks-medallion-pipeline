@@ -30,18 +30,18 @@ Commit: `16ee902 chore: initialize project structure and engineering spec`
 
 **Did not** generate data. **Did not** implement pipeline code.
 
-## Stage 2 — Data generation (next; not started)
+## Stage 2 — Data generation (done)
 
-Only when the user requests it:
+Commit message (this stage): `feat: add deterministic e-commerce sample data generator`
 
-- Document generation rules, seed, disjoint defect injection, exact line counts (10,010 / 100,020 / 500) in `DATA_GENERATION_NOTES.md`.
-- Decide whether to inject 30 future signup dates; record the decision.
-- Implement `generate_sample_data.py` with a frozen seed.
-- Produce `data/customers.csv`, `data/orders.csv`, `data/products.csv`.
-- Validate counts and injected issues with **actual** script output (unique keys vs file rows; uniqueness extras vs FAIL-row math).
-- Update `ai-prompts/data-generation.md` and commit when asked.
+- Generator: `src/data_generation/generate_sample_data.py` (seed **42**, as-of **2026-08-31**).
+- CSVs: `data/customers.csv` 10,010 rows / 10,000 unique IDs; `data/orders.csv` 100,020 / 100,000; `data/products.csv` 500 / 500.
+- Mandatory defects at listed counts only (460 instances). Optional 30 future signups documented in `DATA_GENERATION_NOTES.md`.
+- Built-in validation passed on the generating run.
+- Tests: `python -m unittest tests.test_generate_sample_data -v` → 14 tests OK.
+- `tests/` added because the assignment requires meaningful tests but omitted the directory (`requirements-analysis.md` §6.15).
 
-Do not start Bronze until generation is validated.
+Do not start Bronze until that stage is requested. Do not regenerate CSVs unless the seed or contract changes.
 
 ## Stage 3 — Database contracts
 
@@ -103,6 +103,6 @@ Assert Silver row counts equal Bronze. Multi-failure rows keep multiple codes. U
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after Stage 1.5
+## Explicitly not started after Stage 2
 
-Data generation, Bronze/Silver/Gold/Dashboard implementation, tests, and runtime validation evidence.
+Bronze/Silver/Gold/Dashboard implementation. Generator tests exist; pipeline tests do not.

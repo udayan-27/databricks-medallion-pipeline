@@ -1,0 +1,4 @@
+# Generated sample CSVs are UTF-8 with LF. Keep that in git so seed-42
+# SHA-256 matches regeneration on Windows (core.autocrlf would otherwise
+# rewrite working-tree files as CRLF).
+data/*.csv text eol=lf

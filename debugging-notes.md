@@ -1,6 +1,8 @@
 # Debugging notes
 
-No pipeline implementation exists yet, so there are no runtime defects to record.
+Stage 2 (data generation) produced no runtime defect/debug cycle.
+
+The generator’s built-in validation passed on the first seed-42 run. Unit tests (`python -m unittest tests.test_generate_sample_data -v`) were 14/14 OK. A tautological validation check (`customer_id is None and False`) was removed in a senior review pass; it did not hide a real data bug and did not require regenerating CSVs.
 
 Use this file during later stages to capture:
 

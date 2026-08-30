@@ -23,25 +23,25 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 9. `data-quality-strategy.md`
 10. Matching `ai-prompts/<area>.md` before changing that area
 
-## Current stage (as of requirements/design commit)
+## Current stage (as of Stage 2 data generation)
 
 | Stage | Status |
 |---|---|
 | 0 Requirements read | Done |
 | 1 Repository structure + engineering spec | Done (`16ee902`) |
-| 1.5 Requirements traceability, architecture, DQ strategy | Done (this design pass) |
-| 2 Data generation | **Not started** |
+| 1.5 Requirements traceability, architecture, DQ strategy | Done (`3fa1c57`) |
+| 2 Data generation | **Done** (seed 42; `data/*.csv` populated; tests run) |
 | 3–10 Bronze through submission | **Not started** |
 
-`data/*.csv` are **header-only placeholders**. Python/SQL under `src/` are **stubs** (`NotImplementedError` / NOT IMPLEMENTED). Do not treat them as a working pipeline.
+`data/*.csv` are generated synthetic files (not header-only). Python/SQL under `src/bronze`, `src/silver`, `src/gold`, and `src/dashboard` are **stubs**. Do not treat them as a working pipeline.
 
-**Next requested stage should be Stage 2 (data generation) only when the user asks.** Do not skip ahead.
+**Next requested stage should be Stage 3 or Stage 4 (Bronze) only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked.
 
 ## Frozen decisions (do not reopen unless the user or official spec contradicts them)
 
 1. **~700 vs 460:** Generate the listed issue counts (sum **460** instances). Do not pad to 700. Document the gap.
 2. **Four vs five Silver modules:** Implement **all five** files.
-3. **30 future signup dates:** Optional business-logic defect. Decide at generation time; do not silently add to the mandatory list. Silver still has the `signup_not_future` rule.
+3. **30 future signup dates:** Optional business-logic defect. **Stage 2 decision: inject 30** (`2026-09-01`..`2026-09-30`), disjoint from mandatory customer issues, excluded from the order pool. Not part of the 460. Silver still has the `signup_not_future` rule.
 4. **Duplicate extra rows:** 10,000 unique customers + 10 extra rows = **10,010** customer lines. 100,000 unique orders + 20 extra = **100,020** order lines. Products **500**.
 5. **NULL FK ≠ orphan:** Completeness owns NULLs. RI owns non-null missing parents (50 / 30).
 6. **Uniqueness:** Flag **all** copies of a duplicated key. Combiner joins on `_ingest_row_id`, never on duplicated PKs alone.
@@ -105,4 +105,4 @@ Environment / `src/config.py`: catalog, data path, schema names. Default data pa
 
 ## Tests
 
-Required by the assignment but **missing from the official file tree**. Add `tests/` when implementation starts. Do not create fake passing tests now.
+Required by the assignment but **missing from the official file tree**. `tests/` now exists for Stage 2 generator tests (`tests/test_generate_sample_data.py`). Further Bronze/Silver/Gold tests belong in the same directory.

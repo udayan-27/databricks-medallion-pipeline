@@ -362,7 +362,7 @@ Mandatory injected list does not include business defects. Expected 0 unless:
 
 ### Intentional failure scenarios
 
-- Optional: 30 future `signup_date` values (example prompt). Decision at Stage 2.
+- Optional: 30 future `signup_date` values (example prompt). **Stage 2 injected 30** (`DATA_GENERATION_NOTES.md`).
 - No mandatory quantity/amount sabotage.
 
 ### Test cases

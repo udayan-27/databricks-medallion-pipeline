@@ -1,1 +1,501 @@
 product_id,product_name,category,price,cost,stock_quantity,reorder_level
+1,Ultra Bottle,Clothing,22.38,12.76,285,18
+2,Vivid Toolkit,Beauty,363.40,163.53,65,8
+3,Cedar Backpack,Beauty,158.46,114.09,1149,30
+4,Willow Candle,Home & Kitchen,465.61,344.55,919,80
+5,Ivory Lamp,Home & Kitchen,110.62,74.12,318,32
+6,Keen Bottle,Electronics,66.77,42.73,1735,49
+7,Terra Monitor,Sports,34.46,23.78,1992,53
+8,Cedar Camera,Sports,198.12,124.82,1442,13
+9,Bright Basket,Automotive,155.34,90.10,1751,34
+10,Delta YogaMat,Beauty,188.16,129.83,747,25
+11,Lumen Toaster,Books,143.29,81.68,1399,14
+12,Terra Candle,Books,118.14,87.42,334,64
+13,Maple Monitor,Clothing,425.42,319.06,664,12
+14,Halo Mug,Clothing,212.72,138.27,432,77
+15,Willow Blender,Home & Kitchen,145.33,103.18,1872,63
+16,Echo Monitor,Toys,97.49,53.62,1103,38
+17,Zenith Router,Home & Kitchen,286.76,186.39,283,70
+18,Prime Chair,Electronics,36.86,17.32,327,59
+19,Terra Chair,Beauty,258.15,165.22,958,72
+20,Ivory Camera,Books,13.51,6.35,1099,39
+21,Ultra Blender,Home & Kitchen,79.09,45.87,929,5
+22,Zenith Toolkit,Toys,178.60,128.59,1039,18
+23,Ultra Headset,Beauty,424.73,305.81,313,52
+24,Flux Camera,Beauty,353.56,141.42,1000,7
+25,Delta Toaster,Electronics,207.52,114.14,1798,77
+26,Cedar Chair,Grocery,485.65,344.81,1557,73
+27,Echo Speaker,Office,438.36,306.85,338,38
+28,Quest Charger,Office,283.29,150.14,1546,30
+29,Willow Headset,Home & Kitchen,267.47,168.51,1059,62
+30,Delta Keyboard,Clothing,153.24,67.43,1204,75
+31,Halo Router,Electronics,150.31,60.12,1292,12
+32,Halo Chair,Electronics,26.57,16.21,487,40
+33,Vivid Sneaker,Electronics,146.39,108.33,1915,78
+34,Summit Sneaker,Toys,165.24,115.67,389,17
+35,Delta Basket,Home & Kitchen,288.48,178.86,956,11
+36,Vivid Candle,Electronics,429.47,197.56,1491,48
+37,Delta Keyboard 37,Sports,131.55,68.41,287,59
+38,Flux Monitor,Grocery,309.17,170.04,154,61
+39,Ridge Bottle,Grocery,39.14,28.96,1984,16
+40,Halo Jacket,Sports,272.33,193.35,1770,56
+41,Bright Jacket,Automotive,254.35,101.74,543,63
+42,Jade Kettle,Books,462.50,346.88,996,24
+43,Grove Headset,Sports,148.66,63.92,1110,12
+44,Zenith Blender,Beauty,43.45,18.68,1029,72
+45,Flux Mug,Grocery,338.80,152.46,140,13
+46,Vivid Keyboard,Office,270.60,127.18,1166,36
+47,Summit Charger,Home & Kitchen,32.03,14.41,1195,77
+48,Quest Blender,Books,176.88,93.75,643,35
+49,Ivory YogaMat,Home & Kitchen,91.76,54.14,1902,14
+50,Aero Notebook,Electronics,413.07,190.01,436,69
+51,Ivory Speaker,Grocery,234.71,103.27,756,41
+52,Flux Notebook,Beauty,361.99,213.57,1652,72
+53,Aero Basket,Office,369.45,217.98,212,22
+54,Ivory Bottle,Electronics,76.13,57.10,577,31
+55,Willow Blender 55,Sports,139.41,78.07,514,11
+56,Cedar Candle,Electronics,283.58,161.64,683,21
+57,Ultra Monitor,Sports,111.88,76.08,875,76
+58,Aero Bottle,Sports,55.30,27.10,1709,52
+59,Summit Camera,Electronics,103.04,69.04,631,51
+60,Bright Toaster,Books,143.66,79.01,724,76
+61,Nova Charger,Office,497.16,243.61,484,25
+62,Flux Kettle,Books,22.23,11.34,680,57
+63,Vivid Toolkit 63,Electronics,168.62,96.11,1436,18
+64,Maple Mug,Clothing,314.46,169.81,1880,63
+65,Lumen Headset,Electronics,155.14,83.78,395,56
+66,Keen Monitor,Home & Kitchen,51.48,29.34,1043,56
+67,Vivid Camera,Electronics,223.01,91.43,1987,38
+68,Flux Router,Electronics,179.96,75.58,889,49
+69,Zenith Blender 69,Electronics,291.98,210.23,1842,78
+70,Grove Monitor,Electronics,35.07,23.50,1895,73
+71,Vivid Toolkit 71,Home & Kitchen,492.23,255.96,143,47
+72,Terra Blender,Books,440.74,207.15,615,69
+73,Jade Basket,Home & Kitchen,273.63,164.18,605,75
+74,Echo Backpack,Books,281.53,180.18,1848,27
+75,Terra Router,Sports,203.22,132.09,0,43
+76,Jade Backpack,Home & Kitchen,287.72,172.63,905,32
+77,Quest Sneaker,Beauty,488.30,244.15,581,70
+78,Vivid Candle 78,Electronics,411.82,251.21,1949,35
+79,Vivid Headset,Electronics,153.21,79.67,94,36
+80,Prime Charger,Home & Kitchen,53.71,37.06,1289,78
+81,Grove Pillow,Sports,462.35,295.90,499,23
+82,Ultra Pillow,Toys,9.62,4.43,448,27
+83,Willow Helmet,Sports,310.43,133.48,1878,20
+84,Orbit Speaker,Automotive,310.49,226.66,1219,45
+85,Orbit Charger,Home & Kitchen,477.37,343.71,1857,75
+86,Orbit Jacket,Home & Kitchen,493.35,345.34,1539,36
+87,Ultra Monitor 87,Beauty,347.62,246.81,562,61
+88,Cedar Pillow,Clothing,193.24,106.28,654,74
+89,Cedar Speaker,Home & Kitchen,104.83,56.61,312,32
+90,Cedar Kettle,Sports,273.11,166.60,851,12
+91,Grove Kettle,Grocery,261.23,107.10,1567,78
+92,Maple Sneaker,Clothing,9.85,6.11,798,58
+93,Ridge Toolkit,Toys,487.43,360.70,1838,33
+94,Prime Keyboard,Sports,184.86,123.86,796,48
+95,Vivid Basket,Grocery,270.96,135.48,1883,21
+96,Terra Camera,Beauty,23.66,15.38,1357,8
+97,Cedar Candle 97,Grocery,286.88,137.70,372,11
+98,Ivory YogaMat 98,Home & Kitchen,220.52,116.88,691,53
+99,Ivory Stand,Grocery,282.26,158.07,963,7
+100,Zenith Camera,Clothing,40.12,24.87,140,10
+101,Aero Keyboard,Beauty,136.64,56.02,488,21
+102,Prime Basket,Home & Kitchen,80.95,42.90,524,52
+103,Flux Charger,Toys,403.95,189.86,335,44
+104,Delta Router,Sports,22.81,13.46,1859,53
+105,Maple Pillow,Beauty,135.96,59.82,1701,36
+106,Delta Pillow,Toys,203.63,95.71,1159,10
+107,Lumen Camera,Electronics,286.73,180.64,1326,48
+108,Aero Kettle,Home & Kitchen,327.24,150.53,741,63
+109,Willow Speaker,Books,291.39,148.61,1977,39
+110,Terra Camera 110,Home & Kitchen,322.85,222.77,1497,80
+111,Ivory Blender,Clothing,166.87,75.09,923,36
+112,Orbit Router,Clothing,405.97,259.82,1012,46
+113,Flux Sneaker,Toys,145.00,89.90,697,40
+114,Terra Pillow,Electronics,187.04,140.28,1941,29
+115,Cedar Keyboard,Sports,477.89,315.41,1552,35
+116,Willow Sneaker,Home & Kitchen,429.28,304.79,35,16
+117,Jade Keyboard,Clothing,271.01,149.06,1191,52
+118,Prime Camera,Home & Kitchen,353.93,219.44,1527,75
+119,Keen Toaster,Clothing,466.61,321.96,514,34
+120,Delta Toolkit,Electronics,132.20,79.32,1097,28
+121,Grove Backpack,Clothing,490.04,343.03,1207,72
+122,Terra Headset,Clothing,71.87,37.37,739,27
+123,Jade Lamp,Electronics,469.99,347.79,93,11
+124,Ridge Headset,Beauty,463.04,222.26,1541,67
+125,Delta Lamp,Home & Kitchen,382.20,221.68,902,48
+126,Flux Mug 126,Electronics,171.45,120.02,133,56
+127,Prime Chair 127,Electronics,384.14,165.18,1661,77
+128,Jade Chair,Sports,168.64,79.26,852,33
+129,Quest YogaMat,Clothing,301.23,204.84,1205,59
+130,Jade Router,Beauty,412.98,177.58,1515,17
+131,Grove Candle,Books,144.28,80.80,321,35
+132,Flux Camera 132,Electronics,55.18,27.59,922,65
+133,Jade Mug,Books,157.69,91.46,1439,63
+134,Cedar Basket,Toys,158.96,89.02,1280,80
+135,Vivid Backpack,Sports,284.60,133.76,1326,24
+136,Ivory Speaker 136,Electronics,52.78,22.70,629,77
+137,Jade Notebook,Books,87.48,60.36,1433,56
+138,Ivory Helmet,Home & Kitchen,359.87,255.51,1224,10
+139,Nova Toolkit,Electronics,217.22,121.64,468,78
+140,Summit Lamp,Sports,446.57,254.54,1562,27
+141,Prime Helmet,Office,432.96,294.41,371,79
+142,Nova Candle,Home & Kitchen,328.24,147.71,836,47
+143,Keen Basket,Clothing,74.54,37.27,1420,68
+144,Jade Basket 144,Electronics,268.43,201.32,180,45
+145,Ivory Blender 145,Grocery,81.96,53.27,1689,5
+146,Vivid Camera 146,Electronics,308.75,203.78,1061,51
+147,Terra Stand,Toys,332.68,226.22,416,39
+148,Ridge Speaker,Grocery,194.75,132.43,992,20
+149,Aero Candle,Books,405.02,222.76,636,75
+150,Aero Camera,Clothing,273.37,123.02,1723,19
+151,Orbit Bottle,Sports,430.47,210.93,1467,42
+152,Quest Pillow,Grocery,185.18,122.22,967,36
+153,Orbit Camera,Clothing,100.78,64.50,1227,70
+154,Zenith Speaker,Toys,51.74,29.49,1749,58
+155,Keen Helmet,Clothing,181.08,72.43,611,80
+156,Summit Basket,Home & Kitchen,326.88,160.17,991,49
+157,Keen Camera,Home & Kitchen,362.13,231.76,659,29
+158,Willow Keyboard,Clothing,380.72,243.66,1588,57
+159,Bright Blender,Books,494.03,345.82,1661,53
+160,Maple Basket,Sports,433.29,212.31,75,21
+161,Quest Router,Grocery,223.56,102.84,901,17
+162,Quest Notebook,Home & Kitchen,16.04,7.86,1340,24
+163,Cedar Sneaker,Beauty,179.67,109.60,814,15
+164,Keen Basket 164,Automotive,355.70,227.65,1283,67
+165,Ridge Mug,Clothing,410.64,180.68,1401,41
+166,Halo Toolkit,Automotive,65.22,43.70,1557,17
+167,Orbit Jacket 167,Office,460.81,271.88,94,46
+168,Bright Headset,Home & Kitchen,240.91,151.77,500,72
+169,Nova Router,Electronics,452.81,230.93,161,53
+170,Terra Basket,Office,163.82,116.31,293,34
+171,Orbit Candle,Clothing,172.43,118.98,19,64
+172,Jade Basket 172,Electronics,364.20,182.10,1935,49
+173,Summit Headset,Books,424.72,284.56,935,43
+174,Grove YogaMat,Clothing,322.66,148.42,1171,50
+175,Summit Headset 175,Electronics,464.26,269.27,1699,55
+176,Ivory Lamp 176,Office,376.87,162.05,1526,68
+177,Jade Stand,Clothing,156.80,97.22,389,37
+178,Vivid Stand,Beauty,478.45,229.66,1850,10
+179,Jade Notebook 179,Books,27.85,17.55,184,42
+180,Keen Toolkit,Clothing,278.29,141.93,1610,74
+181,Lumen Helmet,Grocery,334.84,190.86,526,66
+182,Jade Toolkit,Home & Kitchen,227.97,107.15,154,23
+183,Halo Basket,Automotive,480.61,312.40,1647,76
+184,Lumen Chair,Clothing,264.57,105.83,253,63
+185,Lumen Basket,Beauty,496.86,278.24,1684,52
+186,Delta Basket 186,Electronics,159.22,111.45,1810,76
+187,Keen Charger,Beauty,151.06,66.47,950,43
+188,Ultra Kettle,Electronics,82.45,39.58,76,43
+189,Prime Bottle,Grocery,69.68,38.32,277,54
+190,Orbit Toaster,Home & Kitchen,445.39,329.59,1520,24
+191,Nova Candle 191,Beauty,70.88,50.32,1923,40
+192,Bright Pillow,Home & Kitchen,248.82,131.87,1946,35
+193,Lumen Bottle,Sports,455.35,286.87,1320,50
+194,Bright YogaMat,Automotive,186.79,97.13,1943,63
+195,Cedar Basket 195,Electronics,144.99,59.45,683,36
+196,Echo Router,Grocery,140.47,61.81,1135,31
+197,Summit Backpack,Toys,158.68,96.79,1615,5
+198,Ivory Speaker 198,Clothing,91.18,67.47,357,19
+199,Vivid Lamp,Home & Kitchen,92.36,36.94,1614,35
+200,Summit Blender,Clothing,16.33,8.33,259,58
+201,Quest Bottle,Home & Kitchen,494.66,217.65,1593,51
+202,Quest Router 202,Sports,77.45,52.67,1936,10
+203,Zenith Basket,Home & Kitchen,347.72,205.15,1974,8
+204,Bright Sneaker,Books,269.19,180.36,1004,61
+205,Cedar Chair 205,Electronics,217.08,106.37,563,79
+206,Ridge Pillow,Automotive,219.10,140.22,1086,42
+207,Orbit Helmet,Electronics,402.76,269.85,1437,19
+208,Ultra Candle,Home & Kitchen,367.31,194.67,1818,34
+209,Nova Blender,Home & Kitchen,303.19,197.07,194,45
+210,Nova Blender 210,Home & Kitchen,441.87,247.45,312,65
+211,Cedar Chair 211,Home & Kitchen,61.93,27.87,1524,52
+212,Echo Camera,Sports,45.29,33.97,1372,20
+213,Nova Toaster,Grocery,442.02,296.15,1476,11
+214,Jade Charger,Electronics,210.75,130.66,1039,32
+215,Echo Basket,Grocery,321.99,173.87,717,76
+216,Lumen Bottle 216,Toys,188.55,101.82,1730,76
+217,Terra Charger,Electronics,448.34,336.26,1902,39
+218,Aero Jacket,Office,185.08,109.20,718,5
+219,Flux Speaker,Electronics,377.13,245.13,1517,8
+220,Cedar Toolkit,Home & Kitchen,353.64,187.43,929,48
+221,Flux Toaster,Toys,210.22,126.13,1162,15
+222,Bright Speaker,Books,109.15,46.93,557,61
+223,Vivid Kettle,Home & Kitchen,324.27,220.50,441,70
+224,Delta Toaster 224,Clothing,287.73,135.23,1389,80
+225,Prime Helmet 225,Electronics,443.20,261.49,809,12
+226,Aero Backpack,Toys,203.52,107.87,1565,37
+227,Jade Blender,Sports,84.62,33.85,881,27
+228,Echo YogaMat,Sports,355.02,191.71,1706,50
+229,Cedar YogaMat,Home & Kitchen,492.29,206.76,941,14
+230,Keen Router,Books,287.32,186.76,855,42
+231,Delta YogaMat 231,Electronics,19.65,11.79,1940,63
+232,Willow Toaster,Grocery,63.74,42.71,498,60
+233,Summit YogaMat,Home & Kitchen,349.37,157.22,635,48
+234,Halo Blender,Sports,116.17,51.11,233,72
+235,Quest Backpack,Books,234.95,145.67,1677,23
+236,Halo Bottle,Clothing,101.96,57.10,1233,24
+237,Ultra Chair,Home & Kitchen,122.08,86.68,1154,79
+238,Orbit Basket,Grocery,375.93,225.56,1284,45
+239,Echo Notebook,Home & Kitchen,50.74,35.52,620,40
+240,Summit Mug,Electronics,236.63,170.37,945,62
+241,Bright Mug,Electronics,247.64,143.63,1769,16
+242,Terra Charger 242,Home & Kitchen,338.30,216.51,1135,10
+243,Orbit Router 243,Clothing,433.17,225.25,974,69
+244,Echo Mug,Grocery,301.24,138.57,1714,48
+245,Willow Chair,Electronics,336.65,171.69,1449,61
+246,Orbit Helmet 246,Home & Kitchen,348.57,174.28,1879,41
+247,Maple Kettle,Toys,227.74,97.93,1325,47
+248,Cedar Blender,Books,67.92,50.94,581,37
+249,Zenith Basket 249,Clothing,400.97,196.48,1193,23
+250,Lumen Headset 250,Electronics,435.94,283.36,1451,15
+251,Jade Camera,Grocery,252.85,154.24,1372,72
+252,Cedar Candle 252,Sports,445.38,298.40,37,51
+253,Jade Jacket,Office,146.36,89.28,995,29
+254,Halo Speaker,Clothing,107.53,47.31,1614,17
+255,Quest Stand,Electronics,359.73,262.60,689,21
+256,Terra YogaMat,Clothing,107.08,53.54,1418,26
+257,Zenith Notebook,Home & Kitchen,34.62,22.85,1473,35
+258,Orbit Charger 258,Clothing,192.72,131.05,489,44
+259,Prime Backpack,Home & Kitchen,247.05,167.99,577,53
+260,Quest Helmet,Grocery,280.36,140.18,1640,22
+261,Ivory Mug,Grocery,426.19,298.33,1135,18
+262,Willow Helmet 262,Electronics,87.69,50.86,328,39
+263,Orbit Helmet 263,Electronics,102.55,68.71,1864,33
+264,Orbit Toaster 264,Electronics,23.46,15.48,1028,52
+265,Halo YogaMat,Clothing,59.47,37.47,652,17
+266,Willow Candle 266,Electronics,225.72,110.60,587,65
+267,Willow Speaker 267,Home & Kitchen,468.37,327.86,10,15
+268,Aero Monitor,Sports,147.32,72.19,1489,72
+269,Nova Bottle,Clothing,194.80,107.14,97,35
+270,Nova Candle 270,Electronics,414.15,285.76,1713,68
+271,Terra Camera 271,Sports,16.76,12.07,1471,23
+272,Jade Kettle 272,Clothing,7.01,4.35,853,28
+273,Vivid Basket 273,Automotive,62.09,45.33,138,72
+274,Ridge Helmet,Electronics,338.66,254.00,1788,65
+275,Bright Candle,Clothing,259.53,163.50,33,50
+276,Cedar Toaster,Toys,164.01,75.44,1505,47
+277,Echo Mug 277,Clothing,236.87,175.28,1316,27
+278,Vivid Notebook,Beauty,461.72,323.20,1661,22
+279,Cedar Pillow 279,Clothing,305.93,128.49,89,30
+280,Bright Blender 280,Home & Kitchen,209.20,150.62,1669,74
+281,Prime Monitor,Clothing,29.98,15.59,1765,11
+282,Ultra Blender 282,Toys,185.04,86.97,894,56
+283,Zenith Notebook 283,Automotive,259.38,158.22,1016,68
+284,Lumen Helmet 284,Books,180.78,81.35,161,60
+285,Terra Jacket,Clothing,363.47,210.81,163,46
+286,Vivid Headset 286,Beauty,206.85,140.66,872,26
+287,Willow Notebook,Electronics,236.37,160.73,1781,50
+288,Terra Kettle,Electronics,185.92,79.95,1305,56
+289,Lumen Helmet 289,Automotive,497.44,248.72,292,61
+290,Bright Speaker 290,Toys,50.05,27.53,750,51
+291,Maple Router,Books,27.21,13.33,1943,52
+292,Lumen Notebook,Sports,56.37,27.06,815,45
+293,Ultra Monitor 293,Electronics,169.57,79.70,381,68
+294,Quest YogaMat 294,Clothing,374.08,175.82,533,62
+295,Grove Charger,Clothing,193.14,137.13,277,14
+296,Orbit Jacket 296,Automotive,473.50,321.98,1659,45
+297,Vivid Toaster,Sports,470.99,207.24,594,43
+298,Flux Pillow,Toys,471.00,240.21,1041,33
+299,Delta Backpack,Toys,97.00,53.35,53,51
+300,Ridge Router,Toys,247.75,170.95,1129,21
+301,Terra Chair 301,Home & Kitchen,49.07,28.95,1468,66
+302,Quest Kettle,Electronics,274.31,120.70,649,14
+303,Orbit Notebook,Home & Kitchen,451.70,329.74,1798,75
+304,Ultra Router,Home & Kitchen,125.24,60.12,1865,12
+305,Delta Helmet,Electronics,106.27,62.70,660,33
+306,Lumen Helmet 306,Clothing,192.14,86.46,1300,75
+307,Ivory Speaker 307,Beauty,415.60,245.20,191,69
+308,Ultra Jacket,Electronics,393.83,192.98,1278,48
+309,Summit Mug 309,Electronics,24.58,11.06,1313,78
+310,Ivory Candle,Beauty,144.14,95.13,62,68
+311,Ultra Camera,Sports,195.82,115.53,1648,56
+312,Jade Notebook 312,Electronics,53.81,23.14,851,66
+313,Orbit Backpack,Clothing,228.93,112.18,1471,45
+314,Zenith Toaster,Toys,267.29,128.30,1054,76
+315,Delta Blender,Electronics,164.41,113.44,920,36
+316,Echo Bottle,Office,39.15,22.71,1769,58
+317,Halo Jacket 317,Clothing,220.57,132.34,326,68
+318,Quest Notebook 318,Sports,332.85,196.38,184,55
+319,Quest Notebook 319,Beauty,163.75,86.79,99,11
+320,Jade Sneaker,Clothing,397.57,278.30,16,18
+321,Nova Speaker,Toys,179.31,112.97,749,10
+322,Maple Mug 322,Clothing,379.72,284.79,1133,41
+323,Cedar YogaMat 323,Toys,336.45,228.79,572,20
+324,Echo Bottle 324,Toys,264.13,166.40,694,76
+325,Lumen Stand,Beauty,100.53,52.28,822,69
+326,Bright Mug 326,Books,31.49,15.12,1646,65
+327,Quest Notebook 327,Electronics,103.59,74.58,1907,45
+328,Flux YogaMat,Beauty,410.01,241.91,1038,70
+329,Ridge Sneaker,Home & Kitchen,470.46,277.57,34,52
+330,Keen Basket 330,Beauty,77.82,51.36,1631,8
+331,Terra Sneaker,Books,180.00,97.20,1195,66
+332,Flux Helmet,Electronics,418.22,267.66,1394,36
+333,Bright Router,Clothing,465.08,218.59,903,45
+334,Nova Speaker 334,Home & Kitchen,276.62,146.61,1587,65
+335,Zenith Toolkit 335,Sports,46.80,22.46,1148,46
+336,Vivid Sneaker 336,Clothing,350.36,224.23,354,63
+337,Ridge Blender,Books,363.99,225.67,1776,38
+338,Terra Sneaker 338,Clothing,131.99,72.59,611,33
+339,Jade Stand 339,Books,195.39,103.56,1001,45
+340,Prime Toaster,Clothing,373.31,212.79,1174,74
+341,Maple YogaMat,Clothing,232.17,113.76,589,15
+342,Lumen Notebook 342,Toys,435.88,244.09,438,30
+343,Ridge Monitor,Electronics,374.31,213.36,1260,80
+344,Halo Keyboard,Clothing,39.25,28.65,476,11
+345,Delta Kettle,Electronics,222.45,155.72,1578,22
+346,Aero Camera 346,Beauty,109.49,72.26,1803,65
+347,Prime Candle,Clothing,136.70,79.29,1322,12
+348,Cedar Candle 348,Sports,382.25,206.42,1480,9
+349,Flux Kettle 349,Automotive,121.19,50.90,813,68
+350,Flux Toolkit,Electronics,195.69,82.19,1163,18
+351,Keen Headset,Sports,303.75,224.78,1821,22
+352,Quest Notebook 352,Toys,184.79,96.09,677,25
+353,Zenith Notebook 353,Books,430.85,241.28,28,48
+354,Jade Router 354,Electronics,447.96,232.94,1753,56
+355,Nova Helmet,Home & Kitchen,220.90,99.40,195,28
+356,Echo Sneaker,Electronics,218.06,119.93,785,35
+357,Orbit Stand,Clothing,180.96,110.39,1480,78
+358,Aero Monitor 358,Books,434.38,273.66,127,20
+359,Orbit Headset,Books,110.66,71.93,1890,44
+360,Willow Bottle,Home & Kitchen,424.57,246.25,452,33
+361,Echo Sneaker 361,Toys,106.38,73.40,1240,52
+362,Nova Pillow,Toys,365.93,256.15,1642,32
+363,Halo Basket 363,Sports,396.46,178.41,1081,51
+364,Cedar Router,Grocery,79.52,34.19,1849,69
+365,Grove Router,Electronics,357.69,175.27,1749,71
+366,Orbit Bottle 366,Books,451.82,239.46,1001,16
+367,Quest Notebook 367,Electronics,42.45,29.29,850,63
+368,Summit Mug 368,Books,372.20,256.82,631,7
+369,Maple Monitor 369,Sports,7.96,4.22,92,59
+370,Lumen Pillow,Automotive,47.77,35.35,1914,13
+371,Prime Mug,Electronics,194.13,128.13,277,58
+372,Lumen YogaMat,Home & Kitchen,299.94,191.96,1398,74
+373,Echo Candle,Electronics,233.90,109.93,1100,55
+374,Quest Speaker,Grocery,482.99,260.81,1548,7
+375,Jade Notebook 375,Home & Kitchen,447.37,331.05,776,34
+376,Halo Notebook,Clothing,232.84,114.09,1919,19
+377,Bright Basket 377,Clothing,280.74,115.10,137,17
+378,Terra Mug,Clothing,298.56,128.38,90,56
+379,Orbit Keyboard,Toys,359.72,190.65,1589,12
+380,Echo Helmet,Grocery,195.56,105.60,1498,78
+381,Keen Router 381,Clothing,397.84,238.70,1794,23
+382,Vivid Helmet,Clothing,150.85,99.56,124,76
+383,Summit Toolkit,Sports,120.76,80.91,96,49
+384,Ultra Basket,Clothing,255.78,186.72,852,57
+385,Echo Headset,Toys,252.70,128.88,969,35
+386,Halo Headset,Toys,469.70,230.15,1873,12
+387,Ridge Kettle,Sports,278.95,209.21,795,36
+388,Ivory Backpack,Office,222.43,100.09,1734,52
+389,Cedar Camera 389,Electronics,480.85,250.04,772,10
+390,Cedar Backpack 390,Clothing,391.06,293.30,427,47
+391,Jade Lamp 391,Automotive,144.80,75.30,240,66
+392,Halo Pillow,Home & Kitchen,402.09,213.11,490,75
+393,Keen Stand,Home & Kitchen,191.49,122.55,1328,50
+394,Jade Monitor,Grocery,241.68,174.01,954,17
+395,Zenith Sneaker,Home & Kitchen,215.85,114.40,847,10
+396,Summit Keyboard,Electronics,491.77,240.97,1133,79
+397,Summit Toolkit 397,Electronics,279.65,162.20,675,34
+398,Maple Router 398,Sports,167.03,118.59,1932,48
+399,Ivory Stand 399,Home & Kitchen,326.21,231.61,1500,50
+400,Flux Speaker 400,Sports,478.05,353.76,1877,74
+401,Ultra Mug,Grocery,349.36,146.73,152,11
+402,Aero Kettle 402,Electronics,96.09,51.89,309,6
+403,Grove Helmet,Electronics,304.84,192.05,1306,66
+404,Vivid Sneaker 404,Sports,16.29,6.52,842,6
+405,Aero Helmet,Sports,479.28,273.19,587,7
+406,Quest Pillow 406,Toys,447.72,299.97,1863,27
+407,Delta Bottle,Clothing,349.65,171.33,1269,72
+408,Ivory Toaster,Electronics,181.18,117.77,1964,56
+409,Orbit Router 409,Clothing,165.37,89.30,1695,15
+410,Ultra Candle 410,Home & Kitchen,26.75,12.04,772,75
+411,Prime Mug 411,Books,423.28,169.31,169,68
+412,Nova Candle 412,Office,223.09,102.62,1882,10
+413,Halo Backpack,Clothing,459.68,321.78,1892,14
+414,Vivid Monitor,Electronics,361.87,151.99,1741,45
+415,Aero Backpack 415,Toys,390.70,191.44,1459,55
+416,Cedar Headset,Sports,112.45,61.85,1739,54
+417,Vivid Camera 417,Toys,223.39,142.97,286,15
+418,Quest Toolkit,Electronics,232.65,100.04,475,14
+419,Keen Charger 419,Automotive,408.29,265.39,668,8
+420,Ultra Monitor 420,Clothing,301.26,213.89,1132,53
+421,Nova Jacket,Electronics,451.43,288.92,1266,42
+422,Halo Pillow 422,Clothing,54.16,24.37,778,24
+423,Zenith YogaMat,Electronics,213.52,134.52,10,44
+424,Orbit Toaster 424,Electronics,182.78,84.08,383,60
+425,Orbit Camera 425,Home & Kitchen,369.54,266.07,53,16
+426,Lumen Camera 426,Grocery,66.98,40.19,25,42
+427,Nova YogaMat,Office,61.49,46.12,497,78
+428,Quest Jacket,Electronics,455.11,291.27,550,43
+429,Ivory Sneaker,Electronics,101.62,44.71,565,58
+430,Jade Sneaker 430,Clothing,56.40,35.53,505,68
+431,Terra Charger 431,Electronics,134.14,92.56,623,5
+432,Maple Blender,Toys,412.43,263.96,674,61
+433,Keen Kettle,Clothing,432.65,207.67,1235,30
+434,Prime Blender,Automotive,122.40,79.56,596,67
+435,Summit Keyboard 435,Clothing,219.56,140.52,1609,55
+436,Lumen Bottle 436,Beauty,375.51,195.27,1117,28
+437,Vivid Stand 437,Automotive,366.50,150.26,945,31
+438,Orbit Headset 438,Grocery,460.04,202.42,1629,57
+439,Vivid Sneaker 439,Clothing,97.20,57.35,1348,24
+440,Willow Kettle,Home & Kitchen,253.05,111.34,1224,66
+441,Summit YogaMat 441,Office,356.19,256.46,1781,58
+442,Ridge Mug 442,Beauty,241.61,178.79,1872,15
+443,Delta Stand,Electronics,168.67,104.58,1254,10
+444,Summit Candle,Automotive,449.97,292.48,679,60
+445,Delta Lamp 445,Clothing,70.61,39.54,1529,71
+446,Ridge Router 446,Home & Kitchen,456.65,246.59,801,64
+447,Vivid Router,Electronics,458.47,330.10,50,66
+448,Delta Headset,Electronics,278.60,125.37,1926,23
+449,Lumen Headset 449,Toys,230.82,159.27,1067,66
+450,Lumen Sneaker,Books,69.96,47.57,926,45
+451,Cedar Headset 451,Electronics,35.27,16.58,702,18
+452,Vivid Jacket,Sports,491.27,270.20,1130,25
+453,Keen Camera 453,Clothing,285.41,196.93,829,28
+454,Flux Candle,Home & Kitchen,436.76,292.63,1510,30
+455,Orbit Router 455,Electronics,287.50,184.00,439,31
+456,Ivory Stand 456,Sports,467.20,205.57,1637,73
+457,Flux Toaster 457,Home & Kitchen,219.62,114.20,537,67
+458,Quest Candle,Beauty,211.38,135.28,1202,19
+459,Lumen Toaster 459,Grocery,306.05,156.09,1445,43
+460,Terra Router 460,Clothing,61.53,29.53,488,44
+461,Delta Jacket,Sports,250.63,122.81,856,22
+462,Summit YogaMat 462,Sports,283.23,144.45,1100,27
+463,Ridge Jacket,Electronics,326.88,189.59,644,62
+464,Terra Mug 464,Sports,241.28,96.51,399,54
+465,Ridge Helmet 465,Home & Kitchen,433.98,308.13,1007,58
+466,Willow Notebook 466,Electronics,326.26,163.13,63,33
+467,Jade Mug 467,Sports,186.11,100.50,344,63
+468,Summit Toolkit 468,Sports,330.59,247.94,1172,19
+469,Ivory Stand 469,Sports,361.92,228.01,1549,10
+470,Zenith Notebook 470,Automotive,364.04,192.94,209,36
+471,Jade Mug 471,Home & Kitchen,300.72,168.40,1672,16
+472,Orbit Bottle 472,Grocery,161.27,85.47,1204,49
+473,Willow Charger,Electronics,420.68,281.86,285,31
+474,Grove Mug,Sports,379.59,235.35,1222,73
+475,Flux Blender,Clothing,467.39,271.09,547,70
+476,Vivid Bottle,Office,94.84,62.59,567,21
+477,Willow Speaker 477,Books,169.61,83.11,1696,36
+478,Vivid YogaMat,Sports,326.76,160.11,550,58
+479,Maple Notebook,Home & Kitchen,55.48,24.97,1535,40
+480,Willow Toaster 480,Clothing,303.97,215.82,5,16
+481,Zenith Notebook 481,Grocery,422.03,261.66,1629,73
+482,Maple Backpack,Sports,287.56,152.41,661,41
+483,Keen Camera 483,Sports,384.74,184.68,993,48
+484,Vivid Stand 484,Electronics,37.71,15.84,1605,63
+485,Aero Bottle 485,Home & Kitchen,109.52,74.47,1962,59
+486,Grove Pillow 486,Electronics,92.44,54.54,1910,40
+487,Cedar Candle 487,Electronics,242.20,135.63,1360,26
+488,Bright YogaMat 488,Books,415.98,245.43,1546,34
+489,Nova Candle 489,Electronics,65.75,30.24,976,14
+490,Echo Router 490,Books,154.22,112.58,19,6
+491,Willow Blender 491,Books,85.02,56.96,978,14
+492,Halo YogaMat 492,Electronics,64.53,29.68,752,43
+493,Echo YogaMat 493,Beauty,499.57,239.79,1386,23
+494,Cedar Helmet,Beauty,375.14,150.06,336,61
+495,Lumen Toolkit,Office,145.61,71.35,1261,61
+496,Grove Chair,Toys,71.83,34.48,1207,54
+497,Lumen Kettle,Clothing,212.10,101.81,1320,15
+498,Halo Camera,Toys,399.86,231.92,1414,8
+499,Vivid Headset 499,Beauty,140.63,102.66,386,55
+500,Jade Candle,Sports,41.75,22.96,230,35

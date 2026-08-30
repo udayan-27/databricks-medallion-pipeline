@@ -492,9 +492,10 @@ Reviewer stance: this design is sufficient for the assignment if the failure mod
 
 - Exact Unity Catalog catalog name in the candidate’s workspace (config at runtime).
 - Whether local tests use a temp SparkSession or Databricks Connect.
-- Whether to inject 30 future signup dates at generation time.
 - Histogram binning if Databricks visualization cannot histogram the raw measure.
 - High-Value threshold sanity check after real generated distributions exist.
+
+Stage 2 closed: 30 future signup dates **were injected** (see `DATA_GENERATION_NOTES.md`).
 
 ## Rejected over-engineering (out of 20–25 hour scope)
 

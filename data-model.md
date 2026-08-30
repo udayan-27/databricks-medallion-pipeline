@@ -1,6 +1,6 @@
 # Data model
 
-Status: **planned contracts**. Tables have not been created. CSV files currently contain headers only. No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **planned contracts**. Tables have not been created. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 
@@ -265,4 +265,4 @@ Not in this model unless a later spec change says so:
 
 ## Current files on disk
 
-`data/*.csv` exist as header-only placeholders. They are not the 10,010 / 100,020 / 500 row datasets. `database/schema.sql` is the intended DDL and has **not** been applied.
+`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied.

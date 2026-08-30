@@ -53,7 +53,7 @@ After generation (frozen):
 
 Do not pad issue instances to 700.
 
-Optional: 30 future signup dates — decide in `DATA_GENERATION_NOTES.md` at Stage 2.
+Optional: 30 future signup dates — **Stage 2 injected 30** (`2026-09-01`..`2026-09-30`); documented in `DATA_GENERATION_NOTES.md`; not part of the 460.
 
 ## 4. Bronze behavior
 
