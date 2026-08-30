@@ -1,6 +1,6 @@
 # Design notes
 
-Status: architecture and design decisions for implementation. **No pipeline has been built yet. No runtime results exist.**
+Status: architecture and design decisions for implementation. **Bronze ingest code exists.** It has **not** been executed on Databricks or local Spark in the implementation environment. Silver/Gold/Dashboard have not been built. No Databricks runtime results exist.
 
 Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard guide. Rejected extras are listed at the end of this file.
 
@@ -319,7 +319,7 @@ Introduce at Bronze implementation (not in this commit):
 
 | Setting | Purpose | Default for local |
 |---|---|---|
-| `MEDALLION_CATALOG` | UC catalog or unused for HMS | `main` or Spark default |
+| `MEDALLION_CATALOG` | UC catalog or unused for HMS | unset (do not assume `main`) |
 | `MEDALLION_DATA_PATH` | Directory containing the three CSVs | repo `data/` |
 | `MEDALLION_BRONZE_SCHEMA` | schema name | `bronze` |
 | `MEDALLION_SILVER_SCHEMA` | schema name | `silver` |

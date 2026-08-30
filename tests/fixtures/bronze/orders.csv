@@ -1,0 +1,7 @@
+order_id,customer_id,order_date,product_id,quantity,unit_price,total_amount,order_status,payment_date
+10,1,2024-02-01,100,1,10.00,10.00,Completed,2024-02-02
+10,1,2024-02-01,100,1,10.00,10.00,Completed,2024-02-02
+11,,2024-02-03,100,2,10.00,20.00,Pending,
+12,1,2024-02-04,,1,10.00,10.00,Cancelled,
+13,90001,2024-02-05,100,1,10.00,10.00,Completed,2024-02-06
+14,1,2024-02-07,9001,1,10.00,10.00,Completed,2024-02-08

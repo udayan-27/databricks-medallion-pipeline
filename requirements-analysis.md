@@ -2,7 +2,7 @@
 
 Canonical source: `DE_C1_REQUIREMENTS.md`. This document records how those requirements are interpreted, which human decisions resolve ambiguities, and how each requirement traces to artifacts. It does not claim that the pipeline has been implemented or validated.
 
-**Stage status:** requirements and architecture review complete. **Stage 2 data generation is complete** (seed 42). Pipeline implementation has **not** started.
+**Stage status:** requirements and architecture review complete. **Stage 2 data generation is complete** (seed 42). **Bronze ingest code is complete.** Local Spark and Databricks execution of Bronze are **BLOCKED** in the environment that implemented it (no PySpark, no JDK). Silver/Gold/Dashboard have **not** started.
 
 ## 1. Problem statement
 
@@ -474,7 +474,7 @@ A later complete submission should include:
 - [ ] Responsible AI: synthetic data only; no secrets in repo or prompts
 - [ ] Meaningful Git history (not a single dump of finished work)
 
-**Current status of these checkboxes:** source CSVs now contain the listed quality issues (Stage 2). Pipeline, dashboard, and remaining checkboxes stay unchecked until that work exists.
+**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze ingest code exists; Spark/Databricks Bronze execution is BLOCKED here. Pipeline, dashboard, and remaining checkboxes stay unchecked until that work exists.
 
 ## 12. Requirements traceability matrix
 
@@ -504,11 +504,11 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Intentional DQ: 20 duplicate `order_id` rows | Generator | 20 extra rows; 40 uniqueness-fail rows | `ai-prompts/data-generation.md` | PASS |
 | Record ~700 vs listed-count discrepancy | `requirements-analysis.md` §§6.1, 14; `cursor-workflow/project-context.md` | Document review only (arithmetic 50+10+100+200+50+30+20=460) | `ai-prompts/documentation.md` Prompts 1–3 | PASS (documentation of the ambiguity) |
 | Optional 30 future signup dates (example prompt only) | `DATA_GENERATION_NOTES.md`; generator | Counted 30; not in the 460 | `ai-prompts/data-generation.md` | PASS (optional injection, documented) |
-| Bronze: read CSVs into Databricks | `src/bronze/01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py` | Stubs raise `NotImplementedError`; no Spark job | `ai-prompts/bronze-layer.md` (no implementation prompts) | PARTIAL |
-| Bronze: create Bronze tables | Planned `bronze.customers/orders/products` in `database/schema.sql`, `data-model.md` | DDL **not applied** | `ai-prompts/documentation.md` (design) | DESIGNED |
-| Bronze: raw/unchanged; no cleaning | `design-notes.md` Bronze immutability; ingest stubs | No checksum/except test | `ai-prompts/documentation.md` | DESIGNED |
-| Bronze: schema / types | Explicit schema in `data-model.md` / `database/schema.sql` | No ingest run | `ai-prompts/documentation.md` | DESIGNED |
-| Ingestion metadata (row counts, timestamp) | Planned `bronze.ingest_metadata`; `design-notes.md` | No metadata rows written | `ai-prompts/documentation.md` | DESIGNED |
+| Bronze: read CSVs into Databricks | `src/bronze/01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py`, `ingest_core.py` | Contract tests run; Spark ingest tests **skipped** (no PySpark) | `ai-prompts/bronze-layer.md` Prompt 1 | PARTIAL (code complete; Databricks/Spark runtime BLOCKED) |
+| Bronze: create Bronze tables | `bronze.customers/orders/products` via overwrite `saveAsTable`; DDL in `database/schema.sql` | Tables **not** created in a workspace from this environment | `ai-prompts/bronze-layer.md` | PARTIAL |
+| Bronze: raw/unchanged; no cleaning | `ingest_core.py`; AST tests forbid drop/dedupe; PERMISSIVE options | No Spark except-all vs CSV in this environment | `ai-prompts/bronze-layer.md` | PARTIAL |
+| Bronze: schema / types | Explicit contract in `src/bronze/contracts.py` / `data-model.md` | Contract tests assert field names and DECIMAL(18,2); Spark schema test skipped | `ai-prompts/bronze-layer.md` | PARTIAL |
+| Ingestion metadata (row counts, timestamp) | `bronze.ingest_metadata` written by `ingest_core.py` | Spark metadata tests skipped; column contract tested | `ai-prompts/bronze-layer.md` | PARTIAL |
 | Silver completeness module | `src/silver/01_quality_completeness.py` | Stub only | `ai-prompts/silver-layer.md` empty of impl prompts | PARTIAL |
 | Silver uniqueness module | `src/silver/02_quality_uniqueness.py` | Stub only | `ai-prompts/silver-layer.md` | PARTIAL |
 | Silver type validation module | `src/silver/03_quality_type_validation.py` | Stub only | `ai-prompts/silver-layer.md` | PARTIAL |
@@ -525,9 +525,9 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Dashboard filters | Planned in §6.4 and `DASHBOARD_GUIDE.md` | Not configured | `ai-prompts/documentation.md` | DESIGNED |
 | Schema / setup | `database/schema.sql`, `database/setup-notes.md` | Schema not applied to a warehouse | `ai-prompts/documentation.md` | DESIGNED |
 | Seed-data notes | `database/seed-data-notes.md` | Records generator command, counts, synthetic confirmation; Bronze not loaded | `ai-prompts/data-generation.md` | PASS for generation notes; Bronze seed still pending |
-| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py` | **14 tests OK** (`python -m unittest tests.test_generate_sample_data -v`) | `ai-prompts/data-generation.md` | PARTIAL (generator only; pipeline tests not started) |
-| README setup instructions | `README.md` | Generation commands documented and were run | `ai-prompts/data-generation.md` | PARTIAL (generation verified; Databricks setup not) |
-| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Init/design prompts plus Stage 2 `ai-prompts/data-generation.md` | `ai-prompts/documentation.md`; `ai-prompts/data-generation.md` | PARTIAL (Bronze–dashboard logs still empty) |
+| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py`; `tests/test_bronze_contract.py`; `tests/test_bronze_ingest.py` | Generator 14 OK; Bronze contract tests OK; Spark ingest **skipped** (no PySpark) | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md` | PARTIAL (Spark runtime tests BLOCKED) |
+| README setup instructions | `README.md` | Generation commands documented and were run; Bronze commands documented; Databricks ingest not run | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md` | PARTIAL (generation verified; Databricks setup not) |
+| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Init/design prompts, Stage 2 data-generation, Stage 3 bronze-layer | `ai-prompts/documentation.md`; `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md` | PARTIAL (Silver–dashboard logs still empty) |
 | Cursor workflow artifacts | `cursor-workflow/project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | Files exist and were reviewed this stage | `ai-prompts/documentation.md` Prompt 3 | PASS (artifacts exist and are current for this stage) |
 | Debugging notes | `debugging-notes.md` | Placeholder; no runtime defects | `ai-prompts/debugging.md` empty | PARTIAL |
 | Reflection | `reflection.md` | Explicitly not filled with fabricated experience | `ai-prompts/documentation.md` | PARTIAL |
@@ -572,8 +572,7 @@ This satisfies the explicit repository structure and the Silver paragraph that a
 
 ## 15. Out of scope for the requirements/design stage (historical)
 
-That stage did not implement generation or the pipeline. **Stage 2 later completed data generation and generator tests.** Still out of scope until requested:
+That stage did not implement generation or the pipeline. **Stage 2 later completed data generation.** **Stage 3 completed Bronze ingest code** (Spark/Databricks runtime still BLOCKED here). Still out of scope until requested:
 
-- Pipeline implementation (Bronze / Silver / Gold bodies)
-- Dashboard construction
+- Silver / Gold / Dashboard implementation
 - Fabricated runtime results, reflection, or debugging stories

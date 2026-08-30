@@ -23,7 +23,7 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 9. `data-quality-strategy.md`
 10. Matching `ai-prompts/<area>.md` before changing that area
 
-## Current stage (as of Stage 2 data generation)
+## Current stage (as of Stage 3 Bronze ingest)
 
 | Stage | Status |
 |---|---|
@@ -31,11 +31,12 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 1 Repository structure + engineering spec | Done (`16ee902`) |
 | 1.5 Requirements traceability, architecture, DQ strategy | Done (`3fa1c57`) |
 | 2 Data generation | **Done** (seed 42; `data/*.csv` populated; tests run) |
-| 3–10 Bronze through submission | **Not started** |
+| 3 Bronze ingest | **Code complete.** Local Spark and Databricks execution are **BLOCKED** (no PySpark/JDK in this environment). |
+| 4–10 Silver through submission | **Not started** |
 
-`data/*.csv` are generated synthetic files (not header-only). Python/SQL under `src/bronze`, `src/silver`, `src/gold`, and `src/dashboard` are **stubs**. Do not treat them as a working pipeline.
+`data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). Silver / Gold / Dashboard remain stubs.
 
-**Next requested stage should be Stage 3 or Stage 4 (Bronze) only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked.
+**Next requested stage should be Silver only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze tables exist until that runtime is executed.
 
 ## Frozen decisions (do not reopen unless the user or official spec contradicts them)
 
@@ -99,10 +100,13 @@ In the matching `ai-prompts/*.md` file:
 ### VALIDATION
 ### FINAL DECISION
 
-## Config (to add at Bronze, not before)
+## Config (Bronze)
 
-Environment / `src/config.py`: catalog, data path, schema names. Default data path = repo `data/`.
+`src/config.py`: `MEDALLION_DATA_PATH`, `MEDALLION_CATALOG`, `MEDALLION_BRONZE_SCHEMA`, `MEDALLION_TABLE_FORMAT`. Default data path = repo `data/`. Catalog default is unset (not `main`).
 
 ## Tests
 
-Required by the assignment but **missing from the official file tree**. `tests/` now exists for Stage 2 generator tests (`tests/test_generate_sample_data.py`). Further Bronze/Silver/Gold tests belong in the same directory.
+Required by the assignment but **missing from the official file tree**. `tests/` holds Stage 2 generator tests and Stage 3 Bronze tests:
+
+- `tests/test_bronze_contract.py` — always runnable (schema, CSV options, no-drop AST, config, fixtures)
+- `tests/test_bronze_ingest.py` — PySpark runtime; skipped when Spark is unavailable

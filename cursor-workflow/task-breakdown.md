@@ -41,20 +41,25 @@ Commit message (this stage): `feat: add deterministic e-commerce sample data gen
 - Tests: `python -m unittest tests.test_generate_sample_data -v` → 14 tests OK.
 - `tests/` added because the assignment requires meaningful tests but omitted the directory (`requirements-analysis.md` §6.15).
 
-Do not start Bronze until that stage is requested. Do not regenerate CSVs unless the seed or contract changes.
+Do not regenerate CSVs unless the seed or contract changes. Bronze ingest code exists; do not regenerate data to "help" Bronze.
 
-## Stage 3 — Database contracts
+## Stage 3 — Database contracts (DDL already aligned; not applied)
 
-- Align `database/schema.sql` with implemented tables (`_ingest_row_id`, quality columns, Gold tables).
-- Complete seed and setup notes for Databricks (no secrets).
-- Update `ai-prompts/documentation.md` if this is a distinct docs pass.
+- `database/schema.sql` already includes `_ingest_row_id` and `bronze.ingest_metadata` matching the implemented Bronze code.
+- Setup/seed notes describe Databricks apply steps. Objects have **not** been created in a workspace.
 
-## Stage 4 — Bronze
+## Stage 4 — Bronze (done as the user-requested "Stage 3 Bronze Layer")
 
-- Implement customer, order, product ingest and `ingest_all.py`.
-- Explicit schema, PERMISSIVE, raw write, `_ingest_row_id`, ingestion metadata, config/paths.
-- Tests: row counts vs files; source columns unchanged; missing file fails.
-- Update `ai-prompts/bronze-layer.md` and commit.
+Commit message (this stage): `feat: add Bronze ingestion pipeline`
+
+- Shared PySpark ingest in `src/bronze/ingest_core.py`; CLIs in `01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py`.
+- Config: `src/config.py` (env/CLI; no personal paths).
+- Explicit schema, PERMISSIVE, raw write, `_ingest_row_id` (per-execution), append-only `bronze.ingest_metadata`.
+- Tests: `tests/test_bronze_contract.py` (always run); `tests/test_bronze_ingest.py` (skipped without PySpark).
+- Databricks / local Spark execution: **BLOCKED** in the implementation environment (no PySpark, no JDK).
+- `ai-prompts/bronze-layer.md` updated with the real interaction.
+
+Do not start Silver until that stage is requested.
 
 ## Stage 5 — Silver
 
@@ -103,6 +108,6 @@ Assert Silver row counts equal Bronze. Multi-failure rows keep multiple codes. U
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after Stage 2
+## Explicitly not started after Bronze code
 
-Bronze/Silver/Gold/Dashboard implementation. Generator tests exist; pipeline tests do not.
+Silver/Gold/Dashboard implementation. Generator tests and Bronze contract tests exist; Spark ingest tests skip without PySpark.

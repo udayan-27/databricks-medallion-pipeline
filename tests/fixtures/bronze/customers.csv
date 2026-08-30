@@ -1,0 +1,5 @@
+customer_id,customer_name,email,country,signup_date,customer_segment,lifetime_value
+1,Alice Example,alice@example.com,India,2022-01-15,Premium,10.00
+1,Alice Example,alice@example.com,India,2022-01-15,Premium,10.00
+2,Bob Example,,United States,2023-06-01,Standard,5.50
+3,Cara Example,cara@example.com,Germany,2024-01-01,Basic,0.00

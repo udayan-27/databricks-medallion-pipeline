@@ -4,14 +4,24 @@ Status: Databricks objects have not been created from this repository.
 
 ## Planned setup (not executed)
 
-1. Create schemas `bronze`, `silver`, and `gold` (catalog name via config, not a secret).
-2. Apply `database/schema.sql` once DDL is finalized.
+1. Create schemas `bronze`, `silver`, and `gold` (catalog name via `MEDALLION_CATALOG`, not a secret).
+2. Apply `database/schema.sql` once, or let Bronze `CREATE SCHEMA IF NOT EXISTS` plus `saveAsTable` create the Bronze objects on first ingest.
 3. Run Bronze ingest, then Silver, then Gold SQL.
 4. Point Databricks SQL dashboard datasets at Gold tables/views.
 
-## Local development
+## Bronze job (code exists; not run here)
 
-A later README section will describe any local PySpark test approach. Nothing here has been verified against a workspace.
+On a Databricks cluster:
+
+```
+python src/bronze/ingest_all.py --data-path <volume-or-dbfs-or-s3-dir>
+```
+
+Optional: `--catalog`, `--bronze-schema` (default `bronze`), `--table-format delta`.
+
+Local Spark without Delta: `--table-format parquet`. This environment had no PySpark and no JDK, so that path was not executed.
+
+Rerun overwrites `bronze.customers|orders|products` and appends to `bronze.ingest_metadata`.
 
 ## Secrets
 

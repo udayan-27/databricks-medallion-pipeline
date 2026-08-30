@@ -1,14 +1,21 @@
 """
-Bronze ingest: orders.
+Bronze ingest: orders.csv -> bronze.orders.
 
-Status: NOT IMPLEMENTED.
-Will read orders.csv into Bronze with no cleaning or transformation.
+Raw ingest only. Source values are not cleaned, filled, deduplicated, or repaired.
+Shared implementation: ingest_core.ingest_orders.
 """
 
+from __future__ import annotations
 
-def ingest_orders() -> None:
-    raise NotImplementedError("Bronze order ingest is not implemented yet.")
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from ingest_core import cli_main, ingest_orders
+
+__all__ = ["ingest_orders"]
 
 
 if __name__ == "__main__":
-    ingest_orders()
+    cli_main("orders")

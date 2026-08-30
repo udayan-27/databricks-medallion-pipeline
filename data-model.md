@@ -1,6 +1,6 @@
 # Data model
 
-Status: **planned contracts**. Tables have not been created. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 
@@ -265,4 +265,4 @@ Not in this model unless a later spec change says so:
 
 ## Current files on disk
 
-`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied.
+`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied to a warehouse. Bronze job code writes the same Bronze names when Spark is available.

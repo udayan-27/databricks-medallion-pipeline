@@ -1,6 +1,6 @@
 # Seed data notes
 
-Status: Stage 2 sample CSVs are generated. They have **not** been loaded into Databricks Bronze tables yet.
+Status: Stage 2 sample CSVs are generated. Bronze ingest **code** will load them; they have **not** been loaded into Databricks Bronze tables from this environment.
 
 ## How `data/*.csv` were generated
 
@@ -20,4 +20,4 @@ Details: `src/data_generation/DATA_GENERATION_NOTES.md`. Synthetic names/emails 
 
 Mandatory injected issues: 50 NULL emails; 10 extra duplicate customer rows; 100 NULL order customer_id; 200 NULL order product_id; 50 orphan customer_id; 30 orphan product_id; 20 extra duplicate order rows. Optional: 30 future signup dates (not in the 460).
 
-Bronze ingest (Stage 4) must read these files without transformation.
+Bronze ingest (Stage 3/4) must read these files without transformation. Expected Bronze physical row counts, if ingest is faithful: **10,010 / 100,020 / 500**. Those counts were not measured from Spark tables in this environment.
