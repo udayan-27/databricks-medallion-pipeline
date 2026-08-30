@@ -2,7 +2,7 @@
 
 Canonical source: `DE_C1_REQUIREMENTS.md`. This document records how those requirements are interpreted, which human decisions resolve ambiguities, and how each requirement traces to artifacts. It does not claim that the pipeline has been implemented or validated.
 
-**Stage status:** requirements and architecture review complete. **Stage 2 data generation is complete** (seed 42). **Bronze ingest code is complete.** Local Spark and Databricks execution of Bronze are **BLOCKED** in the environment that implemented it (no PySpark, no JDK). Silver/Gold/Dashboard have **not** started.
+**Stage status:** requirements and architecture review complete. **Stage 2 data generation is complete** (seed 42). **Bronze ingest code is complete.** Local Spark parquet Bronze ingest tests passed. **Silver completeness and uniqueness are implemented and locally validated.** Type / RI / business logic / Gold / Dashboard have **not** started.
 
 ## 1. Problem statement
 
@@ -461,8 +461,10 @@ A later complete submission should include:
 - [ ] End-to-end working pipeline (Bronze -> Silver -> Gold -> dashboard queries)
 - [x] Intentional quality issues present in source data at the listed counts
 - [ ] All five Silver quality modules implemented
-- [ ] Bad rows flagged, not deleted; Bronze unchanged
-- [ ] Quality metrics with pass/fail counts and percentages
+- [x] Completeness and uniqueness implemented locally (type / RI / business logic remaining)
+- [x] Completeness/uniqueness flag bad rows without deleting them; Bronze source columns unchanged in tests
+- [ ] Combined `quality_check_result` / Silver tables / `silver.quality_metrics` table
+- [ ] Quality metrics with pass/fail counts and percentages (in-memory metrics exist; table write later)
 - [ ] Gold aggregations A–C plus daily/weekly trends SQL
 - [ ] Dashboard with 3+ required tiles and filters
 - [ ] Schema, setup, and seed-data notes
@@ -474,7 +476,7 @@ A later complete submission should include:
 - [ ] Responsible AI: synthetic data only; no secrets in repo or prompts
 - [ ] Meaningful Git history (not a single dump of finished work)
 
-**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze ingest code exists; Spark/Databricks Bronze execution is BLOCKED here. Pipeline, dashboard, and remaining checkboxes stay unchecked until that work exists.
+**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze ingest code exists; local parquet ingest tests passed; Databricks Bronze is still not run. Completeness and uniqueness transforms are implemented and locally tested. Combined Silver tables, remaining quality modules, Gold, and dashboard stay unchecked.
 
 ## 12. Requirements traceability matrix
 
@@ -509,14 +511,14 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Bronze: raw/unchanged; no cleaning | `ingest_core.py`; AST tests forbid drop/dedupe; PERMISSIVE options | No Spark except-all vs CSV in this environment | `ai-prompts/bronze-layer.md` | PARTIAL |
 | Bronze: schema / types | Explicit contract in `src/bronze/contracts.py` / `data-model.md` | Contract tests assert field names and DECIMAL(18,2); Spark schema test skipped | `ai-prompts/bronze-layer.md` | PARTIAL |
 | Ingestion metadata (row counts, timestamp) | `bronze.ingest_metadata` written by `ingest_core.py` | Spark metadata tests skipped; column contract tested | `ai-prompts/bronze-layer.md` | PARTIAL |
-| Silver completeness module | `src/silver/01_quality_completeness.py` | Stub only | `ai-prompts/silver-layer.md` empty of impl prompts | PARTIAL |
-| Silver uniqueness module | `src/silver/02_quality_uniqueness.py` | Stub only | `ai-prompts/silver-layer.md` | PARTIAL |
+| Silver completeness module | `src/silver/01_quality_completeness.py`; `src/silver/quality_common.py` | Local Spark: 50 NULL emails, 100 NULL order customer_ids, 200 NULL order product_ids; rows retained | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL (transforms implemented and tested locally; Silver tables / Databricks not written) |
+| Silver uniqueness module | `src/silver/02_quality_uniqueness.py`; `src/silver/quality_common.py` | Local Spark: 20 customer and 40 order uniqueness-fail physical rows; all copies flagged | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL (same as completeness: no Silver table write) |
 | Silver type validation module | `src/silver/03_quality_type_validation.py` | Stub only | `ai-prompts/silver-layer.md` | PARTIAL |
 | Silver referential integrity module | `src/silver/04_quality_referential_integrity.py` | Stub only | `ai-prompts/silver-layer.md` | PARTIAL |
 | Silver business logic module | `src/silver/05_quality_business_logic.py`; rules in `data-quality-strategy.md` | Stub only; rules not executed | `ai-prompts/silver-layer.md`; design in `ai-prompts/documentation.md` | PARTIAL |
-| Never delete bad rows | `data-quality-strategy.md`; coding rules | No Silver run to prove row-count equality | `ai-prompts/documentation.md` | DESIGNED |
-| Flag rows (`quality_check_result` or equivalent) | `data-model.md` Silver contract; `create_silver_tables.py` stub | Not written | `ai-prompts/documentation.md` | DESIGNED |
-| Quality reporting (pass/fail counts and percentages) | Planned `silver.quality_metrics`; strategy metrics section | No metrics produced | `ai-prompts/documentation.md` | DESIGNED |
+| Never delete bad rows | `data-quality-strategy.md`; coding rules; completeness/uniqueness transforms | Silver Spark tests: counts remain 10010 / 100020 / 500 after both checks | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL (proven for completeness/uniqueness; later modules untested) |
+| Flag rows (`quality_check_result` or equivalent) | Per-module `*_pass` / `*_failed_checks`; combiner still stub | Tests assert per-module arrays accumulate; combined `quality_check_result` not written | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL |
+| Quality reporting (pass/fail counts and percentages) | In-memory `CheckMetrics`; `silver.quality_metrics` table not written | Completeness/uniqueness metrics asserted in Spark tests | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL |
 | Gold: Sales by Product | `src/gold/01_sales_by_product.sql`; `create_gold_tables.py` stub | SQL placeholder; not executed | `ai-prompts/gold-layer.md` empty of impl prompts | PARTIAL |
 | Gold: Revenue by Customer | `src/gold/02_revenue_by_customer.sql` | Placeholder; not executed | `ai-prompts/gold-layer.md` | PARTIAL |
 | Gold: Customer Segmentation | `src/gold/04_customer_segmentation.sql`; rules in `design-notes.md` §segmentation | Placeholder; not executed | `ai-prompts/gold-layer.md`; `ai-prompts/documentation.md` | PARTIAL |
@@ -525,9 +527,9 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Dashboard filters | Planned in §6.4 and `DASHBOARD_GUIDE.md` | Not configured | `ai-prompts/documentation.md` | DESIGNED |
 | Schema / setup | `database/schema.sql`, `database/setup-notes.md` | Schema not applied to a warehouse | `ai-prompts/documentation.md` | DESIGNED |
 | Seed-data notes | `database/seed-data-notes.md` | Records generator command, counts, synthetic confirmation; Bronze not loaded | `ai-prompts/data-generation.md` | PASS for generation notes; Bronze seed still pending |
-| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py`; `tests/test_bronze_contract.py`; `tests/test_bronze_ingest.py` | Generator 14 OK; Bronze contract tests OK; Spark ingest **skipped** (no PySpark) | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md` | PARTIAL (Spark runtime tests BLOCKED) |
-| README setup instructions | `README.md` | Generation commands documented and were run; Bronze commands documented; Databricks ingest not run | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md` | PARTIAL (generation verified; Databricks setup not) |
-| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Init/design prompts, Stage 2 data-generation, Stage 3 bronze-layer | `ai-prompts/documentation.md`; `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md` | PARTIAL (Silver–dashboard logs still empty) |
+| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py`; `tests/test_bronze_contract.py`; `tests/test_bronze_ingest.py`; `tests/test_silver_contract.py`; `tests/test_silver_quality.py` | Combined relevant set **96/96 OK** (generator 14, Bronze 58, Silver 24); 0 skipped | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md` | PARTIAL (local Spark passed; Databricks not run) |
+| README setup instructions | `README.md` | Generation, Bronze, and Silver completeness/uniqueness commands documented; Databricks ingest not run | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md` | PARTIAL (local verified; Databricks setup not) |
+| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Init/design, Stage 2 data-generation, Stage 3 bronze-layer, Stage 4 Silver completeness/uniqueness | `ai-prompts/documentation.md`; `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md` | PARTIAL (type/RI/BL/Gold/dashboard logs still empty) |
 | Cursor workflow artifacts | `cursor-workflow/project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | Files exist and were reviewed this stage | `ai-prompts/documentation.md` Prompt 3 | PASS (artifacts exist and are current for this stage) |
 | Debugging notes | `debugging-notes.md` | Placeholder; no runtime defects | `ai-prompts/debugging.md` empty | PARTIAL |
 | Reflection | `reflection.md` | Explicitly not filled with fabricated experience | `ai-prompts/documentation.md` | PARTIAL |
@@ -572,7 +574,8 @@ This satisfies the explicit repository structure and the Silver paragraph that a
 
 ## 15. Out of scope for the requirements/design stage (historical)
 
-That stage did not implement generation or the pipeline. **Stage 2 later completed data generation.** **Stage 3 completed Bronze ingest code** (Spark/Databricks runtime still BLOCKED here). Still out of scope until requested:
+That stage did not implement generation or the pipeline. **Stage 2 later completed data generation.** **Stage 3 completed Bronze ingest code** (local parquet tests passed; Databricks still not run). **Stage 4 implemented Silver completeness and uniqueness** (local Spark validated). Still out of scope until requested:
 
-- Silver / Gold / Dashboard implementation
+- Type validation, referential integrity, business logic, `create_silver_tables.py`
+- Gold / Dashboard implementation
 - Fabricated runtime results, reflection, or debugging stories

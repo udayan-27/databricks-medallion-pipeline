@@ -65,14 +65,16 @@ Do not start Silver until that stage is requested.
 
 Implement and test in order, using frozen `data-quality-strategy.md`:
 
-1. Completeness
-2. Uniqueness
-3. Type validation
-4. Referential integrity (NULL ≠ orphan)
-5. Business logic
-6. `create_silver_tables.py` combining flags on `_ingest_row_id` and metrics
+1. Completeness — **done** (this increment). `01_quality_completeness.py` + `quality_common.py`. Local Spark: 50 NULL emails, 100 NULL order customer_ids, 200 NULL order product_ids; rows retained.
+2. Uniqueness — **done** (this increment). `02_quality_uniqueness.py`. Local Spark: 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows; all copies flagged; no survivor.
+3. Type validation — **not started**
+4. Referential integrity (NULL ≠ orphan) — **not started**
+5. Business logic — **not started**
+6. `create_silver_tables.py` combining flags on `_ingest_row_id` and metrics — **not started**
 
-Assert Silver row counts equal Bronze. Multi-failure rows keep multiple codes. Update `ai-prompts/silver-layer.md` and commit per meaningful slice if needed.
+Assert Silver row counts equal Bronze (completeness/uniqueness transforms already do this in tests). Multi-failure rows keep multiple per-module codes. `ai-prompts/silver-layer.md` Prompt 1 records this increment.
+
+Do not start Gold until remaining Silver modules and the combiner are requested.
 
 ## Stage 6 — Gold
 
@@ -108,6 +110,6 @@ Assert Silver row counts equal Bronze. Multi-failure rows keep multiple codes. U
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after Bronze code
+## Explicitly not started after completeness/uniqueness
 
-Silver/Gold/Dashboard implementation. Generator tests and Bronze contract tests exist. Local Spark JVM+PySpark is installed; local parquet Bronze ingest tests pass. Databricks Bronze tables have not been created.
+Type validation, referential integrity, business logic, `create_silver_tables.py`, Gold, Dashboard. Generator tests, Bronze tests, and Silver completeness/uniqueness tests exist and passed locally. Databricks tables have not been created.

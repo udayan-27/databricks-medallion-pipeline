@@ -1,6 +1,6 @@
 # Data quality strategy
 
-Status: **strategy frozen for implementation**. No quality code has been run. No metrics have been produced. Do not delete bad rows.
+Status: **strategy frozen**. Completeness and uniqueness are implemented as PySpark transforms (`src/silver/01_quality_completeness.py`, `src/silver/02_quality_uniqueness.py`, shared helper `src/silver/quality_common.py`). Type validation, referential integrity, business logic, and `create_silver_tables.py` are **not** implemented. Do not delete bad rows.
 
 This file is the source of truth for Silver modules. Implementation must copy these rules, not invent new ones silently.
 
@@ -48,6 +48,29 @@ A single order row can carry, at the same time:
 - `business:orders.amount_equals_qty_price` (amount mismatch)
 
 Gold’s default filter uses the **combined** `quality_check_result`, not a single module column. Metrics still break out each module so the 100 NULL `customer_id` rows remain visible even if some of those rows also fail business logic (generation will try to keep mandatory classes disjoint; overlap is still allowed by the combiner).
+
+### Representation used by the completeness/uniqueness increment
+
+Each implemented module attaches its **own** columns and does not write `quality_check_result`:
+
+| Module | Boolean | Codes |
+|---|---|---|
+| completeness | `completeness_pass` | `completeness_failed_checks` |
+| uniqueness | `uniqueness_pass` | `uniqueness_failed_checks` |
+
+`src/silver/quality_common.py` `attach_module_result` concatenates into the module’s array (`array_distinct`) so a later call cannot replace an earlier code on the same `_ingest_row_id`. Combined `failed_checks` remains the orchestrator’s job.
+
+Observed local Spark counts on seed-42 Bronze (physical rows, not distinct keys):
+
+| Check | fail_count | total_evaluated |
+|---|---|---|
+| `completeness:customers.email` | 50 | 10,010 |
+| `completeness:orders.customer_id` | 100 | 100,020 |
+| `completeness:orders.product_id` | 200 | 100,020 |
+| orders completeness module rollup | 300 | 100,020 |
+| `uniqueness:customers.customer_id` | 20 | 10,010 |
+| `uniqueness:orders.order_id` | 40 | 100,020 |
+| products completeness / uniqueness | 0 | 500 |
 
 ## Thresholds (assignment meaning)
 

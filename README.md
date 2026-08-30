@@ -4,7 +4,7 @@ This repository is the DE C1 AI Capability Exercise submission. It implements (w
 
 `CSV -> Bronze -> Silver -> Gold -> Dashboard`
 
-Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** Silver / Gold / Dashboard code is still stubs. Bronze tables have **not** been created in a Databricks workspace from this environment.
+Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** **Silver completeness and uniqueness are implemented** (type / RI / business logic / Silver tables remain stubs). Gold / Dashboard code is still stubs. Bronze tables have **not** been created in a Databricks workspace from this environment.
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 
@@ -17,12 +17,13 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Sample CSV data | Generated (10,010 / 100,020 / 500 rows; seed 42) |
 | Bronze ingest code | Implemented (`src/bronze/`, `src/config.py`) |
 | Local Spark runtime | Python 3.11 `.venv` + Temurin JDK 17 + PySpark 3.5.6 (isolated from system Python 3.12) |
-| Local Spark validation | In-memory smoke **passed**. Local parquet Bronze ingest tests **passed** (21/21). Not Databricks. |
+| Local Spark validation | In-memory smoke **passed**. Local parquet Bronze ingest tests **passed** (21/21). Silver completeness/uniqueness Spark tests **passed** (16/16). Not Databricks. |
 | Bronze Databricks / Delta / Unity Catalog | **Not run** from this environment |
-| Silver / Gold / Dashboard code | Stubs only |
-| Tests | Generator tests run; Bronze contract tests **37/37 OK**; Spark ingest tests **21/21 OK** |
+| Silver completeness / uniqueness | Implemented (`src/silver/01_quality_completeness.py`, `02_quality_uniqueness.py`, `quality_common.py`). Local Spark validated. Does not write Silver tables. |
+| Silver type / RI / business logic / Gold / Dashboard | Stubs only |
+| Tests | Generator **14/14 OK**; Bronze contract **37/37 OK**; Spark ingest **21/21 OK**; Silver contract **8/8 OK**; Silver Spark **16/16 OK**; combined relevant set **96/96 OK** (0 skipped) |
 
-Do not treat stub Silver/Gold modules or placeholder SQL as a working pipeline. The CSVs in `data/` are real generated inputs.
+Do not treat stub type/RI/business-logic modules, `create_silver_tables.py`, or placeholder Gold SQL as a working pipeline. Completeness and uniqueness can be applied to Bronze DataFrames locally. The CSVs in `data/` are real generated inputs.
 
 ## What this exercise evaluates
 
@@ -31,7 +32,7 @@ The submission must demonstrate requirement analysis, architecture, AI-assisted 
 ## Layers
 
 - **Bronze:** raw, unchanged CSV ingest into `bronze.customers`, `bronze.orders`, `bronze.products`, plus append-only `bronze.ingest_metadata`. Source columns are not cleaned. `_ingest_row_id` is ingest lineage (unique per physical row of a write; regenerated each run).
-- **Silver:** five quality modules (completeness, uniqueness, type validation, referential integrity, business logic). Bad rows are flagged, not deleted. **Not implemented yet.**
+- **Silver:** five quality modules (completeness, uniqueness, type validation, referential integrity, business logic). Bad rows are flagged, not deleted. **Completeness and uniqueness are implemented** as PySpark transforms; they do not delete rows and do not write combined Silver tables. Type / RI / business logic / `create_silver_tables.py` are **not implemented yet.**
 - **Gold:** business aggregations in SQL (sales by product, revenue by customer, daily/weekly trends, customer segmentation). **Not implemented yet.**
 - **Dashboard:** Databricks SQL dashboard with at least three tiles and filters. **Not implemented yet.**
 
@@ -108,10 +109,37 @@ Do **not** install delta-spark, pandas, pyarrow, Jupyter, standalone Spark, or H
 
 **Rerun:** entity tables overwrite from the current CSVs; `_ingest_row_id` values change; `bronze.ingest_metadata` appends. Do not run overlapping jobs.
 
+### Silver completeness and uniqueness
+
+These modules read Bronze DataFrames (or already-written Bronze tables) and **add** quality columns. They do not delete rows, do not write `silver.*` tables, and do not run type / RI / business-logic checks.
+
+| Setting | Purpose | Default |
+|---|---|---|
+| `--bronze-schema` | Schema of the Bronze tables to read | `bronze` |
+| `--table-format` | Must match the Bronze write format | `delta` (use `parquet` locally) |
+
+After a local Bronze parquet ingest:
+
+```
+python src/silver/01_quality_completeness.py --table-format parquet
+python src/silver/02_quality_uniqueness.py --table-format parquet
+```
+
+That logs physical-row pass/fail metrics. Combined `quality_check_result` and `silver.quality_metrics` are later (`create_silver_tables.py`).
+
+Tests (same local Spark stack as Bronze):
+
+```
+python -m unittest tests.test_silver_contract -v
+python -m unittest tests.test_silver_quality -v
+```
+
+Observed local counts on seed-42 data: 50 NULL emails, 100 NULL order `customer_id`, 200 NULL order `product_id`, 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows. Rows remain (10,010 / 100,020 / 500).
+
 ### Tests that run without Spark
 
 ```
-python -m unittest tests.test_bronze_contract -v
+python -m unittest tests.test_bronze_contract tests.test_silver_contract -v
 ```
 
 No real PII, credentials, secrets, tokens, or private production connection details belong in this repository.
@@ -129,3 +157,4 @@ Every meaningful change must be derived from the written spec, tested, reviewed 
 - `cursor-workflow/` — persistent context for Cursor-assisted work
 - `ai-prompts/` — actual prompt history (not fabricated)
 - `src/bronze/ingest_core.py` — Bronze CSV options, lineage, local vs Databricks, rerun behaviour
+- `src/silver/quality_common.py` — shared Silver accumulation and physical-row metrics helpers
