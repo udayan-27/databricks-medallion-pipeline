@@ -56,6 +56,7 @@ from contracts import (  # noqa: E402
     PRODUCT_SOURCE_FIELDS,
     has_uri_scheme,
     join_source_path,
+    spark_input_path,
 )
 from ingest_core import (  # noqa: E402
     BronzeIngestError,
@@ -236,6 +237,44 @@ class TestPathHelpers(unittest.TestCase):
         self.assertFalse(has_uri_scheme(r"D:\data\customers.csv"))
         self.assertTrue(has_uri_scheme("dbfs:/data/customers.csv"))
         self.assertTrue(has_uri_scheme("/Volumes/main/landing"))
+
+    def test_spark_input_path_passthrough_remote(self) -> None:
+        self.assertEqual(spark_input_path("s3://bucket/raw/customers.csv"), "s3://bucket/raw/customers.csv")
+        self.assertEqual(spark_input_path("dbfs:/mnt/raw/orders.csv"), "dbfs:/mnt/raw/orders.csv")
+        self.assertEqual(
+            spark_input_path("/Volumes/main/landing/products.csv"),
+            "/Volumes/main/landing/products.csv",
+        )
+        self.assertEqual(
+            spark_input_path("abfss://container@account.dfs.core.windows.net/raw/x.csv"),
+            "abfss://container@account.dfs.core.windows.net/raw/x.csv",
+        )
+
+    def test_spark_input_path_local_not_percent_encoded(self) -> None:
+        local = spark_input_path(str(Path.cwd() / "file with spaces.csv"))
+        self.assertNotIn("%20", local)
+        self.assertFalse(local.lower().startswith("file:"))
+        self.assertIn("file with spaces.csv", local.replace("\\", "/"))
+
+    def test_spark_input_path_does_not_call_as_uri(self) -> None:
+        source = (BRONZE_DIR / "contracts.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and node.attr == "as_uri":
+                self.fail("spark_input_path must not call Path.as_uri()")
+        self.assertNotIn("Udayan", source)
+        self.assertIn("as_posix()", source)
+
+    def test_local_windows_fs_adapter_is_present_and_gated(self) -> None:
+        java = SRC_DIR / "local_runtime" / "NoWinutilsRawLocalFileSystem.java"
+        helper = SRC_DIR / "spark_local.py"
+        self.assertTrue(java.is_file(), "local Windows FileSystem source is missing")
+        helper_text = helper.read_text(encoding="utf-8")
+        self.assertIn('os.name != "nt"', helper_text)
+        self.assertIn("fs.file.impl", helper_text)
+        java_text = java.read_text(encoding="utf-8")
+        self.assertIn("listStatus", java_text)
+        self.assertIn("setPermission", java_text)
 
 
 class TestHeaderValidation(unittest.TestCase):

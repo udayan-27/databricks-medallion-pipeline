@@ -31,7 +31,7 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 1 Repository structure + engineering spec | Done (`16ee902`) |
 | 1.5 Requirements traceability, architecture, DQ strategy | Done (`3fa1c57`) |
 | 2 Data generation | **Done** (seed 42; `data/*.csv` populated; tests run) |
-| 3 Bronze ingest | **Code complete.** Local Python 3.11 `.venv` + JDK 17 + PySpark 3.5.6 installed. In-memory smoke passed. Local parquet ingest tests **failed** (Windows Hadoop `%20` URIs + no winutils). Databricks / Delta / UC **not** run. |
+| 3 Bronze ingest | **Code complete.** Local Python 3.11 `.venv` + JDK 17 + PySpark 3.5.6. In-memory smoke passed. Local parquet ingest tests **passed** (Windows path helper + no-winutils FileSystem). Databricks / Delta / UC **not** run. |
 | 4–10 Silver through submission | **Not started** |
 
 `data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). Silver / Gold / Dashboard remain stubs.
@@ -108,5 +108,5 @@ In the matching `ai-prompts/*.md` file:
 
 Required by the assignment but **missing from the official file tree**. `tests/` holds Stage 2 generator tests and Stage 3 Bronze tests:
 
-- `tests/test_bronze_contract.py` — always runnable (schema, CSV options, no-drop AST, config, fixtures)
+- `tests/test_bronze_contract.py` — always runnable (schema, CSV options, no-drop AST, config, fixtures, path helper)
 - `tests/test_bronze_ingest.py` — PySpark runtime; skipped when Spark is unavailable

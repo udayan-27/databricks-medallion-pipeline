@@ -16,6 +16,8 @@ Set MEDALLION_CATALOG if Unity Catalog is used. Default table format is delta.
 
 Local: Spark is optional. If PySpark + a JDK are installed, the same code can
 write parquet tables (MEDALLION_TABLE_FORMAT=parquet) into a local warehouse.
+On Windows, locally created SparkSessions use a Java FileSystem that avoids
+winutils/hadoop.dll; Databricks keeps using the cluster session unchanged.
 Absence of Spark does **not** mean Databricks ingest succeeded.
 
 Rerun behaviour
@@ -55,7 +57,9 @@ from contracts import (  # noqa: E402
     EntityContract,
     has_uri_scheme,
     join_source_path,
+    spark_input_path,
 )
+from spark_local import apply_local_spark_config  # noqa: E402
 
 LOGGER = logging.getLogger("bronze.ingest")
 
@@ -85,18 +89,6 @@ def new_ingest_id() -> str:
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
-
-
-def spark_input_path(source_file: str) -> str:
-    """
-    Path string Spark should read.
-
-    Local OS paths become file URIs so spaces in the repo folder name do not
-    split the path. Remote URIs (dbfs:, s3://, /Volumes/, ...) pass through.
-    """
-    if has_uri_scheme(source_file):
-        return source_file
-    return Path(source_file).resolve().as_uri()
 
 
 def _import_pyspark():
@@ -158,12 +150,13 @@ def get_spark_session(app_name: str = "de-c1-bronze") -> Any:
     existing = SparkSession.getActiveSession()
     if existing is not None:
         return existing
-    return (
+    builder = (
         SparkSession.builder.appName(app_name)
         .config("spark.ui.enabled", "false")
         .config("spark.sql.session.timeZone", "UTC")
-        .getOrCreate()
     )
+    builder = apply_local_spark_config(builder)
+    return builder.getOrCreate()
 
 
 def add_ingest_row_id(dataframe: Any) -> Any:

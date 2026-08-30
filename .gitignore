@@ -19,6 +19,7 @@ env/
 # Spark / local Databricks artifacts
 spark-warehouse/
 metastore_db/
+*.class
 derby.log
 checkpoint/
 checkpoints/

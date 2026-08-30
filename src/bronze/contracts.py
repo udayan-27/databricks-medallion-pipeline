@@ -145,3 +145,23 @@ def join_source_path(data_path: str, filename: str) -> str:
     from pathlib import Path
 
     return str(Path(data_path) / filename)
+
+
+def spark_input_path(source_file: str) -> str:
+    """
+    Path string Spark / Hadoop should read.
+
+    Remote URIs (``s3://``, ``dbfs:``, ``abfss://``, ``/Volumes/...``) pass
+    through unchanged so Databricks DBFS/Volume/S3 behaviour is untouched.
+
+    Local OS paths are resolved to an absolute path using forward slashes.
+    They are **not** converted with ``Path.as_uri()``. Hadoop 3.3.4 on Windows
+    treats percent-encoded ``file:`` URIs (``DE%20C1``) as literal path
+    segments and raises ``PATH_NOT_FOUND``. POSIX / Windows path strings
+    with spaces are accepted by this runtime.
+    """
+    if has_uri_scheme(source_file):
+        return source_file
+    from pathlib import Path
+
+    return Path(source_file).expanduser().resolve().as_posix()

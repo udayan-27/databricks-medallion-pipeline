@@ -57,6 +57,47 @@ Goal: isolated Python 3.11 + JDK 17 + PySpark 3.5.6 for local Spark testing. Sys
 - **Optional local job:** `python src/bronze/ingest_all.py --table-format parquet` was **not** run because the Spark ingest suite did not succeed.
 - **Not claimed:** Databricks runtime, Delta, DBFS, Unity Catalog, or a passing local parquet Bronze write.
 
+## Local Windows Spark/parquet validation (2026-08-31)
+
+Two independent defects blocked file-based Bronze tests. In-memory Spark already worked. Winutils was **not** installed.
+
+### 6. Percent-encoded `file:` URIs (`PATH_NOT_FOUND`)
+
+- **Symptom:** `reader.load(spark_path)` in `read_source_csv` (`src/bronze/ingest_core.py`) failed with `[PATH_NOT_FOUND] Path does not exist: file:/D:/DE%20C1%20Project-Udayan%20Mahajan/...`. `TestFixtureIngest` / `TestCommittedSourceIngest` errored in `setUpClass`. `test_header_only_fails` failed because it received path-not-found instead of `0 data rows`.
+- **Expected vs actual:** Spark should read the local CSV. The file exists; Python `csv` header reads succeed. Hadoop cannot open the percent-encoded URI.
+- **Evidence (isolated):** same fixture CSV:
+  - `Path.as_uri()` → `file:///D:/DE%20C1%20Project-Udayan%20Mahajan/...` → **FAIL**
+  - `Path.as_posix()` / `str(Path)` / unquoted `file:///D:/DE C1 ...` → **OK, count=4**
+  - A zero-space path (`C:/dec1_spark_wh/customers.csv`) **succeeds** even as `as_uri()`, so the bug is encoding, not `file:` itself.
+  - CSV **read** does not require winutils (warning only).
+- **Root cause:** `spark_input_path()` used `Path.resolve().as_uri()`. Hadoop 3.3.4 on this Windows runtime treats `%20` as literal path characters.
+- **Independent of Hadoop writes:** yes.
+
+### 7. Hadoop `mkdirs` / parquet commit need native Windows binaries
+
+- **Symptom:** `ensure_bronze_schema` → `CREATE SCHEMA` → `RawLocalFileSystem.setPermission` → `Shell.getWinUtilsPath` → `HADOOP_HOME and hadoop.home.dir are unset`. After URI fix, `saveAsTable` / `write.parquet` still fail.
+- **Exact trigger:** `RawLocalFileSystem.mkOneDirWithMode` → `setPermission` → winutils `chmod`. After a no-op `setPermission`, parquet commit then failed on `FileUtil.list` → `NativeIO$Windows.access0` (`hadoop.dll`).
+- **Evidence:**
+  - Pre-creating `{warehouse}/{schema}.db` made `CREATE SCHEMA` succeed (`exists` skips `mkdirs`) but `saveAsTable` still failed on table-dir `mkdirs`.
+  - Dummy `HADOOP_HOME` with empty `bin/` → "Could not locate Hadoop executable: ...\winutils.exe".
+  - Empty `winutils.exe` file → `CreateProcess error=193` (not a valid Win32 application).
+  - Hadoop 3.3.4 `LocalFileSystemConfigKeys` has no skip-permissions flag. HADOOP-17839 (disable local permission get/set) is unresolved.
+- **Root cause:** Spark uses Hadoop for local files. On Windows, Hadoop 3.3.4 shells out to winutils for chmod and uses NativeIO for directory listing during `FileOutputCommitter.commitJob`. Configuration-only workarounds do not exist in this distribution.
+- **Affects:** local Windows testing / local CLI parquet only. Databricks uses the cluster session (DBFS/S3/UC), not this FileSystem.
+- **Rejected:** installing third-party winutils/hadoop.dll; empty dummy exe; skipping tests; changing Bronze to temp-views; redesigning around Windows.
+- **Accepted:** compile a tiny Java `RawLocalFileSystem` subclass (`setPermission`/`setOwner` no-op; `listStatus`/`getFileStatus` via `java.io.File`) with the project JDK and set it as `fs.file.impl` **only** for locally created SparkSessions (`os.name == "nt"`). Diagnostic `saveAsTable` + overwrite then returned count=4 without winutils.
+
+### 8. Implementation and re-test
+
+- **Files changed:** `src/bronze/contracts.py` (`spark_input_path` → `as_posix()`; remote URIs pass through), `src/spark_local.py`, `src/local_runtime/NoWinutilsRawLocalFileSystem.java`, `src/bronze/ingest_core.py` (`get_spark_session` applies the helper), `tests/test_bronze_ingest.py`, `tests/test_bronze_contract.py`.
+- **Tests re-run:**
+  - `python -m unittest tests.test_bronze_contract -v` → `Ran 37 tests in 0.040s` **OK**.
+  - `python -m unittest tests.test_bronze_ingest -v` → `Ran 21 tests in 47.830s` **OK**.
+  - Combined → `Ran 58 tests in 46.761s` **OK**.
+- **Bronze local result:** customers 10010, orders 100020, products 500; duplicate keys, NULLs, orphans retained; `_ingest_row_id` unique; metadata SUCCESS row counts match; missing/empty/header-only/header-mismatch/preflight failures still fail.
+- **Winutils:** not installed, not committed, not required for this local path.
+- **Still not claimed:** Databricks, Delta, DBFS, Unity Catalog.
+
 Use this file during later stages to capture:
 
 - Symptom

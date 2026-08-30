@@ -21,7 +21,7 @@ Optional: `--catalog`, `--bronze-schema` (default `bronze`), `--table-format del
 
 Local Spark without Delta: `--table-format parquet`.
 
-This machine now has a project-local Python 3.11 `.venv` with PySpark 3.5.6 and Temurin JDK 17. An in-memory Spark smoke test passed. Local parquet Bronze ingest was **not** completed: Spark ingest tests failed on Windows Hadoop path encoding (`Path.as_uri()` percent-encodes spaces) and missing `winutils` (not installed by design). That is local-runtime evidence, not a Databricks/Delta/UC pass. Databricks objects still have not been created from this repository.
+This machine now has a project-local Python 3.11 `.venv` with PySpark 3.5.6 and Temurin JDK 17. An in-memory Spark smoke test passed. Local parquet Bronze ingest tests now pass on Windows: local input paths use `Path.as_posix()` (not percent-encoded `file:` URIs), and locally created SparkSessions install a Java FileSystem that avoids winutils/`hadoop.dll`. That is local-runtime evidence, not a Databricks/Delta/UC pass. Databricks objects still have not been created from this repository.
 
 Rerun overwrites `bronze.customers|orders|products` and appends to `bronze.ingest_metadata`.
 

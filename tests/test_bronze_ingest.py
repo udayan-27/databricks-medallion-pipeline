@@ -51,6 +51,7 @@ from ingest_core import (  # noqa: E402
     ingest_all,
     ingest_customers,
 )
+from spark_local import apply_local_spark_config  # noqa: E402
 
 
 def _simple_type(spark_dtype) -> str:
@@ -77,6 +78,7 @@ class BronzeSparkTestCase(unittest.TestCase):
             .config("spark.sql.shuffle.partitions", "2")
             .config("spark.sql.warehouse.dir", cls.warehouse_dir.as_posix())
         )
+        builder = apply_local_spark_config(builder)
         existing = SparkSession.getActiveSession()
         if existing is not None:
             existing.stop()

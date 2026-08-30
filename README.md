@@ -17,10 +17,10 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Sample CSV data | Generated (10,010 / 100,020 / 500 rows; seed 42) |
 | Bronze ingest code | Implemented (`src/bronze/`, `src/config.py`) |
 | Local Spark runtime | Python 3.11 `.venv` + Temurin JDK 17 + PySpark 3.5.6 (isolated from system Python 3.12) |
-| Local Spark validation | In-memory smoke test **passed**. Bronze parquet ingest tests **failed** (Windows Hadoop path encoding + missing winutils). Not Databricks. |
+| Local Spark validation | In-memory smoke **passed**. Local parquet Bronze ingest tests **passed** (21/21). Not Databricks. |
 | Bronze Databricks / Delta / Unity Catalog | **Not run** from this environment |
 | Silver / Gold / Dashboard code | Stubs only |
-| Tests | Generator tests run; Bronze contract tests 33/33 OK; Spark ingest tests ran (not skipped) and failed |
+| Tests | Generator tests run; Bronze contract tests **37/37 OK**; Spark ingest tests **21/21 OK** |
 
 Do not treat stub Silver/Gold modules or placeholder SQL as a working pipeline. The CSVs in `data/` are real generated inputs.
 
@@ -95,15 +95,16 @@ $env:PYSPARK_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
 python -m unittest tests.test_bronze_ingest -v
 ```
 
-Do **not** install delta-spark, pandas, pyarrow, Jupyter, standalone Spark, or Hadoop/winutils for this stack. Default `--table-format` is still `delta` (Databricks). Local attempts use `--table-format parquet`.
+Do **not** install delta-spark, pandas, pyarrow, Jupyter, standalone Spark, or Hadoop/winutils for this stack. Default `--table-format` is still `delta` (Databricks). Local validation uses `--table-format parquet`. On Windows, locally created SparkSessions compile `src/local_runtime/NoWinutilsRawLocalFileSystem.java` so parquet `saveAsTable` does not need winutils; Databricks uses the cluster session and never loads that class.
 
 **What this environment actually proved (2026-08-31):**
 
 - `createDataFrame` + `count()` + `collect()` + `stop()` in `local[2]` **succeeded**.
-- `python -m unittest tests.test_bronze_contract -v` → **33 tests OK**.
-- `python -m unittest tests.test_bronze_ingest -v` → **FAILED** (1 failure, 2 errors). Spark could not read `file:/...%20...` URIs produced by `Path.as_uri()`, and Hadoop `mkdirs`/`saveAsTable` need winutils on Windows. Bronze logic was not changed to hide that. See `debugging-notes.md`.
-- `python src/bronze/ingest_all.py --table-format parquet` was **not** run, because the ingest test suite did not succeed.
-- None of the above is Databricks, Delta, DBFS, or Unity Catalog validation.
+- `python -m unittest tests.test_bronze_contract -v` → **37 tests OK**.
+- `python -m unittest tests.test_bronze_ingest -v` → **21 tests OK** (full source vs Bronze: 10010 / 100020 / 500; duplicates, NULLs, and orphans retained).
+- Combined: `python -m unittest tests.test_bronze_contract tests.test_bronze_ingest -v` → **58 tests OK**.
+- Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`.
+- None of the above is Databricks, Delta, DBFS, or Unity Catalog validation. See `debugging-notes.md`.
 
 **Rerun:** entity tables overwrite from the current CSVs; `_ingest_row_id` values change; `bronze.ingest_metadata` appends. Do not run overlapping jobs.
 
