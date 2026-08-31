@@ -1,6 +1,6 @@
 # Requirements analysis
 
-Canonical source: `DE_C1_REQUIREMENTS.md`. This document records how those requirements are interpreted, which human decisions resolve ambiguities, and how each requirement traces to artifacts. It does not claim that the pipeline has been implemented or validated.
+Canonical source: `DE_C1_REQUIREMENTS.md`. This document records how those requirements are interpreted, which human decisions resolve ambiguities, and how each requirement traces to artifacts. Local Spark/parquet validation is recorded as local evidence. It does not claim Databricks execution.
 
 **Stage status:** requirements and architecture review complete. **Stage 2 data generation is complete** (seed 42). **Bronze ingest code is complete.** Local Spark parquet Bronze ingest tests passed. **All five Silver quality modules and Silver table orchestration are implemented and locally validated.** **Gold SQL aggregations and `create_gold_tables.py` are implemented and locally validated.** **Dashboard SQL queries and `DASHBOARD_GUIDE.md` are implemented and locally validated.** A Databricks SQL dashboard UI has **not** been rendered.
 
@@ -117,7 +117,7 @@ These are human decisions where the guide is silent or incomplete. They will be 
 14. **Revenue status filter.** Gold revenue and order-count measures use `order_status = 'Completed'` only. Pending and Cancelled orders are excluded from revenue. This is a business assumption, not stated in the guide.
 15. **Batch full refresh.** Each successful run overwrites Bronze/Silver/Gold tables from the current CSVs. Incremental CDC is out of scope.
 16. **CSV read mode.** Spark read uses an explicit schema and `PERMISSIVE` mode so malformed values become null rather than dropping rows (`DROPMALFORMED` would violate “never delete bad rows”).
-17. **Tests live under `tests/`**, which is not in the required file tree but is required by “meaningful tests.” The directory will be added when tests are written, not during this design stage.
+17. **Tests live under `tests/`**, which is not in the required file tree but is required by “meaningful tests.” Generator, Bronze, Silver, Gold, and dashboard tests exist.
 18. **As-of date** for “future signup” is a frozen date documented at generation time (planned default: `2026-08-31`, the date of this design review), not “whenever the job runs.”
 
 ## 5. Edge cases
@@ -132,7 +132,7 @@ These are human decisions where the guide is silent or incomplete. They will be 
 - `order_date` before customer `signup_date`.
 - `order_status` or `customer_segment` values outside the allowed set (type/domain vs business-logic).
 - Schema inference treating dates as strings or decimals as doubles.
-- Header-only or empty files (current placeholders; not valid generated input).
+- Header-only or empty files (rejected at Bronze ingest; fixtures under `tests/fixtures/bronze/`).
 - Gold averages with zero orders (division by zero).
 - Segmentation: a customer can match more than one naive definition; rules must be mutually exclusive (see `design-notes.md`).
 - Duplicate parent keys amplifying Gold joins.
@@ -468,7 +468,7 @@ If Databricks is unavailable during a later coding stage, local PySpark tests ma
 
 A later complete submission should include:
 
-- [ ] End-to-end working pipeline (Bronze -> Silver -> Gold -> dashboard queries)
+- [x] End-to-end working pipeline locally (Bronze -> Silver -> Gold -> dashboard queries); Databricks workspace run still open
 - [x] Intentional quality issues present in source data at the listed counts
 - [x] All five Silver quality modules implemented
 - [x] Completeness, uniqueness, type validation, referential integrity, and business logic implemented locally
@@ -477,16 +477,16 @@ A later complete submission should include:
 - [x] Quality metrics with pass/fail counts and percentages
 - [x] Gold aggregations A–C plus daily/weekly trends SQL
 - [ ] Dashboard with 3+ required tiles and filters (queries + guide local; Databricks UI not rendered)
-- [ ] Schema, setup, and seed-data notes
-- [ ] README setup instructions that match the actual project
-- [x] Meaningful tests that were actually run
-- [ ] Full prompt history in `ai-prompts/`
-- [ ] Requirement, design, and data-quality artifacts
-- [ ] Debugging / code-review notes and reflection
-- [ ] Responsible AI: synthetic data only; no secrets in repo or prompts
-- [ ] Meaningful Git history (not a single dump of finished work)
+- [x] Schema, setup, and seed-data notes (DDL not applied to a Databricks warehouse)
+- [x] README setup instructions that match the actual project (local verified; Databricks setup not executed)
+- [x] Meaningful tests that were actually run (local Spark; Databricks not run)
+- [x] Full prompt history in `ai-prompts/` plus `ai-prompts/prompt-index.md`
+- [x] Requirement, design, and data-quality artifacts
+- [x] Debugging / code-review notes and reflection
+- [x] Responsible AI: synthetic data only; no secrets in repo or prompts (re-checked at audit)
+- [x] Meaningful Git history (not a single dump of finished work)
 
-**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze ingest code exists; local parquet ingest tests passed; Databricks Bronze is still not run. All five Silver quality modules and combined Silver tables are implemented and locally tested. Gold aggregations are implemented and locally tested (Databricks Gold not written). Dashboard queries and guide are implemented and locally tested; Databricks SQL Dashboard UI is still not rendered.
+**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze through dashboard **query** code exists and is locally tested. Databricks Bronze/Silver/Gold tables and a Databricks SQL Dashboard UI have **not** been created from this environment.
 
 ## 12. Requirements traceability matrix
 
@@ -503,7 +503,7 @@ Do not read DESIGNED or PARTIAL as PASS.
 
 | Requirement | Implementation Artifact | Validation/Test Evidence | AI Prompt Evidence | Status |
 |---|---|---|---|---|
-| Medallion flow CSV/S3/DBFS → Bronze → Silver → Gold → Dashboard | `README.md`, `design-notes.md`, `cursor-workflow/spec.md` | None (pipeline not run) | `ai-prompts/documentation.md` Prompts 1–3 | DESIGNED |
+| Medallion flow CSV/S3/DBFS → Bronze → Silver → Gold → Dashboard | `README.md`, `design-notes.md`, `cursor-workflow/spec.md` | Local parquet pipeline tested; Databricks workspace pipeline **not** run | `ai-prompts/documentation.md`; `ai-prompts/prompt-index.md` | PARTIAL |
 | Source dataset `customers.csv` (10k unique + documented extras; required columns) | `data/customers.csv`; `src/data_generation/generate_sample_data.py` | Generator validation + `tests/test_generate_sample_data.py` (14 tests OK) | `ai-prompts/data-generation.md` Prompt 1 | PASS |
 | Source dataset `orders.csv` (100k unique + documented extras; required columns) | `data/orders.csv`; generator | Same | `ai-prompts/data-generation.md` | PASS |
 | Source dataset `products.csv` (500 rows; required columns) | `data/products.csv`; generator | Same | `ai-prompts/data-generation.md` | PASS |
@@ -516,11 +516,11 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Intentional DQ: 20 duplicate `order_id` rows | Generator | 20 extra rows; 40 uniqueness-fail rows | `ai-prompts/data-generation.md` | PASS |
 | Record ~700 vs listed-count discrepancy | `requirements-analysis.md` §§6.1, 14; `cursor-workflow/project-context.md` | Document review only (arithmetic 50+10+100+200+50+30+20=460) | `ai-prompts/documentation.md` Prompts 1–3 | PASS (documentation of the ambiguity) |
 | Optional 30 future signup dates (example prompt only) | `DATA_GENERATION_NOTES.md`; generator | Counted 30; not in the 460 | `ai-prompts/data-generation.md` | PASS (optional injection, documented) |
-| Bronze: read CSVs into Databricks | `src/bronze/01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py`, `ingest_core.py` | Contract tests run; Spark ingest tests **skipped** (no PySpark) | `ai-prompts/bronze-layer.md` Prompt 1 | PARTIAL (code complete; Databricks/Spark runtime BLOCKED) |
-| Bronze: create Bronze tables | `bronze.customers/orders/products` via overwrite `saveAsTable`; DDL in `database/schema.sql` | Tables **not** created in a workspace from this environment | `ai-prompts/bronze-layer.md` | PARTIAL |
-| Bronze: raw/unchanged; no cleaning | `ingest_core.py`; AST tests forbid drop/dedupe; PERMISSIVE options | No Spark except-all vs CSV in this environment | `ai-prompts/bronze-layer.md` | PARTIAL |
-| Bronze: schema / types | Explicit contract in `src/bronze/contracts.py` / `data-model.md` | Contract tests assert field names and DECIMAL(18,2); Spark schema test skipped | `ai-prompts/bronze-layer.md` | PARTIAL |
-| Ingestion metadata (row counts, timestamp) | `bronze.ingest_metadata` written by `ingest_core.py` | Spark metadata tests skipped; column contract tested | `ai-prompts/bronze-layer.md` | PARTIAL |
+| Bronze: read CSVs into Databricks | `src/bronze/01_ingest_customers.py`, `02_ingest_orders.py`, `03_ingest_products.py`, `ingest_all.py`, `ingest_core.py` | Contract tests run; local Spark ingest tests **passed** (parquet). Databricks **not** run | `ai-prompts/bronze-layer.md` Prompt 1 | PARTIAL (code complete; local parquet PASS; Databricks BLOCKED) |
+| Bronze: create Bronze tables | `bronze.customers/orders/products` via overwrite `saveAsTable`; DDL in `database/schema.sql` | Local parquet tables in tests; tables **not** created in a Databricks workspace | `ai-prompts/bronze-layer.md` | PARTIAL |
+| Bronze: raw/unchanged; no cleaning | `ingest_core.py`; AST tests forbid drop/dedupe; PERMISSIVE options | Local Spark except-all vs CSV in tests | `ai-prompts/bronze-layer.md` | PARTIAL (local PASS; Databricks not run) |
+| Bronze: schema / types | Explicit contract in `src/bronze/contracts.py` / `data-model.md` | Contract tests assert field names and DECIMAL(18,2); Spark schema tests passed locally | `ai-prompts/bronze-layer.md` | PARTIAL |
+| Ingestion metadata (row counts, timestamp) | `bronze.ingest_metadata` written by `ingest_core.py` | Local Spark metadata tests passed; column contract tested | `ai-prompts/bronze-layer.md` | PARTIAL |
 | Silver completeness module | `src/silver/01_quality_completeness.py`; `src/silver/quality_common.py` | Local Spark: 50 NULL emails, 100 NULL order customer_ids, 200 NULL order product_ids; rows retained | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL (transforms implemented and tested locally; Databricks Silver not written) |
 | Silver uniqueness module | `src/silver/02_quality_uniqueness.py`; `src/silver/quality_common.py` | Local Spark: 20 customer and 40 order uniqueness-fail physical rows; all copies flagged | `ai-prompts/silver-layer.md` Prompt 1 | PARTIAL (same: Databricks Silver not written) |
 | Silver type validation module | `src/silver/03_quality_type_validation.py`; `src/silver/quality_common.py` | Local Spark: 0 type failures on seed-42 committed data; malformed INT/DATE/DECIMAL and domain fixtures fail without deleting rows; completeness-owned NULLs are not type failures | `ai-prompts/silver-layer.md` Prompt 2 | PARTIAL |
@@ -536,19 +536,19 @@ Do not read DESIGNED or PARTIAL as PASS.
 | Dashboard: 3+ tiles (bar, histogram, pie) | `src/dashboard/dashboard_queries.sql`; `DASHBOARD_GUIDE.md` | Local Spark: Top-N, Gold population, exclusive segments, filter-before-limit; Databricks UI **not** rendered | `ai-prompts/dashboard.md` Prompt 1 | PARTIAL (queries locally validated; Databricks dashboard not created) |
 | Dashboard filters | `DASHBOARD_GUIDE.md` §9; `category` before LIMIT; `customer_segment` on histogram | Contract tests + Spark filter-before-limit vs after-limit | `ai-prompts/dashboard.md` | PARTIAL (documented and locally tested; Databricks widgets not attached) |
 | Schema / setup | `database/schema.sql`, `database/setup-notes.md` | Schema not applied to a warehouse | `ai-prompts/documentation.md` | DESIGNED |
-| Seed-data notes | `database/seed-data-notes.md` | Records generator command, counts, synthetic confirmation; Bronze not loaded | `ai-prompts/data-generation.md` | PASS for generation notes; Bronze seed still pending |
-| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py`; `tests/test_bronze_contract.py`; `tests/test_bronze_ingest.py`; `tests/test_silver_contract.py`; `tests/test_silver_quality.py`; `tests/test_gold_contract.py`; `tests/test_gold_aggregations.py`; `tests/test_dashboard_contract.py`; `tests/test_dashboard_queries.py` | Combined relevant **203/203 OK** in 548.539s (generator+Bronze+Silver 148, Gold 27, Dashboard 28); 0 failed, 0 skipped | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md`; `ai-prompts/gold-layer.md`; `ai-prompts/dashboard.md` | PARTIAL (local Spark passed; Databricks not run) |
-| README setup instructions | `README.md` | Generation, Bronze, and Silver completeness/uniqueness/type/RI commands documented; Databricks ingest not run | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md` | PARTIAL (local verified; Databricks setup not) |
-| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md` | Init/design, Stage 2 data-generation, Stage 3 bronze-layer, Stage 4 Silver completeness/uniqueness, type/RI, and business-logic/orchestration, Stage 5 Gold, Stage 6 Dashboard | `ai-prompts/documentation.md`; `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md`; `ai-prompts/gold-layer.md`; `ai-prompts/dashboard.md` | PARTIAL (final-audit prompts still later) |
-| Cursor workflow artifacts | `cursor-workflow/project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | Files exist and were reviewed this stage | `ai-prompts/documentation.md` Prompt 3 | PASS (artifacts exist and are current for this stage) |
-| Debugging notes | `debugging-notes.md` | Placeholder; no runtime defects | `ai-prompts/debugging.md` empty | PARTIAL |
-| Reflection | `reflection.md` | Explicitly not filled with fabricated experience | `ai-prompts/documentation.md` | PARTIAL |
-| Final AI usage summary | `final-ai-usage-summary.md` | Initialization + this design stage only | `ai-prompts/documentation.md` | PARTIAL |
-| Responsible AI (no real PII/secrets in repo or prompts) | Policy in README, rules, `.gitignore`; `candidate-info.md` omits emails/tokens | `.gitignore` reviewed; no `.env`; CSVs use `@example.com` synthetic names | `ai-prompts/data-generation.md` | PASS for Stage 2 contents (re-check after later stages) |
-| Git / submission (meaningful history; org account process; repo link) | Git repo; commit `16ee902`; this stage’s commit when created | `git log` exists; **no submission URL**; not a complete history yet | `ai-prompts/documentation.md` | PARTIAL |
-| Working rule: spec → test → review → prompt log → commit | `tool-workflow.md`, `cursor-workflow/spec.md` §definition of done | Followed for init; followed for this docs stage (no code tests because no code) | `ai-prompts/documentation.md` | PARTIAL (process in use; not done for implementation stages) |
-| Required repository file tree | Paths listed in `DE_C1_REQUIREMENTS.md` | Tree verified at init (`16ee902`) and re-checked this stage | `ai-prompts/documentation.md` Prompts 2–3 | PASS (paths exist; bodies remain stubs where required) |
-| Quality of AI use (context, spec, refinement, validation, reject notes) | `cursor-workflow/*`, this file, `ai-prompts/documentation.md` | Design review performed; no fabricated test results | `ai-prompts/documentation.md` | PARTIAL (design-stage evidence only) |
+| Seed-data notes | `database/seed-data-notes.md` | Records generator command, counts, synthetic confirmation; local Bronze parquet measured; Databricks Bronze not loaded | `ai-prompts/data-generation.md` | PASS for generation notes; Databricks seed still pending |
+| Tests (“meaningful tests”) | `tests/test_generate_sample_data.py`; `tests/test_bronze_contract.py`; `tests/test_bronze_ingest.py`; `tests/test_silver_contract.py`; `tests/test_silver_quality.py`; `tests/test_gold_contract.py`; `tests/test_gold_aggregations.py`; `tests/test_dashboard_contract.py`; `tests/test_dashboard_queries.py` | Combined relevant **203** tests. Audit-cycle result: `FINAL_AUDIT.md`. Databricks not run | `ai-prompts/data-generation.md`; `ai-prompts/bronze-layer.md`; `ai-prompts/silver-layer.md`; `ai-prompts/gold-layer.md`; `ai-prompts/dashboard.md` | PARTIAL (local Spark; Databricks not run) |
+| README setup instructions | `README.md` | Generation, Bronze, Silver, Gold, dashboard, and test commands documented; Databricks ingest not run | `ai-prompts/documentation.md` | PARTIAL (local verified; Databricks setup not) |
+| Prompt history format (prompt, response, accept/change/reject, validation, decision) | `ai-prompts/*.md`; `ai-prompts/prompt-index.md` | Init through public-repo audit (P001–P015) | `ai-prompts/documentation.md`; `ai-prompts/prompt-index.md` | PASS for documented local lifecycle; Databricks runtime prompts still N/A |
+| Cursor workflow artifacts | `cursor-workflow/project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | Files exist and match current local stage | `ai-prompts/documentation.md` | PASS |
+| Debugging notes | `debugging-notes.md` | Real Windows Spark, Gold harness, dashboard join, compatibility review | `ai-prompts/debugging.md` | PASS for recorded local defects; Databricks runtime N/A |
+| Reflection | `reflection.md` | Written from real local implementation and debugging | `ai-prompts/documentation.md` | PASS for local experience; no fabricated Databricks story |
+| Final AI usage summary | `final-ai-usage-summary.md` | Full local lifecycle P001–P015 | `ai-prompts/documentation.md` | PASS for work that occurred |
+| Responsible AI (no real PII/secrets in repo or prompts) | Policy in README, `tool-workflow.md`, `.gitignore`; `candidate-info.md` omits contact email/tokens | `.gitignore` reviewed; no `.env`; CSVs use `@example.com` | `ai-prompts/data-generation.md`; `ai-prompts/documentation.md` | PASS for repository contents (git author metadata is not copied into docs) |
+| Git / submission (meaningful history; org account process; repo link) | Git history from `16ee902` through compatibility and audit commits; intended public URL in `candidate-info.md` | `git log` is staged and descriptive; **not pushed** from this audit | `ai-prompts/documentation.md` | PARTIAL (history exists; official org submission process not stored in-repo) |
+| Working rule: spec → test → review → prompt log → commit | `tool-workflow.md`, `cursor-workflow/spec.md` §definition of done | Followed for init through dashboard, compatibility, and this audit | `ai-prompts/documentation.md` | PASS for local stages |
+| Required repository file tree | Paths listed in `DE_C1_REQUIREMENTS.md` | Tree re-checked at public-repo audit; supporting `tests/` and `src/config.py` retained | `ai-prompts/documentation.md` | PASS |
+| Quality of AI use (context, spec, refinement, validation, reject notes) | `cursor-workflow/*`, this file, `ai-prompts/` | Design plus implementation evidence; no fabricated test results | `ai-prompts/prompt-index.md` | PASS for local work |
 
 ## 13. Explicit treatment — approximately 700 problematic rows
 
@@ -584,8 +584,9 @@ This satisfies the explicit repository structure and the Silver paragraph that a
 
 ## 15. Out of scope for the requirements/design stage (historical)
 
-That stage did not implement generation or the pipeline. **Stage 2 later completed data generation.** **Stage 3 completed Bronze ingest code** (local parquet tests passed; Databricks still not run). **Stage 4 completed all five Silver quality modules and Silver table orchestration** (local Spark validated). **Stage 5 completed Gold SQL aggregations** (local Spark validated; Databricks Gold not written). **Stage 6 completed dashboard SQL queries and the guide** (local Spark validated; Databricks SQL Dashboard UI not rendered). Still out of scope until requested:
+That stage did not implement generation or the pipeline. Later stages completed data generation, Bronze, Silver, Gold, dashboard queries, local Spark tests, and a Databricks compatibility **code review**. Still out of scope until requested:
 
 - Databricks SQL Dashboard UI rendering in a workspace
-- Fabricated runtime results, reflection, or debugging stories
-- Final submission audit
+- Databricks cluster / SQL warehouse execution
+- Fabricated runtime results
+- Pushing this repository to GitHub from the audit turn

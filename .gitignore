@@ -43,6 +43,8 @@ desktop.ini
 tmp/
 temp/
 .cache/
+hs_err_pid*
+replay_pid*
 
 # Test / coverage
 .pytest_cache/

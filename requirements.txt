@@ -1,0 +1,6 @@
+# Local Python dependencies for this repository.
+# Databricks Runtime already provides Spark; do not pip-install PySpark onto a cluster.
+#
+# Generator and Spark-free contract tests: standard library only (no extra packages).
+# Local Spark tests and Bronze/Silver/Gold/Dashboard jobs: PySpark 3.5.6 (pulls py4j).
+pyspark==3.5.6

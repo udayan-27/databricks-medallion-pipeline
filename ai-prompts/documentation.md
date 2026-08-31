@@ -247,3 +247,54 @@ No production tests re-run (no code change). Prior relevant suite **203/203 OK**
 ### Final decision
 
 Docs updated so the next Databricks run uses cluster session + Delta + configured paths. Do not start that run until asked.
+
+---
+
+## Prompt 6 — 2026-08-31 — Public repository / production-grade readiness audit
+
+### PROMPT SENT
+
+Perform a public-repository readiness audit before pushing to GitHub (`udayan-27/databricks-medallion-pipeline`). Do not push. Do not rewrite historical Git commits. Do not regenerate Stage 2 datasets. Do not start Databricks execution. Do not add unrelated technologies.
+
+Required work: compare the tree to `DE_C1_REQUIREMENTS.md`; audit `ai-prompts/` and create `ai-prompts/prompt-index.md`; verify seed-42 CSVs without modifying them; scan for secrets and environment-specific files; confirm responsible-AI documentation; review README for a fresh clone; run one sequential relevant unittest process; inspect `git log`; fix documentation inconsistencies (460 vs ~700, five Silver modules, physical vs unique counts, local parquet vs Databricks Delta); write `FINAL_AUDIT.md`; update prompt evidence from real work only; create one audit commit if changes are required.
+
+### AI RESPONSE SUMMARY
+
+Read the canonical requirements and current docs/src/tests/data. Confirmed required assignment files exist and supporting modules (`tests/`, `src/config.py`, local Spark helpers) are justified. CSV SHA-256 and defect counts matched `DATA_GENERATION_NOTES.md`. No Databricks PAT, cloud keys, or `.env` in tracked files. Git history is a staged iteration from init through dashboard and compatibility. Stale status language (placeholder reflection, “Spark tests skipped”, “pipeline not run”) was corrected. Username-bearing Windows temp path in debugging notes was redacted to `%TEMP%\...`. Added `requirements.txt` (`pyspark==3.5.6`), prompt index, README reviewer navigation, and `FINAL_AUDIT.md`.
+
+### ACCEPTED
+
+- Keep Stage 2 CSVs byte-identical; do not regenerate.
+- Keep Windows Spark helpers; they stay off the Databricks path.
+- Index only real prompt interactions (P001–P015).
+- Honest BLOCKED status for Databricks execution and dashboard UI.
+
+### CHANGED
+
+- Filled `reflection.md` and `final-ai-usage-summary.md` from recorded project evidence.
+- README rewritten for a fresh clone (local vs Databricks, config table, navigation).
+- Traceability matrix and workflow files updated so they no longer contradict implemented local tests.
+- `.gitignore` now also ignores JVM crash dumps (`hs_err_pid*`, `replay_pid*`).
+
+### REJECTED
+
+- Pushing to GitHub.
+- Rewriting Git history (including to hide commit-author metadata).
+- Regenerating CSVs or starting Databricks.
+- Adding dbt, Airflow, Terraform, Kafka, SCD2, streaming, or CI platforms.
+- Inventing prompt history or Databricks pass/fail results.
+- Removing `tests/` or local Spark helpers because they are absent from the assignment tree.
+
+### VALIDATION
+
+Dataset read-only check (this cycle): physical 10010 / 100020 / 500; unique 10000 / 100000 / 500; NULL email 50; extra duplicate customers 10; NULL order customer_id 100; NULL order product_id 200; orphan customer_id 50; orphan product_id 30; extra duplicate orders 20; future signups 30; SHA-256 match `DATA_GENERATION_NOTES.md`; emails `@example.com` only.
+
+Sequential unittest (this cycle, one process, project `.venv` Python 3.11.9 + Temurin 17 + PySpark 3.5.6):
+
+`python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v`
+
+→ **Ran 203 tests in 535.902s OK** (0 failed, 0 errors, 0 skipped). Not Databricks.
+
+### FINAL DECISION
+
+Ship the documentation/audit artifacts. Do not push. Databricks remains unexecuted.

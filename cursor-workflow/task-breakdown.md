@@ -110,19 +110,21 @@ Gold QA (prior increment): concurrent/overlapping Spark suites vs sequential. Ro
 
 Databricks compatibility audit (this increment): **code review done**. Local Windows Spark (winutils adapter, parquet, `.venv`, warehouse/`TEMP` isolation) is already gated off the Databricks path. Default table format is `delta`. Catalog/data-path are runtime parameters, not committed names. No `src/` change required. Databricks jobs have **not** been started.
 
-## Stage 9 — Documentation closeout
+## Stage 9 — Documentation closeout (done as part of the public-repository audit)
 
-- README setup that matches reality.
+- README setup that matches local vs Databricks reality.
 - `reflection.md` and `final-ai-usage-summary.md` from real experience.
-- Update `ai-prompts/documentation.md`.
+- `ai-prompts/prompt-index.md` and `ai-prompts/documentation.md` Prompt 6.
+- `FINAL_AUDIT.md`.
 
-## Stage 10 — Submission review
+## Stage 10 — Submission review (public-repo audit done; push not started)
 
-- Verify required file tree.
-- Verify prompt history is complete and non-fabricated.
-- Verify Git history is meaningful.
-- Confirm no secrets.
-- Organizational Git account/email process (not stored as a secret in-repo).
+- Required file tree verified.
+- Prompt history indexed; not fabricated.
+- Git history is staged and descriptive; not squashed.
+- Secrets scan performed (see `FINAL_AUDIT.md`).
+- Organizational Git account/email process still not stored as a secret in-repo.
+- **Do not push** until the user asks. Databricks workspace execution is still not started.
 
 ## Explicitly not started after compatibility audit
 

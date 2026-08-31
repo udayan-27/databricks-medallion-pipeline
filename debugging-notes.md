@@ -167,7 +167,7 @@ The class never reached ingest. The traceback ended in PySpark JVM gateway launc
 pyspark/java_gateway.py launch_gateway
   with open(conn_info_file, "rb") as info:
 PermissionError: [Errno 13] Permission denied:
-  C:\Users\UDAYAN~1\AppData\Local\Temp\tmp38ammwfx\tmpwmg8qj9e
+  %TEMP%\tmp38ammwfx\tmpwmg8qj9e
 ```
 
 Unittest continued. `TestFixtureIngest` started a new Spark session ~3 seconds later and passed. Silver and Gold tests in that same process also passed. Result: **Ran 170 tests in 642.476s FAILED (errors=1)**. The four `TestCommittedSourceIngest` methods were not collected after `setUpClass` failed (174 − 4 = 170).
@@ -236,16 +236,16 @@ Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`. No Gold SQL change.
 
 ## Stage 6 / Dashboard — local query validation (2026-08-31)
 
-### 11. Fresh shell had no JAVA_HOME
+### 15. Fresh shell had no JAVA_HOME
 
 - **Symptom:** `python -m unittest tests.test_dashboard_queries -v` failed in `setUpClass` with `Java not found and JAVA_HOME environment variable is not set` / `JAVA_GATEWAY_EXITED`.
 - **Expected vs actual:** Same local Spark stack as Bronze/Silver/Gold (Temurin 17 + `.venv` PySpark). A new agent shell does not inherit the previous session `JAVA_HOME`.
 - **Root cause:** Environment, not dashboard SQL.
 - **Files changed:** none of `src/dashboard/` for this item.
-- **Action:** Set `JAVA_HOME` to `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot` and prepend `%JAVA_HOME%\bin` as documented in README.
+- **Action:** Set session `JAVA_HOME` to the installed Temurin 17 directory (search `jdk-17*` under the Eclipse Adoptium install root) and prepend `%JAVA_HOME%\bin`, as documented in README. Do not bake a patch-specific path into jobs.
 - **AI suggestion:** rejected as a dashboard logic bug.
 
-### 12. Histogram test `AMBIGUOUS_REFERENCE` on `lifetime_value_actual`
+### 16. Histogram test `AMBIGUOUS_REFERENCE` on `lifetime_value_actual`
 
 - **Symptom:** `test_histogram_uses_gold_customer_population` errored: `Reference lifetime_value_actual is ambiguous` after joining the dashboard result to `gold.revenue_by_customer`.
 - **Expected vs actual:** Dashboard query ran; Top 10, segmentation, and edge tests passed (12 OK). The join compared `lifetime_value_actual` to `total_revenue` without aliases, so Spark saw two Gold `lifetime_value_actual` columns.
@@ -259,7 +259,7 @@ Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`. No Gold SQL change.
 
 Code review only. Databricks was **not** executed. Stage 2 CSVs, Gold SQL, and dashboard business SQL were not changed. No production code change was required.
 
-### 13. Local Windows Spark workarounds must not run on Databricks
+### 17. Local Windows Spark workarounds must not run on Databricks
 
 - **Symptom (prevented):** Local Spark on this Windows machine needs `NoWinutilsRawLocalFileSystem`, isolated warehouse/`TEMP` dirs, `--table-format parquet`, project `.venv`, and `JAVA_HOME`. Copying that stack onto a Databricks cluster would be the wrong runtime.
 - **Expected vs actual:** Databricks must use the cluster `SparkSession`, Delta, and a configured volume/DBFS/S3/ABFSS data path. Review of `src/` matches that split.

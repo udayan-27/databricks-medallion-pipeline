@@ -5,10 +5,10 @@
 | Candidate name | Udayan Mahajan |
 | Exercise | DE C1 Coding Evaluation — Databricks Medallion Pipeline |
 | Primary tools | Cursor, Git, PySpark, Spark SQL / Databricks SQL |
-| Project root | `DE C1 Project-Udayan Mahajan` |
-| Repository intent | Matches the required `databricks-medallion-pipeline` structure at this project root |
+| Project root | local folder that fulfils the required `databricks-medallion-pipeline/` tree |
+| Intended public repository | https://github.com/udayan-27/databricks-medallion-pipeline |
 
-Contact email, organizational Git account, and submission URL are intentionally omitted here until the candidate records them. Do not invent those values.
+Contact email and the organizational Git account used for official submission are intentionally omitted here. Do not invent those values. Git commit author metadata is separate from this file and is not copied here.
 
 ## Ownership
 

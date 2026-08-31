@@ -1,127 +1,164 @@
 # Databricks Medallion Pipeline — E-commerce Sales
 
-This repository is the DE C1 AI Capability Exercise submission. It implements (when complete) a Databricks Medallion Architecture pipeline:
+This repository is the DE C1 AI Capability Exercise submission. It implements a Databricks Medallion Architecture pipeline for **synthetic** e-commerce sales:
 
-`CSV -> Bronze -> Silver -> Gold -> Dashboard`
+`CSV → Bronze (PySpark, raw) → Silver (PySpark, five quality modules) → Gold (SQL) → Dashboard queries`
 
-Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** **All five Silver quality modules and Silver table orchestration are implemented** (local Spark / parquet). **Gold SQL aggregations and `create_gold_tables.py` are implemented** (local Spark / parquet). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` are implemented** (local Spark / parquet). A Databricks SQL dashboard has **not** been rendered. Bronze/Silver/Gold tables have **not** been created in a Databricks workspace from this environment.
+Local Spark / parquet tests have been run. **Databricks, Delta, Unity Catalog, and a Databricks SQL dashboard have not been executed from this environment.** Do not read local results as Databricks results.
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
+
+## Reviewer navigation
+
+| Topic | Where |
+|---|---|
+| Assignment requirements | [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md) |
+| Ambiguities and decisions | [`requirements-analysis.md`](requirements-analysis.md) |
+| Architecture | [`design-notes.md`](design-notes.md) |
+| Column contracts | [`data-model.md`](data-model.md) |
+| Silver quality rules | [`data-quality-strategy.md`](data-quality-strategy.md) |
+| Prompt history | [`ai-prompts/prompt-index.md`](ai-prompts/prompt-index.md) |
+| Tests | [`tests/`](tests/) |
+| Debugging | [`debugging-notes.md`](debugging-notes.md) |
+| Databricks setup (not executed) | [`database/setup-notes.md`](database/setup-notes.md) |
+| Dashboard workspace steps | [`src/dashboard/DASHBOARD_GUIDE.md`](src/dashboard/DASHBOARD_GUIDE.md) |
+| Public-repo audit | [`FINAL_AUDIT.md`](FINAL_AUDIT.md) |
+| Reflection / AI usage | [`reflection.md`](reflection.md), [`final-ai-usage-summary.md`](final-ai-usage-summary.md) |
 
 ## Status
 
 | Area | Status |
 |---|---|
-| Repository structure | Initialized |
-| Requirements analysis, architecture, data model, DQ strategy | Written (design stage) |
-| Sample CSV data | Generated (10,010 / 100,020 / 500 rows; seed 42) |
-| Bronze ingest code | Implemented (`src/bronze/`, `src/config.py`) |
-| Local Spark runtime | Python 3.11 `.venv` + Temurin JDK 17 + PySpark 3.5.6 (isolated from system Python 3.12) |
-| Local Spark validation | In-memory smoke **passed**. Local parquet Bronze ingest tests **passed** (21/21). Silver Spark tests **passed** (55/55). Gold Spark tests **passed** (16/16 aggregations + 11/11 contract). Not Databricks. |
-| Bronze Databricks / Delta / Unity Catalog | **Not run** from this environment |
-| Silver completeness / uniqueness / type / RI / business logic | Implemented (`src/silver/01_quality_completeness.py` through `05_quality_business_logic.py`, `quality_common.py`, `create_silver_tables.py`). Local Spark validated. Combined Silver tables written in tests as parquet. |
-| Gold aggregations | Implemented (`src/gold/01_sales_by_product.sql` through `04_customer_segmentation.sql`, `create_gold_tables.py`). Local Spark / parquet validated. Databricks Gold **not** run. |
-| Dashboard | Queries + guide implemented (`src/dashboard/dashboard_queries.sql`, `DASHBOARD_GUIDE.md`). Local Spark query tests against Gold parquet. Databricks SQL Dashboard UI **not** rendered. |
-| Databricks compatibility audit | **Code review complete.** Local Windows Spark workarounds are gated off the Databricks path. Runtime catalog/data-path remain placeholders. Databricks execution has **not** started. |
-| Tests | Generator **14/14 OK**; Bronze contract **38/38 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; Dashboard contract **15/15 OK**; Dashboard Spark **13/13 OK**. Sequential generator/Bronze/Silver **148/148 OK**; sequential Gold **27/27 OK**; sequential Dashboard **28/28 OK**; combined relevant **203/203 OK** (0 failed, 0 errors, 0 skipped) in **548.539s**. |
-
-Completeness, uniqueness, type validation, RI, and business logic run on Bronze DataFrames locally. `create_silver_tables.py` writes combined Silver tables and `silver.quality_metrics` (local parquet in tests). `create_gold_tables.py` executes the Gold SQL files against Silver and overwrites Gold tables (local parquet in tests). The CSVs in `data/` are real generated inputs.
+| Repository structure | Required assignment tree plus tests, config, and local Spark helpers |
+| Requirements, architecture, data model, DQ strategy | Written and frozen |
+| Sample CSV data | Generated (seed **42**). Physical rows **10,010 / 100,020 / 500**. Unique keys **10,000 / 100,000 / 500**. Do not regenerate. |
+| Bronze ingest | Implemented. Local parquet tests passed. Databricks / Delta / UC **not** run. |
+| Silver (all five modules + combiner) | Implemented. Local parquet tests passed. Databricks Silver **not** run. |
+| Gold SQL aggregations | Implemented. Local parquet tests passed. Databricks Gold **not** run. |
+| Dashboard | Queries + guide implemented and locally tested. Databricks SQL Dashboard UI **not** rendered. |
+| Databricks compatibility | Code review complete. Local Windows Spark workarounds are gated off the cluster path. Execution has **not** started. |
 
 ## What this exercise evaluates
 
-The submission must demonstrate requirement analysis, architecture, AI-assisted implementation, data quality engineering, testing, validation of AI output, debugging, documentation, responsible AI usage, human ownership of technical decisions, meaningful Git history, and complete AI prompt history.
+Requirement analysis, architecture, AI-assisted implementation with recorded prompts, data-quality engineering, testing, validation of AI output, debugging, documentation, responsible AI, human ownership of decisions, and meaningful Git history.
 
-## Layers
+## Architecture
 
-- **Bronze:** raw, unchanged CSV ingest into `bronze.customers`, `bronze.orders`, `bronze.products`, plus append-only `bronze.ingest_metadata`. Source columns are not cleaned. `_ingest_row_id` is ingest lineage (unique per physical row of a write; regenerated each run).
-- **Silver:** five quality modules (completeness, uniqueness, type validation, referential integrity, business logic). Bad rows are flagged, not deleted. **All five modules plus `create_silver_tables.py` are implemented.** They preserve every Bronze physical row and write combined `quality_check_result` / `failed_checks` plus `silver.quality_metrics`. Local parquet validated; Databricks Silver is **not** run.
-- **Gold:** business aggregations in SQL (sales by product, revenue by customer, daily/weekly trends, customer segmentation). **Implemented.** Qualifying orders: `order_status = 'Completed' AND quality_check_result = 'PASS'`. Local parquet validated; Databricks Gold is **not** run.
-- **Dashboard:** Databricks SQL dashboard queries for three required tiles (bar / histogram / pie) plus two Gold-field filters. **Queries implemented and locally tested.** Databricks SQL Dashboard UI has **not** been rendered from this environment. See `src/dashboard/DASHBOARD_GUIDE.md`.
+```
+data/*.csv  (or MEDALLION_DATA_PATH on DBFS / S3 / UC Volume)
+    → Bronze  bronze.customers | bronze.orders | bronze.products  + bronze.ingest_metadata
+    → Silver  five quality modules → silver.* + silver.quality_metrics
+    → Gold    sales_by_product, revenue_by_customer, daily_trends, weekly_trends, customer_segmentation
+    → Dashboard queries against Gold only
+```
+
+- **Bronze:** raw CSV ingest. Source columns are not cleaned. `_ingest_row_id` is ingest lineage (unique per physical row of a write; regenerated each run).
+- **Silver:** completeness, uniqueness, type validation, referential integrity, business logic. Bad rows are **flagged, not deleted**. Combined `quality_check_result` / `failed_checks`.
+- **Gold:** qualifying orders are `order_status = 'Completed' AND quality_check_result = 'PASS'`. `lifetime_value_actual` is qualifying order revenue, **not** source `customers.lifetime_value`.
+- **Dashboard:** Top 10 products (bar), customer revenue distribution (histogram), customer segmentation (pie), plus two Gold-field filters.
+
+## Frozen requirement interpretations
+
+- Listed defects total **460 issue instances**. Do not pad to ~700.
+- Implement **all five** Silver modules (the narrative says four; the required tree lists five).
+- Physical customers **10,010** (10,000 unique + 10 extra duplicate rows). Physical orders **100,020** (100,000 unique + 20 extra duplicate rows). Products **500**.
+- **30 future signup** records are optional business-logic defects, documented separately from the 460.
+- Local Spark writes **parquet**. Databricks default is **Delta**.
 
 ## Repository layout
 
-See `cursor-workflow/spec.md` and `cursor-workflow/task-breakdown.md` for the staged plan. Required paths match `DE_C1_REQUIREMENTS.md`.
+Required assignment paths are present. Supporting modules that the assignment omitted but the work needs:
 
-## Setup
+| Path | Role |
+|---|---|
+| `src/config.py` | `MEDALLION_DATA_PATH`, `MEDALLION_CATALOG`, schema names, `MEDALLION_TABLE_FORMAT` |
+| `src/bronze/ingest_core.py`, `contracts.py` | Shared ingest (numbered `01_` scripts are thin CLIs) |
+| `src/silver/quality_common.py` | Shared quality accumulation |
+| `src/spark_local.py`, `src/local_runtime/` | Local Windows Spark only; not used on Databricks |
+| `tests/` | Contract tests (no Spark) and Spark integration tests |
+| `requirements.txt` | Pin `pyspark==3.5.6` for local setup |
 
-### Sample data
+## Local vs Databricks
 
-From the repository root (Python 3.12 used when this was run):
+| | Local (this machine / a fresh clone) | Databricks |
+|---|---|---|
+| Python | 3.11 virtualenv | Databricks Runtime Python |
+| JDK | 17 (Temurin or equivalent) | Cluster JDK |
+| Spark | PySpark **3.5.6** from `requirements.txt` | Cluster Spark |
+| Table format | `--table-format parquet` | omit the flag (default **delta**) |
+| Data path | repo `data/` | UC Volume / DBFS / S3 / ABFSS via `MEDALLION_DATA_PATH` |
+| Catalog | unset (Hive metastore names `bronze.customers`) | `MEDALLION_CATALOG` at runtime |
+| SparkSession | created locally; Windows FileSystem adapter may apply | **reuse the cluster session** |
+| Do not copy | `.venv`, winutils, laptop `JAVA_HOME`, parquet flag | — |
+
+Databricks execution from this repository: **not started**.
+
+## Prerequisites (fresh clone)
+
+### Generator and Spark-free tests
+
+Python 3.11 or 3.12 is enough. No extra packages.
 
 ```
 python src/data_generation/generate_sample_data.py --output-dir data --seed 42
 python -m unittest tests.test_generate_sample_data -v
 ```
 
-Default seed is **42**. The default `--output-dir` is the repo `data/` directory (resolved from the script path, not a hardcoded Windows or Databricks path). Same seed produces byte-identical UTF-8/LF CSVs. See `src/data_generation/DATA_GENERATION_NOTES.md`.
+**Do not regenerate** the committed `data/*.csv` files unless the seed or contract changes. They are required submission artifacts (seed 42, as-of 2026-08-31, ROUND_HALF_EVEN money rounding). SHA-256 values are in [`src/data_generation/DATA_GENERATION_NOTES.md`](src/data_generation/DATA_GENERATION_NOTES.md).
 
-Do not regenerate these files unless the seed or contract changes.
+### Local Spark (Bronze / Silver / Gold / Dashboard query tests)
 
-### Bronze ingest
+From the repository root:
 
-Configuration (no secrets in git):
+```
+py -3.11 -m venv .venv
+```
+
+Windows:
+
+```
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+$env:JAVA_HOME = (Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object { $_.Name -like "jdk-17*" } | Select-Object -First 1).FullName
+$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+$env:PYSPARK_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
+```
+
+macOS / Linux: create the venv with Python 3.11, `pip install -r requirements.txt`, point `JAVA_HOME` at a JDK 17 install, then use `export PYSPARK_PYTHON=$(pwd)/.venv/bin/python`.
+
+Do **not** install delta-spark, pandas, winutils, or PySpark into system Python. Default `--table-format` remains `delta` for Databricks. Local validation passes `--table-format parquet`. On Windows, locally created SparkSessions compile `src/local_runtime/NoWinutilsRawLocalFileSystem.java` so parquet `saveAsTable` does not need winutils.
+
+## Configuration
+
+No secrets in git. `.venv/` and `.env` are gitignored.
 
 | Setting | Purpose | Default |
 |---|---|---|
 | `MEDALLION_DATA_PATH` / `--data-path` | Directory containing the three CSVs | `<repo>/data` |
-| `MEDALLION_CATALOG` / `--catalog` | Unity Catalog name | unset (tables are `bronze.<entity>`) |
-| `MEDALLION_BRONZE_SCHEMA` / `--bronze-schema` | Schema name | `bronze` |
+| `MEDALLION_CATALOG` / `--catalog` | Unity Catalog name | unset |
+| `MEDALLION_BRONZE_SCHEMA` / `--bronze-schema` | Bronze schema | `bronze` |
+| `MEDALLION_SILVER_SCHEMA` / `--silver-schema` | Silver schema | `silver` |
+| `MEDALLION_GOLD_SCHEMA` / `--gold-schema` | Gold schema | `gold` |
 | `MEDALLION_TABLE_FORMAT` / `--table-format` | `delta` or `parquet` | `delta` |
 
-**Databricks:** run on a cluster with an active SparkSession. Point `MEDALLION_DATA_PATH` at a UC volume, DBFS, S3, or ABFSS prefix that contains `customers.csv`, `orders.csv`, and `products.csv`. Set `MEDALLION_CATALOG` at runtime if using Unity Catalog (do not commit a workspace catalog name). Default format `delta` is the Databricks path. Do **not** copy the local Windows stack: no project `.venv`, winutils, `JAVA_HOME` from this laptop, or `--table-format parquet`. Runtime parameter checklist: `database/setup-notes.md`.
+## Execution
+
+Run **one** Spark job or unittest process at a time. Concurrent Spark processes are unsupported on Windows.
+
+### Bronze
 
 ```
-python src/bronze/ingest_all.py --data-path /Volumes/<catalog>/<schema>/<volume>
+python src/bronze/ingest_all.py --table-format parquet
 ```
 
-Individual datasets: `python src/bronze/01_ingest_customers.py` (same flags). `ingest_all.py` preflights all three files, then overwrites the three entity tables and appends three metadata rows sharing one `ingest_id`.
+Databricks (after copying CSVs to a volume): `python src/bronze/ingest_all.py --data-path /Volumes/<catalog>/<schema>/<volume>` — omit `--table-format`. Individual datasets: `python src/bronze/01_ingest_customers.py` (same flags). `ingest_all.py` preflights all three files, overwrites the three entity tables, and appends three metadata rows sharing one `ingest_id`.
 
-**Local Spark (this machine):** an isolated project `.venv` is used so PySpark is not installed into system Python 3.12 (or 3.7). `.gitignore` already ignores `.venv/`.
+Rerun: entity tables overwrite; `_ingest_row_id` values change; `bronze.ingest_metadata` appends.
 
-| Component | Actual |
-|---|---|
-| Python for Spark | 3.11.9 (`py -3.11`), venv `.venv\Scripts\python.exe` |
-| System Python | 3.12.7 (unchanged; no PySpark) |
-| JDK | Eclipse Temurin 17.0.20.1 (locate the installed `jdk-17*-hotspot` directory; do not assume a patch path) |
-| PySpark | 3.5.6 inside `.venv` only (`py4j==0.10.9.7` came in as its dependency) |
+### Silver
 
-Create and use the venv from the repo root:
-
-```
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install "pyspark==3.5.6"
-$env:JAVA_HOME = (Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory | Where-Object { $_.Name -like "jdk-17*" } | Select-Object -First 1).FullName
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
-$env:PYSPARK_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
-python -m unittest tests.test_bronze_ingest -v
-```
-
-Do **not** install delta-spark, pandas, pyarrow, Jupyter, standalone Spark, or Hadoop/winutils for this stack. Default `--table-format` is still `delta` (Databricks). Local validation uses `--table-format parquet`. On Windows, locally created SparkSessions compile `src/local_runtime/NoWinutilsRawLocalFileSystem.java` so parquet `saveAsTable` does not need winutils; Databricks uses the cluster session and never loads that class.
-
-**What this environment actually proved (2026-08-31):**
-
-- `createDataFrame` + `count()` + `collect()` + `stop()` in `local[2]` **succeeded**.
-- `python -m unittest tests.test_bronze_contract -v` → **37 tests OK**.
-- `python -m unittest tests.test_bronze_ingest -v` → **21 tests OK** (full source vs Bronze: 10010 / 100020 / 500; duplicates, NULLs, and orphans retained).
-- Combined: `python -m unittest tests.test_bronze_contract tests.test_bronze_ingest -v` → **58 tests OK**.
-- Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`.
-- None of the above is Databricks, Delta, DBFS, or Unity Catalog validation. See `debugging-notes.md`.
-
-**Rerun:** entity tables overwrite from the current CSVs; `_ingest_row_id` values change; `bronze.ingest_metadata` appends. Do not run overlapping jobs.
-
-### Silver quality modules and tables
-
-These modules read Bronze DataFrames (or already-written Bronze tables) and **add** quality columns. They do not delete rows. `create_silver_tables.py` runs all five modules, combines flags on `_ingest_row_id`, and writes `silver.customers` / `orders` / `products` plus `silver.quality_metrics`.
-
-| Setting | Purpose | Default |
-|---|---|---|
-| `--bronze-schema` | Schema of the Bronze tables to read | `bronze` |
-| `--silver-schema` | Schema of the Silver tables to write | `silver` |
-| `--table-format` | Must match the Bronze write format | `delta` (use `parquet` locally) |
-
-After a local Bronze parquet ingest:
+Modules add quality columns. They do not delete rows. Then write combined Silver tables:
 
 ```
 python src/silver/01_quality_completeness.py --table-format parquet
@@ -132,103 +169,80 @@ python src/silver/05_quality_business_logic.py --table-format parquet
 python src/silver/create_silver_tables.py --table-format parquet
 ```
 
-Observed local counts on seed-42 data: 50 NULL emails, 100 NULL order `customer_id`, 200 NULL order `product_id`, 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows, **0 type failures**, **50 orphan customer_id**, **30 orphan product_id**, **30 future signup** business-logic failures (optional; not in the 460), **0** other frozen business-rule failures (`order_not_before_signup` = 0). Rows remain (10,010 / 100,020 / 500). Combined customer FAIL rows = 100; order FAIL rows = 420 (disjoint classes on this seed). Malformed type cases use `tests/fixtures/silver/type_validation/`. Business-rule cases use `tests/fixtures/silver/business_logic/`.
+Observed local counts on seed-42 data: 50 NULL emails, 100 NULL order `customer_id`, 200 NULL order `product_id`, 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows, **0 type failures**, **50 orphan customer_id**, **30 orphan product_id**, **30 future signup** business-logic failures (optional; not in the 460). Combined customer FAIL rows = 100; order FAIL rows = 420. Physical rows remain 10,010 / 100,020 / 500.
 
-Tests (same local Spark stack as Bronze):
-
-```
-python -m unittest tests.test_silver_contract -v
-python -m unittest tests.test_silver_quality -v
-```
-
-Run **one Spark unittest process at a time**. A second concurrent full suite can fail during Spark JVM gateway launch on Windows (`PermissionError` on a Py4J temp connection-info file). That is an environment/concurrency issue, not a Bronze/Silver/Gold logic failure. Sequential isolation uses a unique warehouse and `spark.local.dir` per test class; it does not make overlapping suites supported. See `debugging-notes.md`.
-
-### Gold aggregations
-
-Gold reads Silver only. Eligibility is explicit in each SQL file:
-
-`order_status = 'Completed' AND quality_check_result = 'PASS'`
-
-`lifetime_value_actual` is the customer's qualifying order revenue, not source `customers.lifetime_value`. `revenue_by_customer` includes every canonical customer (including zero qualifying orders). Segmentation uses Inactive → High-Value (>= 1000.00) → Repeat → One-Time.
-
-| Setting | Purpose | Default |
-|---|---|---|
-| `--silver-schema` | Schema of the Silver tables to read | `silver` |
-| `--gold-schema` | Schema of the Gold tables to write | `gold` |
-| `--table-format` | Must match the Silver write format | `delta` (use `parquet` locally) |
-| `--catalog` | Unity Catalog name | unset |
-
-After a local Bronze + Silver parquet run:
+### Gold
 
 ```
 python src/gold/create_gold_tables.py --table-format parquet
 ```
 
-Tests (same local Spark stack):
-
-```
-python -m unittest tests.test_gold_contract -v
-python -m unittest tests.test_gold_aggregations -v
-```
-
-Or one sequential relevant suite (do not start a second copy while this is running):
-
-```
-python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
-```
-
-Observed local fixture reconciliation: 17 qualifying orders, revenue 3330.00; duplicate order copies, NULL/orphan FKs, and FAIL rows excluded. Seed-42: Gold product/customer/daily/weekly/segment totals match eligible Silver; 10,000 canonical customers. Databricks Gold tables have **not** been written.
+Eligibility is in each SQL file: `order_status = 'Completed' AND quality_check_result = 'PASS'`. Segmentation: Inactive → High-Value (>= 1000.00) → Repeat → One-Time. `revenue_by_customer` includes every canonical customer, including zeros.
 
 ### Dashboard queries
 
-Dashboard datasets read Gold only. Queries live in `src/dashboard/dashboard_queries.sql`. Workspace click-path, viz types, histogram binning, and filters are in `src/dashboard/DASHBOARD_GUIDE.md`.
+SQL: [`src/dashboard/dashboard_queries.sql`](src/dashboard/dashboard_queries.sql). Workspace click-path: [`src/dashboard/DASHBOARD_GUIDE.md`](src/dashboard/DASHBOARD_GUIDE.md).
 
 | Tile | Gold table | Visualization |
 |---|---|---|
 | Top 10 products by revenue | `gold.sales_by_product` | bar |
-| Customer revenue distribution | `gold.revenue_by_customer` (`lifetime_value_actual`, all canonical customers including zeros) | histogram (bins in the Databricks viz, not SQL) |
+| Customer revenue distribution | `gold.revenue_by_customer.lifetime_value_actual` (all canonical customers, including zeros) | histogram (bins in the Databricks viz, not SQL) |
 | Customer segmentation | `gold.customer_segmentation` | pie |
 
-Filters (Gold fields only): `category` on Tile 1 as a query parameter **before** `LIMIT 10`; `customer_segment` on Tile 2. Date range is not a filter on these tiles (no date grain on those Gold tables).
+Filters: `category` on Tile 1 **before** `LIMIT 10`; `customer_segment` on Tile 2. Date range is not a filter on these tiles.
 
-Local tests:
+## Tests
 
-```
-python -m unittest tests.test_dashboard_contract -v
-python -m unittest tests.test_dashboard_queries -v
-```
-
-Or one sequential relevant suite (do not start a second copy while this is running):
-
-```
-python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
-```
-
-A Databricks SQL dashboard has **not** been created or rendered from this environment. Local `spark.sql` against parquet is not Databricks SQL / Delta / Unity Catalog validation.
-
-This cycle’s sequential full suite: **Ran 203 tests in 548.539s OK**.
-
-### Tests that run without Spark
+Spark-free:
 
 ```
 python -m unittest tests.test_bronze_contract tests.test_silver_contract tests.test_gold_contract tests.test_dashboard_contract -v
 ```
 
-No real PII, credentials, secrets, tokens, or private production connection details belong in this repository.
+Full relevant suite (**one process**; do not start a second copy):
+
+```
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
+```
+
+| Suite | Tests |
+|---|---|
+| Generator | 14 |
+| Bronze contract | 38 |
+| Bronze Spark ingest | 21 |
+| Silver contract | 20 |
+| Silver Spark | 55 |
+| Gold contract | 11 |
+| Gold Spark | 16 |
+| Dashboard contract | 15 |
+| Dashboard Spark | 13 |
+| **Total relevant** | **203** |
+
+Latest sequential full-suite result is recorded in [`FINAL_AUDIT.md`](FINAL_AUDIT.md) after the public-repository audit run. Do not treat an older prompt-file timing as the current result.
+
+A second concurrent full suite can fail during Spark JVM gateway launch on Windows. That is an environment issue, not a pipeline logic failure. See [`debugging-notes.md`](debugging-notes.md).
+
+## Local limitations
+
+- No winutils. Windows parquet writes use a project Java FileSystem **only** for locally created sessions (`os.name == "nt"`).
+- Repo path spaces produce a non-fatal `'C1' is not recognized` warning from `spark-submit.cmd`. Tests still run.
+- Local warehouse / `metastore_db` / parquet files are gitignored. They are not submission artifacts.
+- Histogram binning, dashboard widgets, and Unity Catalog grants require a Databricks workspace.
+
+## Expected quality checks (seed 42)
+
+Mandatory listed issues (460 instances): 50 NULL emails; 10 extra duplicate customers; 100 NULL order `customer_id`; 200 NULL order `product_id`; 50 orphan `customer_id`; 30 orphan `product_id`; 20 extra duplicate orders.
+
+Uniqueness flags **all copies** (20 customer rows, 40 order rows). Optional 30 future signups are separate. Type failures on committed data: 0.
+
+## AI workflow artifacts
+
+Prompt history lives under [`ai-prompts/`](ai-prompts/). Start at [`ai-prompts/prompt-index.md`](ai-prompts/prompt-index.md). Entries record prompt, response summary, accept/change/reject, validation, and final decision. They are not fabricated.
+
+## Responsible AI
+
+Data is synthetic. No real customer PII, credentials, tokens, or production connection details belong in this repository or in AI prompts. See [`tool-workflow.md`](tool-workflow.md).
 
 ## Working rules
 
 Every meaningful change must be derived from the written spec, tested, reviewed against requirements, recorded in `ai-prompts/`, and committed with a descriptive message.
-
-## Documentation map
-
-- `requirements-analysis.md` — problem, requirements, ambiguities, decisions
-- `design-notes.md` — architecture decisions
-- `data-model.md` — Bronze / Silver / Gold contracts
-- `data-quality-strategy.md` — quality checks and metrics
-- `cursor-workflow/` — persistent context for Cursor-assisted work
-- `ai-prompts/` — actual prompt history (not fabricated)
-- `src/bronze/ingest_core.py` — Bronze CSV options, lineage, local vs Databricks, rerun behaviour
-- `src/silver/quality_common.py` — shared Silver accumulation and physical-row metrics helpers
-- `src/dashboard/dashboard_queries.sql` — Gold-only tile queries and filter-value lookups
-- `src/dashboard/DASHBOARD_GUIDE.md` — workspace steps; local vs Databricks
