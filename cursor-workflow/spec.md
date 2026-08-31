@@ -20,7 +20,7 @@ Build, in later stages, a Databricks Medallion pipeline:
 5. Provide dashboard SQL and setup guide.
 6. Document, test, and record AI usage.
 
-Those stages are now implemented and locally tested. This spec remains the binding contract. The official Databricks process is `src/databricks/run_pipeline.py`. Workspace execution is still out of scope until requested.
+Those stages are now implemented and locally tested. This spec remains the binding contract. The official Databricks process is `src/databricks/run_pipeline.py` and **has been executed** in the workspace (bootstrap/source, Bronze, Silver, Gold, and dashboard SQL all PASS). Visual dashboard rendering is a separate Databricks SQL UI operation and was completed manually. See `FINAL_AUDIT.md`.
 
 Out of scope: streaming, Autoloader, SCD2, dbt, Great Expectations, quarantine tables, production deployment.
 

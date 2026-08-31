@@ -26,6 +26,7 @@ Cursor was the AI tool. Git, unittest, local PySpark, and the repository Databri
 | Databricks workflow redesign | documentation Prompt 7 / bronze, silver, gold, dashboard, debugging / P016 | `src/databricks/` bootstrap + validate + `run_pipeline.py`; existing modules remain the transform source of truth; that turn did **not** execute Databricks |
 | Repository closeout | documentation Prompt 8 / bronze, silver, gold, dashboard, debugging / P017 | Record actual workspace PASS results and the published dashboard; docs only; pipeline/Gold/dashboard SQL unchanged |
 | Dashboard definition export | `ai-prompts/dashboard.md` Prompt 4 / documentation Prompt 9 / P018 | Read-only CLI export of the published Lakeview `.lvdash.json`; structural tests; no live-dashboard change |
+| Final evidence / ownership freeze | documentation Prompt 10 / P019 | Stale current-status wording removed; prompt-history scan format; candidate-info without extra personal data; one docs commit; not pushed |
 
 Index: `ai-prompts/prompt-index.md`.
 
@@ -62,4 +63,4 @@ See `tool-workflow.md`.
 
 ## What remains outside AI-usage claims
 
-Local Spark/parquet tests are not Databricks. The `src/databricks/` workflow **was** executed in a workspace; those PASS counts are Databricks evidence. Visual dashboard rendering remains a human UI operation. Remaining submission steps are git push (when asked) and the organizational account/email process.
+Local Spark/parquet tests are not Databricks. The `src/databricks/` workflow **was** executed in a workspace; those PASS counts are Databricks evidence. Visual dashboard rendering remains a human UI operation. Remaining submission steps are: push this documentation freeze commit when asked (do not force-push), and submit the repository using the required organizational/TTN account and email process.

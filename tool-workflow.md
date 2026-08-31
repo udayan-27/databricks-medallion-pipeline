@@ -32,6 +32,7 @@ This project is developed in Cursor with Git history and written specifications 
 - Putting real PII, credentials, secrets, passwords, tokens, or private production connection details into the repo or prompts
 - Shallow one-line prompts as the only AI usage evidence
 - Claiming local Spark/parquet results are Databricks / Delta / Unity Catalog results
+- Claiming Cursor performed Databricks OAuth or created the visual dashboard tiles
 
 ## Prompt-history standard
 
@@ -47,8 +48,37 @@ Index: `ai-prompts/prompt-index.md`.
 - **Production connection details were not supplied.** Catalog, data path, and table format are runtime configuration (`MEDALLION_CATALOG`, `MEDALLION_DATA_PATH`, `MEDALLION_TABLE_FORMAT`).
 - **Sensitive information would be excluded from future AI prompts.** Workspace URLs, tokens, and real PII stay out of `ai-prompts/` and source.
 
-This is a description of what this repository contains and how prompts were written. It is not a claim that a Databricks workspace was used.
+This section describes how prompts and repository contents were kept free of secrets and real PII. Databricks workspace execution evidence is recorded separately in `FINAL_AUDIT.md` and is not implied or denied by this responsible-AI section.
 
-## Current state
+## Ownership (AI vs human)
 
-Requirements, design, seed-42 data, Bronze, all five Silver modules, Gold SQL, dashboard queries, local Spark tests, a Databricks compatibility **code review**, and a repository-owned Databricks **bootstrap/validation workflow** (`src/databricks/`) are done. A Databricks cluster/SQL warehouse run of that workflow and a Databricks SQL dashboard UI have **not** been executed.
+Cursor/AI was used for requirement decomposition, architecture/design, data generation, pipeline implementation, testing, debugging, dashboard SQL, Databricks automation, dashboard-definition export automation, and documentation/auditing.
+
+Human ownership included interpreting ambiguities, accepting or rejecting AI proposals, deciding quality-rule semantics, approving fixes, validating test results, performing Databricks account authentication (OAuth browser step), and performing the visual dashboard creation/publishing UI action.
+
+Honest examples of AI ideas that were rejected or constrained (already documented; not invented for this file): padding defects to ~700, Faker/pandas/dbt, winutils, default catalog `main`, using source `lifetime_value` as `lifetime_value_actual`, last-writer quality flags, claiming Cursor rendered the dashboard.
+
+## Current status (final)
+
+Unambiguous final state of this repository:
+
+- Requirements, design, seed-42 data, Bronze, all five Silver modules, Gold SQL, dashboard queries, local Spark tests, Databricks compatibility code review, and the repository-owned Databricks bootstrap/validation workflow (`src/databricks/`) are complete.
+- The Databricks workflow **was actually executed** in the workspace: `python src/databricks/run_pipeline.py`.
+- Bootstrap/source validation **PASS**.
+- Bronze **PASS** in Databricks.
+- Silver **PASS** in Databricks.
+- Gold **PASS** in Databricks.
+- Dashboard SQL validation **PASS**.
+- The actual Databricks SQL dashboard **DE C1 E-Commerce Sales Dashboard** was created and published **manually** in the Databricks UI. Cursor did not generate the visual tiles.
+- The real `.lvdash.json` was exported read-only and is version-controlled in `dashboards/`.
+- Dashboard sharing is account-scoped (**Anyone in my account can view**). That is **not** public internet access.
+
+Local Spark/parquet tests remain a separate evidence class from Databricks. Visual tile rendering remains a human UI operation.
+
+## Historical evolution (do not treat as current status)
+
+The following was true at an earlier project stage (after the Databricks automation code existed, before the workspace run and published dashboard):
+
+> A Databricks cluster/SQL warehouse run of that workflow and a Databricks SQL dashboard UI have **not** been executed.
+
+That statement is preserved here as chronology. It is **not** the current status. Workspace execution and the published dashboard were recorded later (P017 / P018).

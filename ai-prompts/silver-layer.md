@@ -1,6 +1,8 @@
 # Silver-layer prompts
 
-## Prompt 1 — Stage 4 Silver completeness and uniqueness (first increment)
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording that Databricks was not yet executed was true at that prompt’s time. Current status is in `tool-workflow.md` and `FINAL_AUDIT.md`.
+
+## P008 — Stage 4 Silver completeness and uniqueness (first increment)
 
 ### PROMPT SENT
 
@@ -96,7 +98,11 @@ No Silver runtime defect required a code fix after the first passing run. A pre-
 
 Accept this increment. Completeness and uniqueness are implemented and locally validated. Type / RI / business logic / Silver orchestration / Gold / Dashboard remain stubs. Commit: `feat: add Silver completeness and uniqueness validation`.
 
-## Prompt 2 — Stage 4 Silver type validation and referential integrity
+### COMMIT / ARTIFACT
+
+`cfc71d5` — `feat: add Silver completeness and uniqueness validation`. Files: `src/silver/01_quality_completeness.py`, `src/silver/02_quality_uniqueness.py`, `src/silver/quality_common.py`, Silver tests.
+
+## P009 — Stage 4 Silver type validation and referential integrity
 
 ### PROMPT SENT
 
@@ -186,7 +192,11 @@ Adversarial review (duplicate parents, NULL FKs, orphans, empty child dataset, a
 
 Accept this increment. Type validation and referential integrity are implemented and locally validated. Business logic / Silver orchestration / Gold / Dashboard remain stubs. Commit: `feat: add Silver type and referential integrity validation`.
 
-## Prompt 3 — Stage 4 Silver business logic, orchestration, and metrics
+### COMMIT / ARTIFACT
+
+`6925aca` — `feat: add Silver type and referential integrity validation`. Files: `src/silver/03_quality_type_validation.py`, `src/silver/04_quality_referential_integrity.py`, `src/silver/quality_common.py`, Silver tests.
+
+## P010 — Stage 4 Silver business logic, orchestration, and metrics
 
 ### PROMPT SENT
 
@@ -254,9 +264,13 @@ Debugging cycle (real): (1) canonical-parent window originally partitioned on pr
 
 Accept this increment. Silver is complete locally. Gold / Dashboard remain stubs. Databricks / Delta / UC still not run. Commit: `feat: complete Silver quality validation pipeline`.
 
+### COMMIT / ARTIFACT
+
+`99a5ad7` — `feat: complete Silver quality validation pipeline`. Files: `src/silver/05_quality_business_logic.py`, `src/silver/create_silver_tables.py`, Silver tests.
+
 ---
 
-## Prompt 4 — 2026-08-31 — Databricks workflow reuses existing Silver modules
+## P016 — 2026-08-31 — Databricks workflow reuses existing Silver modules
 
 ### PROMPT SENT
 
@@ -286,9 +300,13 @@ P016 sequential suite **223/223 OK**. Silver Spark tests unchanged.
 
 Silver application code stays the source of truth.
 
+### COMMIT / ARTIFACT
+
+`063854b` — `feat: automate Databricks environment and pipeline validation`. Silver quality modules unchanged. Duplicate log: `ai-prompts/documentation.md` P016.
+
 ---
 
-## Prompt 5 — 2026-08-31 — Closeout: Databricks Silver PASS (no Silver code change)
+## P017 — 2026-08-31 — Closeout: Databricks Silver PASS (no Silver code change)
 
 ### PROMPT SENT
 
@@ -317,3 +335,7 @@ Local closeout suite **223/223 OK**. Databricks Silver PASS is the candidate’s
 ### FINAL DECISION
 
 Silver application code stays the source of truth. Databricks Silver is complete.
+
+### COMMIT / ARTIFACT
+
+`ead99e1` — `docs: close out Databricks validation and dashboard`. Silver source unchanged. Workspace Silver PASS recorded from the candidate’s `run_pipeline.py` run.

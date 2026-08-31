@@ -1,6 +1,8 @@
 # Gold-layer prompts
 
-## Prompt 1 — Stage 5 Gold analytical aggregations
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording that Databricks was not yet executed was true at that prompt’s time. Current status is in `tool-workflow.md` and `FINAL_AUDIT.md`.
+
+## P011 — Stage 5 Gold analytical aggregations
 
 ### PROMPT SENT
 
@@ -101,13 +103,48 @@ First Gold Spark run had 6 errors (stale parquet readers after overwrite; overwr
 
 Gold SQL aggregations and `create_gold_tables.py` are implemented against the frozen Completed+PASS contract. Local Spark/parquet tests pass. Databricks/Delta/UC Gold tables have **not** been written. Dashboard is not started.
 
-## Prompt 2 — Gold QA: concurrent Spark suite vs sequential (not a Gold SQL change)
+### COMMIT / ARTIFACT
 
-A later debugging cycle investigated a concurrent full-suite `PermissionError` during Bronze `setUpClass`. Gold production SQL was not modified. See `ai-prompts/debugging.md` Prompt 2 and `debugging-notes.md`. Operating rule: run Spark unittest suites sequentially.
+`eb25da1` — `feat: add Gold analytical aggregations`. Files: `src/gold/*.sql`, `src/gold/create_gold_tables.py`, `tests/test_gold_contract.py`, `tests/test_gold_aggregations.py`.
+
+## P012 — Gold QA: concurrent Spark suite vs sequential (not a Gold SQL change)
+
+### PROMPT SENT
+
+Close the Gold QA/debugging checkpoint before Dashboard. Gold is committed (`eb25da1`). A clean sequential full relevant suite was 174 OK. A second full-suite process started concurrently and failed during Bronze `setUpClass` with a Windows temporary-file `PermissionError` while starting Spark. Do not start Dashboard. Do not change Gold business logic unless a Gold defect is proven.
+
+### AI RESPONSE SUMMARY
+
+The failing stack is PySpark `java_gateway.launch_gateway` opening a unique `%TEMP%` connection-info file. That is JVM gateway startup on Windows, not Gold SQL. Gold production SQL was not modified. See `ai-prompts/debugging.md` P012 for the full diagnosis.
+
+### ACCEPTED
+
+- Classification as Spark environment / Windows Py4J temp-file race, not a Gold defect.
+- Sequential-only Spark unittest execution.
+
+### CHANGED
+
+- Test-infrastructure helper in `src/spark_local.py` (`start_local_test_spark` / `stop_local_test_spark`). Gold SQL unchanged.
+
+### REJECTED
+
+- Changing Gold aggregations, eligibility, or DECIMAL handling — no evidence of a Gold defect.
+
+### VALIDATION
+
+Covered by `ai-prompts/debugging.md` P012: sequential 148 + 27 OK (175 including helper test). Gold SQL files were not modified.
+
+### FINAL DECISION
+
+A later debugging cycle investigated a concurrent full-suite `PermissionError` during Bronze `setUpClass`. Gold production SQL was not modified. Operating rule: run Spark unittest suites sequentially.
+
+### COMMIT / ARTIFACT
+
+`aa48ca2` — `fix: document and harden Spark test isolation`. Gold SQL unchanged. Duplicate log: `ai-prompts/debugging.md` P012.
 
 ---
 
-## Prompt 3 — 2026-08-31 — Databricks workflow reuses existing Gold SQL
+## P016 — 2026-08-31 — Databricks workflow reuses existing Gold SQL
 
 ### PROMPT SENT
 
@@ -137,9 +174,13 @@ P016 sequential suite **223/223 OK**. Gold Spark tests unchanged.
 
 Gold application SQL stays the source of truth.
 
+### COMMIT / ARTIFACT
+
+`063854b` — `feat: automate Databricks environment and pipeline validation`. Gold SQL unchanged. Duplicate log: `ai-prompts/documentation.md` P016.
+
 ---
 
-## Prompt 4 — 2026-08-31 — Closeout: Databricks Gold PASS (no Gold SQL change)
+## P017 — 2026-08-31 — Closeout: Databricks Gold PASS (no Gold SQL change)
 
 ### PROMPT SENT
 
@@ -168,3 +209,7 @@ Local closeout suite **223/223 OK**. Databricks Gold PASS is the candidate’s w
 ### FINAL DECISION
 
 Gold application SQL stays the source of truth. Databricks Gold is complete.
+
+### COMMIT / ARTIFACT
+
+`ead99e1` — `docs: close out Databricks validation and dashboard`. Gold SQL unchanged. Workspace Gold PASS recorded from the candidate’s `run_pipeline.py` run.

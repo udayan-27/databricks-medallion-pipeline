@@ -44,7 +44,8 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 11 Databricks bootstrap/validation workflow | **Done** in `src/databricks/`. Local contract tests added. |
 | 12 Databricks workspace execution | **Done.** `python src/databricks/run_pipeline.py`: bootstrap/source, Bronze, Silver, Gold, dashboard SQL all **PASS**. |
 | 13 Repository closeout | **Done** (`docs: close out Databricks validation and dashboard`). |
-| 14 Dashboard definition in Git | **This increment.** Read-only export of the published Lakeview `.lvdash.json`. Do not modify the live dashboard. Do not push until asked. |
+| 14 Dashboard definition in Git | **Done** (`59f7ebd`). Read-only export of the published Lakeview `.lvdash.json`. |
+| 15 Final evidence / ownership freeze | **This increment.** Documentation/evidence only. Do not modify pipeline logic, Gold SQL, dashboard SQL, CSVs, or the published dashboard. Do not push until asked. |
 
 `data/*.csv` are generated synthetic files. Bronze, Silver, Gold, and dashboard SQL are implemented. Databricks tables exist from the official workflow. The published dashboard was created in the Databricks SQL UI.
 

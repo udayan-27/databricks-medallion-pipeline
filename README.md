@@ -257,7 +257,7 @@ python -m unittest tests.test_generate_sample_data tests.test_bronze_contract te
 | Databricks workflow (Spark-free) | 20 |
 | **Total relevant** | **232** |
 
-Latest sequential full-suite result (this increment): **Ran 232 tests in 558.859s OK**. P017 closeout recorded 223 tests in 840.713s. The public-repo audit recorded 203 tests. Do not treat an older prompt-file timing as the current result. Local tests are not Databricks.
+Latest sequential full-suite result (this freeze): **Ran 232 tests in 531.708s OK**. P018 recorded 232 tests in 558.859s. P017 closeout recorded 223 tests in 840.713s. The public-repo audit recorded 203 tests. Do not treat an older prompt-file timing as the current result. Local tests are not Databricks.
 
 A second concurrent full suite can fail during Spark JVM gateway launch on Windows. That is an environment issue, not a pipeline logic failure. See [`debugging-notes.md`](debugging-notes.md).
 

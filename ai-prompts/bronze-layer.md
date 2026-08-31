@@ -2,9 +2,11 @@
 
 Stage 3 (user numbering) / Stage 4 (task-breakdown numbering): Bronze ingest implementation.
 
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording that Databricks was not yet executed was true at that prompt’s time. Current status is in `tool-workflow.md` and `FINAL_AUDIT.md`.
+
 ---
 
-## Prompt 1 — Stage 3 Bronze ingestion
+## P005 — Stage 3 Bronze ingestion
 
 ### PROMPT SENT
 
@@ -84,9 +86,13 @@ No test was marked PASS without being executed. No validation was fabricated.
 
 Keep this Bronze implementation. Do not start Silver until requested. On a Databricks cluster, run `src/bronze/ingest_all.py` with `MEDALLION_DATA_PATH` (and `MEDALLION_CATALOG` if using UC) and execute `tests.test_bronze_ingest` (or the same ingest against `data/`) before treating runtime ingest as PASS. Local contract tests are the supported evidence in this environment.
 
+### COMMIT / ARTIFACT
+
+`a581cbc` — `feat: add Bronze ingestion pipeline`. Files: `src/bronze/*`, `src/config.py`, `tests/test_bronze_contract.py`, `tests/test_bronze_ingest.py`.
+
 ---
 
-## Prompt 2 — Local Windows Spark/parquet validation (cross-platform path + no winutils)
+## P007 — Local Windows Spark/parquet validation (cross-platform path + no winutils)
 
 ### PROMPT SENT
 
@@ -134,9 +140,13 @@ Diagnosed two independent Windows Hadoop issues from stack traces and isolated S
 
 Keep the local path helper and Windows-only FileSystem adapter. Do not install winutils. Do not start Silver. Databricks Bronze remains unproven until a workspace job is run.
 
+### COMMIT / ARTIFACT
+
+`f809c13` — `fix: make local Bronze Spark validation cross-platform`. Files: `src/bronze/contracts.py`, `src/spark_local.py`, `src/local_runtime/NoWinutilsRawLocalFileSystem.java`. Duplicate log: `ai-prompts/debugging.md` P007.
+
 ---
 
-## Prompt 3 — 2026-08-31 — Databricks workflow reuses existing Bronze ingest
+## P016 — 2026-08-31 — Databricks workflow reuses existing Bronze ingest
 
 ### PROMPT SENT
 
@@ -166,9 +176,13 @@ Covered by the P016 sequential suite (**223 tests in 534.573s OK**). Bronze Spar
 
 Bronze application code stays the source of truth. Databricks execution still not run.
 
+### COMMIT / ARTIFACT
+
+`063854b` — `feat: automate Databricks environment and pipeline validation`. Bronze transform modules unchanged. Duplicate log: `ai-prompts/documentation.md` P016.
+
 ---
 
-## Prompt 4 — 2026-08-31 — Closeout: Databricks Bronze PASS (no Bronze code change)
+## P017 — 2026-08-31 — Closeout: Databricks Bronze PASS (no Bronze code change)
 
 ### PROMPT SENT
 
@@ -197,3 +211,7 @@ Local closeout suite **223/223 OK**. Stage 2 SHA-256 unchanged. Databricks Bronz
 ### FINAL DECISION
 
 Bronze application code stays the source of truth. Databricks Bronze is complete.
+
+### COMMIT / ARTIFACT
+
+`ead99e1` — `docs: close out Databricks validation and dashboard`. Bronze source unchanged. Workspace Bronze PASS recorded from the candidate’s `run_pipeline.py` run, not from Cursor executing the cluster.

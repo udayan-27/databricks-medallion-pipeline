@@ -1,6 +1,8 @@
 # Dashboard prompts
 
-## Prompt 1 — Stage 6 Dashboard implementation
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording that the Databricks UI was not yet rendered was true at that prompt’s time. Current status is in `tool-workflow.md` and `FINAL_AUDIT.md`. Cursor created dashboard SQL and later export automation. The human created and published the visual dashboard in the Databricks UI.
+
+## P013 — Stage 6 Dashboard implementation
 
 ### PROMPT SENT
 
@@ -60,9 +62,13 @@ Databricks SQL Dashboard UI: **not run**. Stage 2 CSV SHA-256 unchanged. Gold pr
 
 Ship Gold-only dashboard SQL + guide + local tests. Do not treat local parquet `spark.sql` as Databricks rendering. Keep Gold production SQL unchanged.
 
+### COMMIT / ARTIFACT
+
+`2a470fc` — `feat: add Databricks SQL dashboard queries and guide`. Files: `src/dashboard/dashboard_queries.sql`, `src/dashboard/DASHBOARD_GUIDE.md`, dashboard tests.
+
 ---
 
-## Prompt 2 — 2026-08-31 — Databricks workflow validates dashboard SQL, not visual tiles
+## P016 — 2026-08-31 — Databricks workflow validates dashboard SQL, not visual tiles
 
 ### PROMPT SENT
 
@@ -92,9 +98,13 @@ P016 sequential suite **223/223 OK**, including existing dashboard contract/Spar
 
 Dashboard SQL remains Gold-only. Visual rendering is still not automated and has not been executed.
 
+### COMMIT / ARTIFACT
+
+`063854b` — `feat: automate Databricks environment and pipeline validation`. Dashboard SQL unchanged. Visual tiles were not created by Cursor. Duplicate log: `ai-prompts/documentation.md` P016.
+
 ---
 
-## Prompt 3 — 2026-08-31 — Closeout: dashboard SQL PASS + published UI (manual)
+## P017 — 2026-08-31 — Closeout: dashboard SQL PASS + published UI (manual)
 
 ### PROMPT SENT
 
@@ -124,9 +134,13 @@ Local closeout suite **223/223 OK**. Databricks dashboard SQL PASS and published
 
 Dashboard SQL remains Gold-only and unchanged. The published dashboard is a manual UI artifact.
 
+### COMMIT / ARTIFACT
+
+`ead99e1` — `docs: close out Databricks validation and dashboard`. Dashboard SQL unchanged. Visual tiles: human Databricks UI, not Cursor.
+
 ---
 
-## Prompt 4 — 2026-08-31 — Version-control the actual published dashboard definition (P018)
+## P018 — 2026-08-31 — Version-control the actual published dashboard definition
 
 ### PROMPT SENT
 
@@ -179,3 +193,7 @@ Complete sequential suite (venv Python 3.11.9 + Temurin 17; one process):
 ### FINAL DECISION
 
 Ship the exported Lakeview definition plus docs/tests. Do not treat Git as controlling warehouse binding or account-level sharing. Do not push.
+
+### COMMIT / ARTIFACT
+
+`59f7ebd` — `feat: version-control Databricks dashboard definition`. Files: `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`, `dashboards/README.md`, `tests/test_dashboard_artifact.py`. OAuth was a manual browser step by the user.

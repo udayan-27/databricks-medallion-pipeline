@@ -151,6 +151,10 @@ The candidate ran `python src/databricks/run_pipeline.py` in the workspace. Boot
 
 Documentation and prompt history only. Pipeline logic, Gold SQL, dashboard SQL, and the published dashboard were not modified. Local closeout suite: **223/223 OK**. Do not push until asked.
 
-## Stage 15 — Version-control dashboard definition (this increment)
+## Stage 15 — Version-control dashboard definition (done)
 
-The published Lakeview object **DE C1 E-Commerce Sales Dashboard** was exported read-only to `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`. It was not reconstructed from SQL. The live dashboard was not modified. Databricks CLI OAuth was a manual browser step. Do not push until asked.
+The published Lakeview object **DE C1 E-Commerce Sales Dashboard** was exported read-only to `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`. It was not reconstructed from SQL. The live dashboard was not modified. Databricks CLI OAuth was a manual browser step. Commit: `59f7ebd`.
+
+## Stage 16 — Final evidence / ownership freeze (this increment)
+
+Documentation and prompt-history evidence only. Stale current-status wording that still implied Databricks had not been executed is corrected. Candidate-info uses known facts plus submission-form placeholders. Do not regenerate data. Do not change pipeline/Gold/dashboard SQL. Do not modify the published dashboard. Do not push until asked.

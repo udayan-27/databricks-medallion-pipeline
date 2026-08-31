@@ -1,6 +1,6 @@
 # Reflection
 
-Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, the Databricks workflow redesign, **actual Databricks workspace execution**, the **manually rendered** published SQL dashboard, and a **read-only export** of that dashboard’s serialized definition into Git. Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path. Cursor did not generate the visual dashboard. Cursor did not perform Databricks account authorization (OAuth was a manual browser step).
+Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, the Databricks workflow redesign, **actual Databricks workspace execution**, the **manually rendered** published SQL dashboard, a **read-only export** of that dashboard’s serialized definition into Git, and a **final documentation/evidence freeze** that corrected leftover current-status wording (the Databricks run and published dashboard were already complete). Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path. Cursor did not generate the visual dashboard. Cursor did not perform Databricks account authorization (OAuth was a manual browser step).
 
 ## What went well
 

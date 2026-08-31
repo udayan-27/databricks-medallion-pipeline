@@ -3,9 +3,9 @@
 Public repository / production-grade readiness audit for the DE C1 medallion pipeline.
 
 Date: 2026-08-31  
-Local HEAD before this closeout commit: `063854b` (`feat: automate Databricks environment and pipeline validation`)
+Local HEAD before this freeze commit: `59f7ebd` (`feat: version-control Databricks dashboard definition`)
 Intended public remote: https://github.com/udayan-27/databricks-medallion-pipeline  
-**Not pushed from this closeout.** Historical Git commits were not rewritten. Stage 2 CSVs were not regenerated. Pipeline logic, Gold SQL, dashboard SQL, and the published Databricks dashboard were not modified.
+**Not pushed from this freeze.** Historical Git commits were not rewritten. Stage 2 CSVs were not regenerated. Pipeline logic, Gold SQL, dashboard SQL, and the published Databricks dashboard were not modified.
 
 Statuses: **PASS** | **PARTIAL** | **NOT APPLICABLE**
 
@@ -22,7 +22,7 @@ Three evidence classes (do not collapse them):
 | Assignment tree | Required root docs exist | `README.md`, `candidate-info.md`, `tool-workflow.md`, `requirements-analysis.md`, `design-notes.md`, `data-model.md`, `data-quality-strategy.md`, `debugging-notes.md`, `reflection.md`, `final-ai-usage-summary.md` | PASS | Bodies are filled |
 | Cursor workflow | `cursor-workflow/` four files | `project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | PASS | Persistent context for a new chat |
 | Prompt files | Required `ai-prompts/*.md` | data-generation, bronze, silver, gold, dashboard, debugging, documentation | PASS | Real interactions; not fabricated |
-| Prompt index | `ai-prompts/prompt-index.md` | P001–P018 mapped to lifecycle, files, commits | PASS | No invented prompts to fill a sequence |
+| Prompt index | `ai-prompts/prompt-index.md` | P001–P019 mapped to lifecycle, files, commits | PASS | No invented prompts to fill a sequence |
 | Source tree | `src/data_generation`, `bronze`, `silver`, `gold`, `dashboard`, `databricks` | Numbered modules plus shared helpers and workspace orchestrator | PASS | Extra helpers are required engineering, not scope creep |
 | Database notes | `database/schema.sql`, `seed-data-notes.md`, `setup-notes.md` | Files exist; Databricks tables written by `run_pipeline.py` (Spark), not by executing `schema.sql` as a warehouse script | PASS | Design DDL remains the contract; objects exist via the official workflow |
 | Tests directory | Meaningful tests | 11 unittest modules; fixtures for Bronze/Silver/Gold/type/BL | PASS | Absent from the assignment tree; required by “meaningful tests” |
@@ -47,9 +47,9 @@ Three evidence classes (do not collapse them):
 | Responsible AI docs | Synthetic data; no secrets in prompts | `tool-workflow.md`, `final-ai-usage-summary.md`, README | PASS | Claims limited to what this repo actually contains |
 | Reproducibility | Fresh-clone setup | README + `requirements.txt` (`pyspark==3.5.6`) | PASS | Generator is stdlib-only; Spark tests need JDK 17 + Python 3.11 venv |
 | Configuration | `MEDALLION_CATALOG`, `MEDALLION_DATA_PATH`, `MEDALLION_TABLE_FORMAT` | `src/config.py` | PASS | Catalog default unset (not `main`) |
-| Local tests this cycle | One sequential relevant suite | P017: `Ran 223 tests in 840.713s OK`. P018: `Ran 232 tests in 558.859s OK` | PASS | 0 failed, 0 errors, 0 skipped. Command in README. **Not Databricks** |
+| Local tests this cycle | One sequential relevant suite | P019: `Ran 232 tests in 531.708s OK`. P018: `Ran 232 tests in 558.859s OK`. P017: `Ran 223 tests in 840.713s OK` | PASS | 0 failed, 0 errors, 0 skipped. Command in README. **Not Databricks** |
 | Test coverage | Generator, Bronze, Silver, Gold, dashboard, Databricks workflow, reconciliation, errors, local Spark | unittest modules listed in README | PASS | Concurrent Spark suites remain unsupported |
-| Git history | Meaningful iteration | 15 commits from `16ee902` through `063854b` before this closeout | PASS | requirements → design → data → Bronze → Silver → Gold → dashboard → compatibility → automation |
+| Git history | Meaningful iteration | 16 commits from `16ee902` through `59f7ebd` before this freeze | PASS | requirements → design → data → Bronze → Silver → Gold → dashboard → compatibility → automation → workspace closeout → dashboard export |
 | README | Fresh-clone reviewer path | Setup, local vs Databricks vs published dashboard, data, execution, tests, navigation | PASS | Stale “Databricks not executed” current-status language removed |
 | Databricks Bronze | Workspace ingest / Delta / UC | `run_pipeline.py` BRONZE PASS | PASS | See final validation section |
 | Databricks Silver | Workspace Silver tables | `run_pipeline.py` SILVER PASS | PASS | See final validation section |
@@ -156,7 +156,7 @@ Visual dashboard rendering was completed **manually in the Databricks UI**. That
 
 Do not call that sharing setting public internet access. The `.lvdash.json` is the Lakeview payload (datasets, widgets, filters). It does **not** contain account-level sharing, warehouse binding, or `embed_credentials`. Those remain workspace runtime settings.
 
-## Dashboard definition export (this increment)
+## Dashboard definition export (P018)
 
 Read-only. The published dashboard was not created, updated, published, or deleted from this chat.
 
@@ -207,6 +207,64 @@ python -m unittest tests.test_generate_sample_data tests.test_bronze_contract te
 
 Nine Spark-free tests in `tests.test_dashboard_artifact` were added. Existing SQL/Gold/Spark tests were not weakened. Local tests are not Databricks.
 
+## Evidence-freeze increment local test record (P019)
+
+Environment: Python 3.11.9 project `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. One process. Documentation/evidence files only were edited before this run.
+
+```
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_artifact tests.test_dashboard_queries tests.test_databricks_workflow -v
+```
+
+| Metric | This freeze |
+|---|---|
+| Tests run | 232 |
+| Passed | 232 |
+| Failed | 0 |
+| Errors | 0 |
+| Skipped | 0 |
+| Runtime | 531.708s |
+
+This is local validation, not Databricks. Workspace PASS counts remain the P017 record above.
+
+## Requirements cross-check this freeze (documentation/evidence only)
+
+Internal classification against `DE_C1_REQUIREMENTS.md`. Implementation was not changed.
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Repository structure | PASS |
+| 2 | All required files | PASS |
+| 3 | Source schemas | PASS |
+| 4 | Source row counts | PASS (10,010 / 100,020 / 500) |
+| 5 | Intentional issue counts | PASS (460 listed + 30 optional future signups) |
+| 6 | Bronze ingestion | PASS (local + Databricks) |
+| 7 | Silver completeness | PASS |
+| 8 | Silver uniqueness | PASS |
+| 9 | Silver type validation | PASS |
+| 10 | Silver referential integrity | PASS |
+| 11 | Silver business logic | PASS |
+| 12 | Quality metrics | PASS |
+| 13 | Gold sales by product | PASS |
+| 14 | Gold revenue by customer | PASS |
+| 15 | Gold customer segmentation | PASS |
+| 16 | Daily/weekly trends | PASS (implemented; workspace grains 1,339 / 193) |
+| 17 | Dashboard SQL | PASS |
+| 18 | Dashboard visualization definitions | PASS (manual UI + exported `.lvdash.json`) |
+| 19 | Database schema/setup | PASS (`schema.sql` is the contract; objects created by `run_pipeline.py`) |
+| 20 | Data-generation notes | PASS |
+| 21 | Tests | PASS (232 local this cycle) |
+| 22 | Debugging notes | PASS |
+| 23 | Reflection | PASS |
+| 24 | AI prompt history | PASS (P001–P019; historical blocks not rewritten) |
+| 25 | Cursor workflow artifacts | PASS |
+| 26 | Responsible AI | PASS |
+| 27 | Git history | PASS |
+| 28 | Actual Databricks validation evidence | PASS (recorded workspace run; not re-executed this freeze) |
+| 29 | Actual published dashboard evidence | PASS (manual UI; not modified this freeze) |
+| 30 | Version-controlled `.lvdash.json` | PASS |
+
+No FAIL items. Submission-form placeholders in `candidate-info.md` (role, assessment start date, submission date) are intentional, not missing pipeline artifacts.
+
 ## Historical local audit (public-repo readiness, before Databricks execution)
 
 The earlier audit (HEAD `eb9c61c` at that time) recorded **Ran 203 tests in 535.902s OK** without `tests.test_databricks_workflow`. Databricks rows were **BLOCKED / NOT EXECUTED**. That was true then. It is no longer current status.
@@ -230,13 +288,14 @@ Matches `src/data_generation/DATA_GENERATION_NOTES.md`.
 - No tracked Spark warehouse / parquet / `_delta_log` / `*.class`.
 - No Databricks PAT, cloud keys, or private keys in tracked files.
 - No personal workspace paths (`C:\Users\`, `D:\DE C1`, `/Workspace/Users/`) in `src/`.
-- Dashboard SQL and Gold SQL files were not edited this cycle.
+- Dashboard SQL and Gold SQL files were not edited this freeze.
 - Exported `.lvdash.json` was scanned for PAT/OAuth/password/key/local-path patterns: none found.
+- `candidate-info.md` contains no phone, employee ID, organizational email, or tokens.
 
 ## Remaining steps before final submission
 
 Databricks pipeline execution and the published dashboard are complete. Remaining work is submission process only:
 
-1. Push this closeout commit to `origin/master` when asked (`git push`; do not force-push).
-2. Follow the organizational Git account/email process and submit the repository link plus any required short written responses.
+1. Push this documentation freeze commit to `origin/master` when asked (`git push`; do not force-push).
+2. Submit this repository using the required organizational/TTN account and email process, plus any required short written responses. Complete `[To be completed in submission form]` fields from `candidate-info.md` in that form, not by publishing extra personal data here.
 3. Do not regenerate Stage 2 CSVs. Do not change Bronze/Silver/Gold/dashboard SQL semantics. Do not modify the published Databricks dashboard. The serialized definition in `dashboards/` is an export, not a license to rewrite the live object.

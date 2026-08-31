@@ -1,6 +1,8 @@
 # Debugging prompts
 
-## Prompt 1 — 2026-08-31 — Local Windows Spark/parquet validation
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording that Databricks was not yet executed was true at that prompt’s time. Current status is in `tool-workflow.md` and `FINAL_AUDIT.md`.
+
+## P007 — 2026-08-31 — Local Windows Spark/parquet validation
 
 ### PROMPT SENT
 
@@ -33,7 +35,11 @@ Contract 37 OK. Ingest 21 OK. Combined 58 OK. Full Bronze row counts 10010 / 100
 
 Record this as a real local-runtime debug cycle. Do not claim Databricks validation. Do not start Silver.
 
-## Prompt 2 — 2026-08-31 — Gold QA: concurrent Spark suite Windows temp PermissionError
+### COMMIT / ARTIFACT
+
+`f809c13` — `fix: make local Bronze Spark validation cross-platform`. Duplicate log: `ai-prompts/bronze-layer.md` P007.
+
+## P012 — 2026-08-31 — Gold QA: concurrent Spark suite Windows temp PermissionError
 
 ### PROMPT SENT
 
@@ -95,7 +101,11 @@ Did not launch a second concurrent full suite.
 
 Treat the incident as local Spark-on-Windows gateway/temp isolation, not Gold. Run Spark tests sequentially. Isolation helper is test/runtime infrastructure only. Databricks not claimed. Dashboard not started.
 
-## Prompt 3 — 2026-08-31 — Databricks compatibility audit (no execution)
+### COMMIT / ARTIFACT
+
+`aa48ca2` — `fix: document and harden Spark test isolation`. Gold SQL unchanged. Duplicate log: `ai-prompts/gold-layer.md` P012.
+
+## P014 — 2026-08-31 — Databricks compatibility audit (no execution)
 
 ### PROMPT SENT
 
@@ -132,9 +142,13 @@ No `src/` or `tests/` edits. Full suite not re-run. Last sequential relevant res
 
 Code is compatible pending runtime parameters. Do not start Databricks until asked.
 
+### COMMIT / ARTIFACT
+
+`eb9c61c` — `fix: prepare pipeline for Databricks runtime validation`. Docs only; no `src/` change. Duplicate log: `ai-prompts/documentation.md` P014.
+
 ---
 
-## Prompt 4 — 2026-08-31 — Databricks workflow redesign (not a runtime debug cycle)
+## P016 — 2026-08-31 — Databricks workflow redesign (not a runtime debug cycle)
 
 ### PROMPT SENT
 
@@ -164,9 +178,13 @@ Local copy test on temp dirs preserved SHA-256 (`7f8ae14c…`, `b244c3d9…`, `a
 
 Treat POSIX/FUSE Python I/O as the primary serverless-compatible copy, with documented fallbacks. Do not execute Databricks until asked.
 
+### COMMIT / ARTIFACT
+
+`063854b` — `feat: automate Databricks environment and pipeline validation`. Duplicate log: `ai-prompts/documentation.md` P016.
+
 ---
 
-## Prompt 5 — 2026-08-31 — Closeout: no new runtime defect
+## P017 — 2026-08-31 — Closeout: no new runtime defect
 
 ### PROMPT SENT
 
@@ -195,3 +213,7 @@ Local closeout suite **223/223 OK**. Workspace PASS is the candidate’s run.
 ### FINAL DECISION
 
 No new defect. Databricks execution and published dashboard are complete.
+
+### COMMIT / ARTIFACT
+
+`ead99e1` — `docs: close out Databricks validation and dashboard`. No production code change. Workspace PASS recorded from the candidate’s run.

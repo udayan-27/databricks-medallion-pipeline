@@ -2,45 +2,51 @@
 
 Meaningful AI interactions for documentation and repository structure. Entries are real; they are not invented after the fact.
 
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording that later stages or Databricks were not yet executed was true at that prompt’s time. Current status is in `tool-workflow.md` and `FINAL_AUDIT.md`.
+
 ---
 
-## Prompt 1 — 2026-08-31 — Read requirements (no implementation)
+## P001 — 2026-08-31 — Read requirements (no implementation)
 
-### Prompt text (summary)
+### PROMPT SENT
 
 Act as the implementation agent for the DE C1 AI Capability Exercise. Before any implementation, read `DE_C1_REQUIREMENTS.md` completely and treat it as canonical. Do not implement the pipeline yet. First understand the assignment, including requirement analysis through complete AI prompt history. Record the ~700-row inconsistency, four-vs-five quality-check inconsistency, and the example prompt’s future signup dates. Confirm: full requirements read; repository structure understood; ambiguities identified; AI workflow evidence is part of the submission.
 
-### AI response summary
+### AI RESPONSE SUMMARY
 
 The assistant read the full requirements file and restated the medallion pipeline, source schemas, Bronze/Silver/Gold/dashboard rules, required tree, and working constraints (PySpark, SQL Gold, no PII, no deleting bad rows, Bronze raw). It listed the three ambiguities with a 460 vs 700 count table and stated it would not hide them. It confirmed AI prompt history is scored and that this confirmation turn should later be recorded. No files were created.
 
-### Accepted and why
+### ACCEPTED
 
 - No coding on that turn, matching the instruction.
 - Ambiguities named rather than smoothed over.
 - Five Silver modules treated as required.
 
-### Changed and why
+### CHANGED
 
 None; there was no implementation.
 
-### Rejected and why
+### REJECTED
 
 Not applicable (no code suggestions).
 
-### Validation performed
+### VALIDATION
 
 File read of `DE_C1_REQUIREMENTS.md` only. No tests. No pipeline validation.
 
-### Final decision
+### FINAL DECISION
 
 Hold implementation until the user requests the next stage.
 
+### COMMIT / ARTIFACT
+
+None. Read-only turn; no Git commit.
+
 ---
 
-## Prompt 2 — 2026-08-31 — Initialize project structure
+## P002 — 2026-08-31 — Initialize project structure
 
-### Prompt text (summary)
+### PROMPT SENT
 
 Initialize the complete repository structure required by `DE_C1_REQUIREMENTS.md`. Do not implement the pipeline. Do not populate final sample CSV data. Create all listed root files, `src/*`, `data/`, `database/`, `ai-prompts/`, and `cursor-workflow/`. Write `requirements-analysis.md` with problem statement through acceptance criteria plus explicit 700-row and four-vs-five treatment. Write Cursor context, spec, rules, and task breakdown. Create `.gitignore`. Update this file with the actual interaction. If Git is not initialized, initialize and commit:
 
@@ -48,41 +54,45 @@ Initialize the complete repository structure required by `DE_C1_REQUIREMENTS.md`
 
 Show the file tree, verify required files, Git status, first commit, and unresolved items. Do not start data generation.
 
-### AI response summary
+### AI RESPONSE SUMMARY
 
 The assistant created the required tree at the project root (fulfilling `databricks-medallion-pipeline/` layout without nesting an extra folder). Documentation was written as planned/honest status, not as fake results. Python/SQL modules are stubs (`NotImplementedError` or “NOT IMPLEMENTED” comments). CSVs are header-only. `requirements-analysis.md` records the 460 vs 700 gap and the five-module decision. Git was initialized and the requested commit was made after the files existed.
 
-### Accepted and why
+### ACCEPTED
 
 - Full required path list, including five Silver stubs.
 - Header-only CSVs instead of generated 10k/100k/500 rows.
 - Ambiguities documented as implementation decisions, not hidden.
 - Prompt history limited to this real documentation/init work.
 
-### Changed and why
+### CHANGED
 
 - Files placed at workspace root rather than a nested `databricks-medallion-pipeline/` directory, because this folder is already the project root. Recorded in `requirements-analysis.md` assumption 1 and `README.md`.
 
-### Rejected and why
+### REJECTED
 
 - Implementing ingest/quality/Gold SQL bodies — out of scope.
 - Generating sample rows — explicitly forbidden.
 - Inventing test results, debugging stories, or reflection content.
 - Padding defect counts to 700.
 
-### Validation performed
+### VALIDATION
 
 - Required paths checked against the list in `DE_C1_REQUIREMENTS.md` after creation.
 - Git status and `git log` inspected after the initial commit.
 - No PySpark jobs, no pytest, no CSV row-count validation (data not generated).
 
-### Final decision
+### FINAL DECISION
 
 Stage 1 (structure + spec) is the Git baseline. Stage 2 (data generation) waits for an explicit user request.
 
+### COMMIT / ARTIFACT
+
+`16ee902` — `chore: initialize project structure and engineering spec`.
+
 ---
 
-## Prompt 3 — 2026-08-31 — Requirements/architecture review (no implementation)
+## P003 — 2026-08-31 — Requirements/architecture review (no implementation)
 
 ### PROMPT SENT
 
@@ -163,9 +173,13 @@ Performed in this environment (documentation/repo inspection only):
 
 Treat Stage 1.5 (requirements, architecture, data-model, DQ strategy, Cursor context) as complete written design. Keep Stage 2+ blocked until explicitly requested. Commit once: `docs: finalize requirements architecture and data quality design`.
 
+### COMMIT / ARTIFACT
+
+`3fa1c57` — `docs: finalize requirements architecture and data quality design`.
+
 ---
 
-## Prompt 4 — 2026-08-31 — Local Spark environment (Python 3.11 / JDK 17 / PySpark 3.5.6)
+## P006 — 2026-08-31 — Local Spark environment (Python 3.11 / JDK 17 / PySpark 3.5.6)
 
 ### PROMPT SENT
 
@@ -213,44 +227,52 @@ Smoke test passed. Contract tests 33/33 OK. Spark ingest tests ran (not skipped)
 
 Local Spark **runtime** is installed. Local parquet Bronze **ingest validation is not complete**. Databricks remains blocked until a workspace job is actually run. Stop after environment setup; do not start Silver.
 
+### COMMIT / ARTIFACT
+
+`b6352b3` — `docs: record local Python 3.11 Spark environment`. `.venv` not committed.
+
 ---
 
-## Prompt 5 — 2026-08-31 — Databricks compatibility audit documentation
+## P014 — 2026-08-31 — Databricks compatibility audit documentation
 
-### Prompt text (summary)
+### PROMPT SENT
 
 Audit the completed local pipeline for Databricks compatibility. Do not start Databricks, change Gold/dashboard logic, or regenerate Stage 2 data. Document only justified findings. Catalog/schema must stay parameterized.
 
-### AI response summary
+### AI RESPONSE SUMMARY
 
 No `src/` change. Runtime parameters (catalog, data path, default Delta) were already designed. README and `database/setup-notes.md` now state that Databricks must not use the local Windows Spark stack, and that `MEDALLION_CATALOG` is a runtime placeholder.
 
-### Accepted and why
+### ACCEPTED
 
 - Audit recorded in `debugging-notes.md`.
 - Operator checklist in `database/setup-notes.md` without inventing a catalog name.
 
-### Changed and why
+### CHANGED
 
 Documentation only. Gold SQL, dashboard queries, and pipeline code unchanged.
 
-### Rejected and why
+### REJECTED
 
 - Hard-coded workspace/catalog names.
 - Local Delta install for the audit.
 - Databricks execution this turn.
 
-### Validation performed
+### VALIDATION
 
 No production tests re-run (no code change). Prior relevant suite **203/203 OK**.
 
-### Final decision
+### FINAL DECISION
 
 Docs updated so the next Databricks run uses cluster session + Delta + configured paths. Do not start that run until asked.
 
+### COMMIT / ARTIFACT
+
+`eb9c61c` — `fix: prepare pipeline for Databricks runtime validation`. Duplicate log: `ai-prompts/debugging.md` P014.
+
 ---
 
-## Prompt 6 — 2026-08-31 — Public repository / production-grade readiness audit
+## P015 — 2026-08-31 — Public repository / production-grade readiness audit
 
 ### PROMPT SENT
 
@@ -299,9 +321,13 @@ Sequential unittest (this cycle, one process, project `.venv` Python 3.11.9 + Te
 
 Ship the documentation/audit artifacts. Do not push. Databricks remains unexecuted.
 
+### COMMIT / ARTIFACT
+
+`bf7ee06` — `chore: complete public repository readiness audit`. Files include `FINAL_AUDIT.md`, `ai-prompts/prompt-index.md`, README/reflection closeout.
+
 ---
 
-## Prompt 7 — 2026-08-31 — Databricks bootstrap / execution / validation workflow
+## P016 — 2026-08-31 — Databricks bootstrap / execution / validation workflow
 
 ### PROMPT SENT
 
@@ -347,9 +373,13 @@ Copy-test SHA-256 of the three CSVs matched `DATA_GENERATION_NOTES.md`. Truncate
 
 Ship the repository-owned Databricks workflow as the official supported process. Do not execute it in Databricks until asked. Do not push.
 
+### COMMIT / ARTIFACT
+
+`063854b` — `feat: automate Databricks environment and pipeline validation`. Files: `src/databricks/`, `tests/test_databricks_workflow.py`. Workspace run was **not** part of this turn.
+
 ---
 
-## Prompt 8 — 2026-08-31 — Final repository closeout (Databricks evidence)
+## P017 — 2026-08-31 — Final repository closeout (Databricks evidence)
 
 ### PROMPT SENT
 
@@ -400,13 +430,17 @@ Databricks evidence is the candidate’s recorded workspace run, not a re-execut
 
 Ship the documentation/evidence closeout. Databricks pipeline and published dashboard are complete. Stop after the requested commit. Do not push.
 
+### COMMIT / ARTIFACT
+
+`ead99e1` — `docs: close out Databricks validation and dashboard`. Pipeline/Gold/dashboard SQL unchanged. Workspace PASS recorded from the candidate’s run. Visual dashboard: human UI, not Cursor.
+
 ---
 
-## Prompt 9 — 2026-08-31 — Version-control published dashboard definition (P018)
+## P018 — 2026-08-31 — Version-control published dashboard definition
 
 ### PROMPT SENT
 
-Same interaction as `ai-prompts/dashboard.md` Prompt 4 / P018. Retrieve the real published Lakeview definition with Databricks CLI/API. Do not fabricate the JSON. Do not modify the live dashboard or pipeline SQL. Do not push.
+Same interaction as `ai-prompts/dashboard.md` P018. Retrieve the real published Lakeview definition with Databricks CLI/API. Do not fabricate the JSON. Do not modify the live dashboard or pipeline SQL. Do not push.
 
 ### AI RESPONSE SUMMARY
 
@@ -435,3 +469,58 @@ Spark-free dashboard artifact + contract tests **24/24 OK**. Sequential full sui
 ### FINAL DECISION
 
 Commit the exported definition and supporting docs/tests. Do not push.
+
+### COMMIT / ARTIFACT
+
+`59f7ebd` — `feat: version-control Databricks dashboard definition`. Duplicate log: `ai-prompts/dashboard.md` P018. OAuth was a manual browser step; Cursor did not perform account authorization.
+
+---
+
+## P019 — 2026-08-31 — Final evidence and ownership freeze
+
+### PROMPT SENT
+
+FINAL REPOSITORY QUALITY + EVIDENCE AUDIT. Documentation/evidence-only. Do not redesign the pipeline, regenerate data, change Bronze/Silver/Gold/dashboard SQL, modify the published dashboard, rewrite Git history, or push.
+
+Required work: (1) fix stale current-status wording that still implied Databricks was not executed; (2) make prompt-history lifecycle evidence evaluator-scannable without inventing interactions; (3) complete candidate-info with known facts only and no unnecessary personal data; (4) ownership/responsible-AI consistency; (5) requirements cross-check; (6) stale-claim scan of CURRENT STATUS sections only; (7) public-repo security scan; (8) SHA-256 of seed-42 CSVs without regenerating; (9) run the full local test suite; (10) one commit `docs: finalize submission evidence and ownership`; stop without pushing.
+
+### AI RESPONSE SUMMARY
+
+Corrected `tool-workflow.md` current status (and the matching `cursor-workflow/spec.md` current-status sentence) so Databricks workspace execution, layer PASS results, the manually published dashboard, version-controlled `.lvdash.json`, and account-scoped sharing are unambiguous. Preserved the old “not executed” wording as a labeled historical/evolution note. Added P-numbers, COMMIT/ARTIFACT sections, and consistent lifecycle headings across `ai-prompts/`. Rewrote `ai-prompts/prompt-index.md` as a reviewer navigator with type, validation, result, and Cursor-vs-human Databricks UI distinction. Expanded `candidate-info.md` with known stack/environment facts and `[To be completed in submission form]` placeholders for unknown personal fields. Did not invent role, assessment dates, or organizational email. Did not change pipeline, Gold SQL, dashboard SQL, datasets, or the live dashboard.
+
+### ACCEPTED
+
+- Documentation/evidence only; pipeline and data remain frozen.
+- Historical prompt FINAL DECISION blocks that said Databricks was not yet executed stay as chronology.
+- Candidate personal fields that are not known stay as submission-form placeholders.
+- Submit using the required organizational/TTN account and email process, without publishing the email address.
+
+### CHANGED
+
+- Current-status language in `tool-workflow.md` and `cursor-workflow/spec.md`.
+- Prompt-file scan headings and `prompt-index.md` navigation columns.
+- `candidate-info.md` required assignment fields that were actually known.
+
+### REJECTED
+
+- Regenerating CSVs; changing Bronze/Silver/Gold/dashboard SQL; modifying the published dashboard.
+- Inventing AI responses, rejections, validations, role, dates, or organizational email.
+- Pushing; rewriting Git history.
+
+### VALIDATION
+
+Dataset SHA-256 match `DATA_GENERATION_NOTES.md` (customers / orders / products unchanged). Sequential unittest this cycle (venv Python 3.11.9 + Temurin 17.0.20.1; one process):
+
+`python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_artifact tests.test_dashboard_queries tests.test_databricks_workflow -v`
+
+→ **Ran 232 tests in 531.708s OK** (0 failed, 0 errors, 0 skipped). Local, not Databricks.
+
+Security scan this cycle: no PAT/OAuth/password/private-key matches in tracked docs/src/tests/dashboard JSON; no `.env` or `.venv` tracked.
+
+### FINAL DECISION
+
+Ship one documentation/evidence commit. Treat the repository as frozen afterward except if the submission form itself requires a missing artifact. Do not push.
+
+### COMMIT / ARTIFACT
+
+This commit: `docs: finalize submission evidence and ownership`. Files: `tool-workflow.md`, `candidate-info.md`, `ai-prompts/*`, `FINAL_AUDIT.md`, related workflow/docs. No source/data/dashboard logic changes.

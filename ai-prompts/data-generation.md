@@ -2,9 +2,11 @@
 
 Stage 2 prompt history. Do not treat this file as a Stage 3 (Bronze) log.
 
+Evaluator scan format: PROMPT SENT / AI RESPONSE SUMMARY / ACCEPTED / CHANGED / REJECTED / VALIDATION / FINAL DECISION / COMMIT / ARTIFACT. Historical FINAL DECISION wording is frozen at the time of that prompt. Current repository status is in `tool-workflow.md` and `FINAL_AUDIT.md`.
+
 ---
 
-## Prompt 1 — Stage 2 generator implementation
+## P004 — Stage 2 generator implementation
 
 ### PROMPT SENT
 
@@ -71,3 +73,7 @@ No test was marked PASS without being executed. No validation was fabricated.
 ### FINAL DECISION
 
 Retain this generator version: seed **42**, as-of **2026-08-31**, listed mandatory defects only, optional 30 future signups documented, LF UTF-8 CSVs in `data/`, unittest suite under `tests/`. Do not regenerate unless the seed or contract changes. Do not start Bronze until requested.
+
+### COMMIT / ARTIFACT
+
+`f5f3acf` — `feat: add deterministic e-commerce sample data generator`. Files: `src/data_generation/generate_sample_data.py`, `data/*.csv`, `tests/test_generate_sample_data.py`, `src/data_generation/DATA_GENERATION_NOTES.md`.
