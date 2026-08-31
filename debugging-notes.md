@@ -275,6 +275,17 @@ Code review only. Databricks was **not** executed. Stage 2 CSVs, Gold SQL, and d
 - **Tests re-run:** none (no production or test code changed). Last sequential relevant suite remains **203/203 OK**.
 - **Rejected:** installing delta-spark locally; regenerating Stage 2 CSVs; changing Gold/dashboard logic; hard-coding a workspace catalog; starting Databricks execution.
 
+## Stage 11 — Databricks workflow redesign (2026-08-31)
+
+Code and documentation only. Databricks was **not** executed. This is not a runtime defect cycle.
+
+- **Symptom (prevented):** The final submission depending on temporary exploratory Databricks notebook cells and manual CSV uploads.
+- **Expected vs actual:** Official process is `python src/databricks/run_pipeline.py` from the Git-folder root; it copies version-controlled `data/*.csv` to `/Volumes/workspace/de_c1/source_data/` and runs existing Bronze/Silver/Gold modules.
+- **Root cause / decision:** Workspace files and UC Volumes both support POSIX Python I/O on Databricks Runtime / serverless; `dbutils.fs.cp` with `file:/` is a fallback. Visual dashboard rendering stays a UI action.
+- **Files changed:** `src/databricks/*`, `tests/test_databricks_workflow.py`, README / setup-notes / prompt history. Stage 2 CSVs, Bronze/Silver/Gold transforms, and dashboard SQL were not rewritten.
+- **Tests re-run:** Spark-free `tests.test_databricks_workflow` plus the sequential full relevant suite (see the prompt record for this increment).
+- **Rejected:** Duplicating Bronze/Silver/Gold into a notebook; regenerating CSVs; claiming earlier manual Databricks setup as Cursor history; executing Databricks from this turn; pushing.
+
 Use this file during later stages to capture:
 
 - Symptom

@@ -104,3 +104,35 @@ Gold SQL aggregations and `create_gold_tables.py` are implemented against the fr
 ## Prompt 2 — Gold QA: concurrent Spark suite vs sequential (not a Gold SQL change)
 
 A later debugging cycle investigated a concurrent full-suite `PermissionError` during Bronze `setUpClass`. Gold production SQL was not modified. See `ai-prompts/debugging.md` Prompt 2 and `debugging-notes.md`. Operating rule: run Spark unittest suites sequentially.
+
+---
+
+## Prompt 3 — 2026-08-31 — Databricks workflow reuses existing Gold SQL
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 7 / P016. Gold must run via `src/gold/create_gold_tables.py`. Reconcile eligible Silver revenue with Gold product/customer revenue and order counts. Eligibility remains Completed AND `quality_check_result = PASS`.
+
+### AI RESPONSE SUMMARY
+
+The Databricks orchestrator calls `create_gold_tables.create_gold_tables`, which still executes `src/gold/*.sql`. Validation queries Gold tables and compares `SUM(total_amount)` / `COUNT(*)` of eligible Silver orders to Gold product, customer, daily, and weekly totals, and checks segmentation coverage vs `revenue_by_customer`.
+
+### ACCEPTED
+
+Keep Gold logic in SQL files. Keep `lifetime_value_actual` from orders.
+
+### CHANGED
+
+None of the Gold SQL files or `create_gold_tables.py` aggregation path.
+
+### REJECTED
+
+Reimplementing Gold as PySpark `groupBy` in the Databricks wrapper; claiming Databricks Gold was executed.
+
+### VALIDATION
+
+P016 sequential suite **223/223 OK**. Gold Spark tests unchanged.
+
+### FINAL DECISION
+
+Gold application SQL stays the source of truth.

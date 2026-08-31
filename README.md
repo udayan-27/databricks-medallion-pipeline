@@ -4,7 +4,7 @@ This repository is the DE C1 AI Capability Exercise submission. It implements a 
 
 `CSV → Bronze (PySpark, raw) → Silver (PySpark, five quality modules) → Gold (SQL) → Dashboard queries`
 
-Local Spark / parquet tests have been run. **Databricks, Delta, Unity Catalog, and a Databricks SQL dashboard have not been executed from this environment.** Do not read local results as Databricks results.
+Local Spark / parquet tests have been run. The official Databricks path is the repository workflow in `src/databricks/`. **That workflow has not been executed in a Databricks workspace from this environment.** Do not read local results as Databricks results.
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 
@@ -20,7 +20,7 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Prompt history | [`ai-prompts/prompt-index.md`](ai-prompts/prompt-index.md) |
 | Tests | [`tests/`](tests/) |
 | Debugging | [`debugging-notes.md`](debugging-notes.md) |
-| Databricks setup (not executed) | [`database/setup-notes.md`](database/setup-notes.md) |
+| Databricks bootstrap / run / validate | [`database/setup-notes.md`](database/setup-notes.md), [`src/databricks/run_pipeline.py`](src/databricks/run_pipeline.py) |
 | Dashboard workspace steps | [`src/dashboard/DASHBOARD_GUIDE.md`](src/dashboard/DASHBOARD_GUIDE.md) |
 | Public-repo audit | [`FINAL_AUDIT.md`](FINAL_AUDIT.md) |
 | Reflection / AI usage | [`reflection.md`](reflection.md), [`final-ai-usage-summary.md`](final-ai-usage-summary.md) |
@@ -36,7 +36,7 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Silver (all five modules + combiner) | Implemented. Local parquet tests passed. Databricks Silver **not** run. |
 | Gold SQL aggregations | Implemented. Local parquet tests passed. Databricks Gold **not** run. |
 | Dashboard | Queries + guide implemented and locally tested. Databricks SQL Dashboard UI **not** rendered. |
-| Databricks compatibility | Code review complete. Local Windows Spark workarounds are gated off the cluster path. Execution has **not** started. |
+| Databricks workflow | Repository-owned bootstrap + pipeline + validation in `src/databricks/`. Uses existing Bronze/Silver/Gold modules. **Not executed** in a workspace from this environment. |
 
 ## What this exercise evaluates
 
@@ -75,6 +75,7 @@ Required assignment paths are present. Supporting modules that the assignment om
 | `src/bronze/ingest_core.py`, `contracts.py` | Shared ingest (numbered `01_` scripts are thin CLIs) |
 | `src/silver/quality_common.py` | Shared quality accumulation |
 | `src/spark_local.py`, `src/local_runtime/` | Local Windows Spark only; not used on Databricks |
+| `src/databricks/` | Databricks bootstrap, source copy, orchestration, validation |
 | `tests/` | Contract tests (no Spark) and Spark integration tests |
 | `requirements.txt` | Pin `pyspark==3.5.6` for local setup |
 
@@ -86,12 +87,12 @@ Required assignment paths are present. Supporting modules that the assignment om
 | JDK | 17 (Temurin or equivalent) | Cluster JDK |
 | Spark | PySpark **3.5.6** from `requirements.txt` | Cluster Spark |
 | Table format | `--table-format parquet` | omit the flag (default **delta**) |
-| Data path | repo `data/` | UC Volume / DBFS / S3 / ABFSS via `MEDALLION_DATA_PATH` |
+| Data path | repo `data/` | `/Volumes/<catalog>/de_c1/source_data` after `src/databricks` copies Git-folder `data/` |
 | Catalog | unset (Hive metastore names `bronze.customers`) | `MEDALLION_CATALOG` at runtime |
 | SparkSession | created locally; Windows FileSystem adapter may apply | **reuse the cluster session** |
 | Do not copy | `.venv`, winutils, laptop `JAVA_HOME`, parquet flag | — |
 
-Databricks execution from this repository: **not started**.
+Databricks execution from this repository: **not started**. The command to run there is documented below; do not treat that documentation as a completed workspace run.
 
 ## Prerequisites (fresh clone)
 
@@ -141,6 +142,9 @@ No secrets in git. `.venv/` and `.env` are gitignored.
 | `MEDALLION_SILVER_SCHEMA` / `--silver-schema` | Silver schema | `silver` |
 | `MEDALLION_GOLD_SCHEMA` / `--gold-schema` | Gold schema | `gold` |
 | `MEDALLION_TABLE_FORMAT` / `--table-format` | `delta` or `parquet` | `delta` |
+| `MEDALLION_SOURCE_SCHEMA` | UC schema that owns the source volume (Databricks workflow) | `de_c1` |
+| `MEDALLION_SOURCE_VOLUME` | UC volume name (Databricks workflow) | `source_data` |
+| `MEDALLION_GIT_DATA_PATH` | Git-folder directory that contains the three CSVs | `<repo>/data` |
 
 ## Execution
 
@@ -152,7 +156,7 @@ Run **one** Spark job or unittest process at a time. Concurrent Spark processes 
 python src/bronze/ingest_all.py --table-format parquet
 ```
 
-Databricks (after copying CSVs to a volume): `python src/bronze/ingest_all.py --data-path /Volumes/<catalog>/<schema>/<volume>` — omit `--table-format`. Individual datasets: `python src/bronze/01_ingest_customers.py` (same flags). `ingest_all.py` preflights all three files, overwrites the three entity tables, and appends three metadata rows sharing one `ingest_id`.
+Databricks official path: `python src/databricks/run_pipeline.py` from the Git-folder repository root (see below). That command copies `data/*.csv` to the UC Volume and then calls `ingest_all.py`. Individual datasets remain available: `python src/bronze/01_ingest_customers.py`. `ingest_all.py` preflights all three files, overwrites the three entity tables, and appends three metadata rows sharing one `ingest_id`.
 
 Rerun: entity tables overwrite; `_ingest_row_id` values change; `bronze.ingest_metadata` appends.
 
@@ -191,18 +195,45 @@ SQL: [`src/dashboard/dashboard_queries.sql`](src/dashboard/dashboard_queries.sql
 
 Filters: `category` on Tile 1 **before** `LIMIT 10`; `customer_segment` on Tile 2. Date range is not a filter on these tiles.
 
+## Databricks (official workspace workflow)
+
+The supported Databricks process is a single repository command. It does **not** depend on pasted exploratory notebook cells. Bronze/Silver/Gold logic stays in the existing application modules.
+
+This workflow has **not** been executed in Databricks from this environment.
+
+### MANUAL — genuinely unavoidable
+
+1. Databricks login / account authorization
+2. GitHub authorization if the workspace Git folder requires it
+3. Git-folder creation/connection if the Databricks UI/API requires it (connect this repository so `data/*.csv` and `src/` are workspace files)
+4. Visual Dashboard creation/rendering in the Databricks SQL UI after Gold exists (`DASHBOARD_GUIDE.md`). SQL validation of those queries **is** automated; tile rendering is not.
+
+### AUTOMATED (`python src/databricks/run_pipeline.py`)
+
+Schema creation, volume creation, copy of Git-folder `data/*.csv` into `/Volumes/workspace/de_c1/source_data/`, source validation, Bronze, Bronze validation, Silver, Silver validation, Gold, Gold validation, dashboard SQL validation, structured PASS/FAIL report.
+
+From the Git-folder repository root, on Databricks serverless / cluster Python:
+
+```
+python src/databricks/run_pipeline.py
+```
+
+Defaults: catalog `workspace`, source schema `de_c1`, volume `source_data`, table format `delta`, app name `DE_C1_Databricks`. Optional: `--stage bootstrap|source|bronze|silver|gold|dashboard`. Optional evaluation reset (not used on a normal run): `--reset`.
+
+Details, resource policy, and the source-copy mechanism: [`database/setup-notes.md`](database/setup-notes.md).
+
 ## Tests
 
 Spark-free:
 
 ```
-python -m unittest tests.test_bronze_contract tests.test_silver_contract tests.test_gold_contract tests.test_dashboard_contract -v
+python -m unittest tests.test_bronze_contract tests.test_silver_contract tests.test_gold_contract tests.test_dashboard_contract tests.test_databricks_workflow -v
 ```
 
 Full relevant suite (**one process**; do not start a second copy):
 
 ```
-python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries tests.test_databricks_workflow -v
 ```
 
 | Suite | Tests |
@@ -216,9 +247,10 @@ python -m unittest tests.test_generate_sample_data tests.test_bronze_contract te
 | Gold Spark | 16 |
 | Dashboard contract | 15 |
 | Dashboard Spark | 13 |
-| **Total relevant** | **203** |
+| Databricks workflow (Spark-free) | 20 |
+| **Total relevant** | **223** |
 
-Latest sequential full-suite result is recorded in [`FINAL_AUDIT.md`](FINAL_AUDIT.md) after the public-repository audit run. Do not treat an older prompt-file timing as the current result.
+Latest sequential full-suite result (this Databricks-workflow increment): **Ran 223 tests in 534.573s OK**. The prior public-repo audit recorded 203 tests in [`FINAL_AUDIT.md`](FINAL_AUDIT.md). Do not treat an older prompt-file timing as the current result.
 
 A second concurrent full suite can fail during Spark JVM gateway launch on Windows. That is an environment issue, not a pipeline logic failure. See [`debugging-notes.md`](debugging-notes.md).
 

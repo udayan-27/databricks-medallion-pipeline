@@ -23,6 +23,7 @@ Cursor was the AI tool. Git, unittest, and local PySpark were the validation too
 | Dashboard queries + guide | `ai-prompts/dashboard.md` / P013 | Gold-only tiles; Databricks UI not rendered |
 | Databricks compatibility review | debugging Prompt 3 / documentation Prompt 5 / P014 | Code review; no Databricks execution |
 | Public repository readiness audit | documentation Prompt 6 / P015 | Structure, security, prompt index, `FINAL_AUDIT.md` |
+| Databricks workflow redesign | documentation Prompt 7 / bronze, silver, gold, dashboard, debugging / P016 | `src/databricks/` bootstrap + validate + `run_pipeline.py`; existing modules remain the transform source of truth; workspace **not** executed |
 
 Index: `ai-prompts/prompt-index.md`.
 
@@ -56,4 +57,4 @@ See `tool-workflow.md`.
 
 ## What remains outside AI-usage claims
 
-Local Spark/parquet tests are not Databricks, Delta, Unity Catalog, or Databricks SQL dashboard evidence. Those items stay BLOCKED / NOT EXECUTED until a workspace run is requested.
+Local Spark/parquet tests are not Databricks, Delta, Unity Catalog, or Databricks SQL dashboard evidence. The `src/databricks/` workflow is the official supported Databricks process; it has not been executed in a workspace from this environment. Those items stay BLOCKED / NOT EXECUTED until a workspace run is requested.

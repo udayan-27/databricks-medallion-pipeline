@@ -39,11 +39,12 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 6 Dashboard | **Queries + guide complete** for this increment. Local Spark tests run against Gold parquet. Databricks SQL Dashboard UI **not** rendered. |
 | 8 Databricks compatibility audit | **Done** (code review). Local Windows Spark workarounds are isolated. No `src/` change. Databricks execution **not** started. |
 | 9 Documentation closeout | **Done** for local work (`README.md`, `reflection.md`, `final-ai-usage-summary.md`, `ai-prompts/prompt-index.md`) |
-| 10 Public repository readiness audit | **Done** (`FINAL_AUDIT.md`). Do not start Databricks until asked. |
+| 10 Public repository readiness audit | **Done** (`FINAL_AUDIT.md`). |
+| 11 Databricks bootstrap/validation workflow | **Code complete** in `src/databricks/`. Local contract tests added. Workspace execution **not** started. |
 
 `data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). All five Silver modules plus the combiner write combined flags locally. Gold SQL files plus `create_gold_tables.py` write Gold aggregations locally. Dashboard SQL plus `DASHBOARD_GUIDE.md` are implemented; the Databricks dashboard product has not been used.
 
-**Next requested stage should be Databricks execution only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold/dashboard exist until that runtime is executed. Do not re-apply local Windows Spark workarounds on the cluster. Do not push until asked.
+**Next requested stage should be Databricks execution of `python src/databricks/run_pipeline.py` only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold/dashboard exist until that runtime is executed. Do not re-apply local Windows Spark workarounds on the cluster. Do not push until asked. Do not treat exploratory notebook cells as the official Databricks process.
 
 ## Frozen decisions (do not reopen unless the user or official spec contradicts them)
 

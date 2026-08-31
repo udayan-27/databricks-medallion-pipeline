@@ -73,10 +73,8 @@ This replaces older prompt-file timings (including 548.539s) as the current resu
 
 ## Remaining Databricks-only items
 
-1. Copy CSVs to a UC Volume / DBFS / S3 prefix and set `MEDALLION_DATA_PATH`.
-2. Set `MEDALLION_CATALOG` if Unity Catalog is used (do not commit the name).
-3. Run Bronze / Silver / Gold with default `--table-format delta` on a cluster session.
-4. Apply or let Spark create warehouse objects from `database/schema.sql` as needed.
-5. Create the Databricks SQL dashboard from `src/dashboard/DASHBOARD_GUIDE.md`.
+1. Unavoidable UI: Databricks login, GitHub authorization if required, Git-folder connection if the UI/API requires it.
+2. Run `python src/databricks/run_pipeline.py` from the Git-folder root (schema/volume, source copy, Bronze/Silver/Gold, SQL validation). **Not executed** from this environment.
+3. Create the visual Databricks SQL dashboard from `src/dashboard/DASHBOARD_GUIDE.md` after Gold exists. SQL validation is automated; UI rendering is not.
 
-None of those were started during this audit.
+A later increment added `src/databricks/` so schema/volume/source copy/pipeline/validation are one repository command instead of manual notebook cells. That command has **still not been executed** in Databricks from this environment. Visual dashboard rendering remains a UI action.

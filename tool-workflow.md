@@ -51,4 +51,4 @@ This is a description of what this repository contains and how prompts were writ
 
 ## Current state
 
-Requirements, design, seed-42 data, Bronze, all five Silver modules, Gold SQL, dashboard queries, local Spark tests, and a Databricks compatibility **code review** are done. A Databricks cluster/SQL warehouse run and a Databricks SQL dashboard UI have **not** been executed.
+Requirements, design, seed-42 data, Bronze, all five Silver modules, Gold SQL, dashboard queries, local Spark tests, a Databricks compatibility **code review**, and a repository-owned Databricks **bootstrap/validation workflow** (`src/databricks/`) are done. A Databricks cluster/SQL warehouse run of that workflow and a Databricks SQL dashboard UI have **not** been executed.

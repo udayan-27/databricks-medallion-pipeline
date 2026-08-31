@@ -6,10 +6,10 @@ If this is a **new chat**, read `cursor-workflow/project-context.md` first.
 
 ## Stage discipline
 
-- Current completed work: repository init + requirements/architecture/DQ design + Stage 2 sample data + Bronze ingest code + **all five Silver quality modules and Silver table orchestration** + **Gold SQL aggregations and Gold table orchestration** + **Dashboard SQL queries and guide** + local Spark tests + Databricks compatibility **code review** + public-repository documentation audit.
+- Current completed work: repository init + requirements/architecture/DQ design + Stage 2 sample data + Bronze ingest code + **all five Silver quality modules and Silver table orchestration** + **Gold SQL aggregations and Gold table orchestration** + **Dashboard SQL queries and guide** + local Spark tests + Databricks compatibility **code review** + public-repository documentation audit + **repository-owned Databricks bootstrap/validation workflow** (`src/databricks/`; not executed in a workspace).
 - Do not regenerate sample data unless asked.
-- Do not start Databricks execution until asked. Do not push until asked.
-- Local Spark Bronze/Silver/Gold/Dashboard query tests run in this environment; Databricks tables and a Databricks SQL dashboard have not been created. A compatibility audit confirmed local Windows Spark workarounds are isolated. Do not claim Databricks execution passed. Do not apply `.venv` / winutils / parquet flags on the cluster.
+- Do not start Databricks execution of `run_pipeline.py` until asked. Do not push until asked.
+- Local Spark Bronze/Silver/Gold/Dashboard query tests run in this environment; Databricks tables and a Databricks SQL dashboard have not been created. Do not claim Databricks execution passed. Do not apply `.venv` / winutils / parquet flags on the cluster. Do not document exploratory notebook cells as the official Databricks process.
 
 ## Frozen analysis (do not silently reverse)
 

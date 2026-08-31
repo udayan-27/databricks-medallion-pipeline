@@ -1,6 +1,6 @@
 # Reflection
 
-Written after local implementation, testing, Windows Spark debugging, and the public-repository readiness audit. Databricks workspace execution has not been done, so this does not invent a Databricks success or failure story.
+Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, and the Databricks workflow redesign. Databricks workspace execution has not been done, so this does not invent a Databricks success or failure story. Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path.
 
 ## What went well
 
@@ -16,7 +16,7 @@ Local Windows Spark was harder than the pipeline logic. In-memory `createDataFra
 
 A later Gold QA run showed that overlapping Spark unittest processes on Windows can fail during JVM gateway startup (`PermissionError` on a Py4J temp connection-info file). The operating rule is one Spark process at a time.
 
-Keeping documentation honest was also work. Status lines drifted toward “Spark skipped” or “not yet implemented” after those stages had actually passed locally. The audit had to correct that without claiming Databricks results.
+Keeping documentation honest was also work. Status lines drifted toward “Spark skipped” or “not yet implemented” after those stages had actually passed locally. The audit had to correct that without claiming Databricks results. The later Databricks workflow redesign had the same rule: automate schema/volume/source copy/pipeline/validation in git, and leave login, Git-folder connection, and visual dashboard rendering as the only unavoidable UI actions.
 
 ## Where AI helped
 

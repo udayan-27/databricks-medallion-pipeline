@@ -59,3 +59,35 @@ Databricks SQL Dashboard UI: **not run**. Stage 2 CSV SHA-256 unchanged. Gold pr
 ### FINAL DECISION
 
 Ship Gold-only dashboard SQL + guide + local tests. Do not treat local parquet `spark.sql` as Databricks rendering. Keep Gold production SQL unchanged.
+
+---
+
+## Prompt 2 — 2026-08-31 — Databricks workflow validates dashboard SQL, not visual tiles
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 7 / P016. Validate `src/dashboard/dashboard_queries.sql` against Gold. Do not claim visual dashboard rendering is automated unless a supported mechanism exists.
+
+### AI RESPONSE SUMMARY
+
+`validate_dashboard_sql` loads the existing SQL file, substitutes `{gold_schema}`, and runs the five named queries (Top 10, histogram population, segmentation, category filter values, customer_segment filter). Category filter is applied before `LIMIT 10`. Visual bar/histogram/pie creation remains a Databricks UI action documented in `DASHBOARD_GUIDE.md`. Dashboard SQL was not rewritten.
+
+### ACCEPTED
+
+SQL validation in the repository workflow; UI rendering stays manual.
+
+### CHANGED
+
+Guide/README wording so the official process is `run_pipeline.py` plus the existing click-path for tiles.
+
+### REJECTED
+
+Claiming Lakeview/SQL dashboard widgets are created by the Python workflow; fabricating a Databricks UI run.
+
+### VALIDATION
+
+P016 sequential suite **223/223 OK**, including existing dashboard contract/Spark tests.
+
+### FINAL DECISION
+
+Dashboard SQL remains Gold-only. Visual rendering is still not automated and has not been executed.

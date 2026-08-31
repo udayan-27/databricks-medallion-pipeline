@@ -133,3 +133,35 @@ Diagnosed two independent Windows Hadoop issues from stack traces and isolated S
 ### FINAL DECISION
 
 Keep the local path helper and Windows-only FileSystem adapter. Do not install winutils. Do not start Silver. Databricks Bronze remains unproven until a workspace job is run.
+
+---
+
+## Prompt 3 — 2026-08-31 — Databricks workflow reuses existing Bronze ingest
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 7 / P016: automate Databricks bootstrap and validation. Bronze must run via existing `src/bronze/ingest_all.py`, not a duplicated notebook transform.
+
+### AI RESPONSE SUMMARY
+
+`src/databricks/run_pipeline.py` calls `ingest_core.ingest_all` with `PipelineConfig` pointing at `/Volumes/workspace/de_c1/source_data`, catalog `workspace`, `table_format=delta`. Bronze validation queries actual tables for existence, Delta format, row counts, NULL/duplicate/orphan preservation, `_ingest_row_id` uniqueness, and ingest metadata. Ingest logic was not copied into `src/databricks/`.
+
+### ACCEPTED
+
+Reuse `ingest_all`. Keep entity overwrite + append-only metadata.
+
+### CHANGED
+
+None of the Bronze transform modules.
+
+### REJECTED
+
+Notebook-duplicated ingest; regenerating CSVs; claiming Databricks Bronze was executed.
+
+### VALIDATION
+
+Covered by the P016 sequential suite (**223 tests in 534.573s OK**). Bronze Spark tests remain part of that suite.
+
+### FINAL DECISION
+
+Bronze application code stays the source of truth. Databricks execution still not run.

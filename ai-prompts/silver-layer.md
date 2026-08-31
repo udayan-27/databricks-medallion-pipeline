@@ -253,3 +253,35 @@ Debugging cycle (real): (1) canonical-parent window originally partitioned on pr
 ### FINAL DECISION
 
 Accept this increment. Silver is complete locally. Gold / Dashboard remain stubs. Databricks / Delta / UC still not run. Commit: `feat: complete Silver quality validation pipeline`.
+
+---
+
+## Prompt 4 — 2026-08-31 — Databricks workflow reuses existing Silver modules
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 7 / P016. Silver must run via `src/silver/create_silver_tables.py` (all five quality modules). Do not duplicate Silver logic.
+
+### AI RESPONSE SUMMARY
+
+The Databricks orchestrator calls `create_silver_tables.create_silver_tables`. Validation queries `silver.quality_metrics` and Silver tables for completeness, uniqueness (keys and participating rows), type (`type` module name), RI orphans, future-signup business logic, combined `quality_check_result`, and Bronze=Silver row counts. Eligibility for later Gold remains Completed + PASS.
+
+### ACCEPTED
+
+Reuse the combiner and frozen seed-42 expected fail counts. Flag, do not delete.
+
+### CHANGED
+
+None of the five Silver quality modules.
+
+### REJECTED
+
+Notebook-duplicated quality logic; padding to 700; treating NULL FKs as orphans; claiming Databricks Silver was executed.
+
+### VALIDATION
+
+P016 sequential suite **223/223 OK**. Silver Spark tests unchanged.
+
+### FINAL DECISION
+
+Silver application code stays the source of truth.

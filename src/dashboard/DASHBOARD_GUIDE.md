@@ -23,6 +23,8 @@ Local-only path (this repository's tests):
 
 That local path does **not** create a Databricks dashboard.
 
+Automated Databricks SQL validation (queries against `workspace.gold.*`) is part of `python src/databricks/run_pipeline.py`. That command has **not** been executed from this environment. Visual tile rendering remains a Databricks UI action and has **not** been created or rendered.
+
 ## 2. Catalog / schema assumptions
 
 | Setting | Local default | Databricks |
@@ -69,7 +71,7 @@ Qualifying-order definition is already inside Gold (`Completed` + `quality_check
 
 ## 4. Dashboard creation steps
 
-These are workspace click-path instructions. They have **not** been executed here.
+These are workspace click-path instructions. They have **not** been executed here. Repository automation validates the SQL; it does not create the visual dashboard.
 
 1. Confirm Gold tables exist: `SHOW TABLES IN gold` (or `SHOW TABLES IN <catalog>.gold`).
 2. Open **SQL Editor**. Create a new query. Paste each `DASHBOARD_QUERY` from `src/dashboard/dashboard_queries.sql` after substituting `{gold_schema}`.
@@ -240,6 +242,7 @@ Do not check the Databricks boxes without a warehouse run.
 | Table format | parquet | Delta |
 | Catalog | none / Hive metastore | Unity Catalog or workspace HMS |
 | What was run | `spark.sql` of `dashboard_queries.sql` in unit tests | **not run** |
+| Automated SQL checks | local Spark against parquet Gold | `src/databricks` dashboard SQL validation (**not run** in a workspace from this environment) |
 | What it proves | Query logic vs Gold contract, Top-N, population, segments, filter pattern | Tiles, viz types, widget filters, warehouse permissions |
 | What it cannot prove | Bar/histogram/pie rendering, widget UX, auto-bin appearance | Nothing until executed |
 

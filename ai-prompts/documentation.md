@@ -298,3 +298,51 @@ Sequential unittest (this cycle, one process, project `.venv` Python 3.11.9 + Te
 ### FINAL DECISION
 
 Ship the documentation/audit artifacts. Do not push. Databricks remains unexecuted.
+
+---
+
+## Prompt 7 — 2026-08-31 — Databricks bootstrap / execution / validation workflow
+
+### PROMPT SENT
+
+Redesign the Databricks workflow so the final project minimizes manual Databricks work. Do not fabricate historical AI interactions. Do not claim Cursor performed earlier manual Databricks actions. The final submission must not depend on temporary exploratory notebook cells.
+
+Create a repository-owned bootstrap + execution + validation workflow under `src/databricks/` that uses the existing Bronze/Silver/Gold application code. Automate schema/volume creation, copy of Git-folder `data/*.csv` into `/Volumes/workspace/de_c1/source_data/`, source validation (including the 460 listed issues and 30 future signups as a separate class), Bronze/Silver/Gold execution and validation, dashboard SQL validation, structured PASS/FAIL reporting, optional `--reset` for the evaluation schemas/volume only, and local unit tests. Investigate the supported Databricks Free Edition/Serverless copy mechanism rather than guessing. Do not execute Databricks. Do not push. Commit if real changes are made.
+
+### AI RESPONSE SUMMARY
+
+Added `src/databricks/bootstrap.py`, `validate.py`, and `run_pipeline.py`. The orchestrator constructs `PipelineConfig` (`/Volumes/workspace/de_c1/source_data`, catalog `workspace`, schemas `bronze`/`silver`/`gold`, `delta`, app name `DE_C1_Databricks`) and calls existing `ingest_all`, `create_silver_tables`, and `create_gold_tables`. Source copy tries POSIX Python I/O, then driver-temp + volume write, then `dbutils.fs.cp` with a `file:/` workspace URI, matching Databricks file docs for workspace files and UC Volumes on serverless. Git-folder path is `repo_root()/data`, not a hard-coded user folder. Visual dashboard rendering is not claimed as automated. Local Spark-free tests query committed CSVs (and a truncated negative fixture) so PASS is not hard-coded.
+
+### ACCEPTED
+
+- Existing Bronze/Silver/Gold modules remain the transform source of truth.
+- Unavoidable manual boundary: login, GitHub auth if required, Git-folder connection if UI/API requires it, visual dashboard UI.
+- RESET only with `--reset`, only evaluation bronze/silver/gold tables and the three volume CSVs.
+- Stage 2 CSVs unchanged; no secrets; no `.venv` / winutils on the cluster path.
+
+### CHANGED
+
+- Official Databricks process is now `python src/databricks/run_pipeline.py` from the Git-folder root (`database/setup-notes.md`, README).
+- Added `tests/test_databricks_workflow.py` (20 Spark-free tests).
+
+### REJECTED
+
+- Duplicating Bronze/Silver/Gold into a notebook.
+- Regenerating or editing Stage 2 CSVs.
+- Hard-coding `/Workspace/Users/<email>/...` in production code.
+- Claiming earlier exploratory Databricks notebook work as Cursor history.
+- Executing Databricks from this turn.
+- Pushing.
+- Treating visual dashboard rendering as automated.
+
+### VALIDATION
+
+`python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries tests.test_databricks_workflow -v`
+
+→ **Ran 223 tests in 534.573s OK** (0 failed, 0 errors, 0 skipped). Not Databricks.
+
+Copy-test SHA-256 of the three CSVs matched `DATA_GENERATION_NOTES.md`. Truncated-customers fixture produced FAIL (actual customers.rows=19, not a hard-coded PASS).
+
+### FINAL DECISION
+
+Ship the repository-owned Databricks workflow as the official supported process. Do not execute it in Databricks until asked. Do not push.

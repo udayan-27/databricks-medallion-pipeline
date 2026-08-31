@@ -126,6 +126,19 @@ Databricks compatibility audit (this increment): **code review done**. Local Win
 - Organizational Git account/email process still not stored as a secret in-repo.
 - **Do not push** until the user asks. Databricks workspace execution is still not started.
 
-## Explicitly not started after compatibility audit
+## Stage 11 — Databricks bootstrap / execution / validation workflow (code complete; workspace not run)
 
-Databricks cluster/SQL warehouse execution. Databricks SQL Dashboard UI rendering. Generator, Bronze, Silver, Gold, and Dashboard query tests exist and were locally validated. Databricks tables have not been created.
+Commit intended for this stage: `feat: automate Databricks environment and pipeline validation`
+
+- `src/databricks/bootstrap.py` — catalog/schema/volume, Git-folder → UC Volume copy, optional `--reset`
+- `src/databricks/validate.py` — source / Bronze / Silver / Gold / dashboard SQL checks with CHECK/EXPECTED/ACTUAL/STATUS/NOTES
+- `src/databricks/run_pipeline.py` — single entry point that calls existing `ingest_all`, `create_silver_tables`, `create_gold_tables`
+- Local Spark-free tests: `tests/test_databricks_workflow.py`
+- Official Databricks command: `python src/databricks/run_pipeline.py` from the Git-folder root
+- Visual dashboard UI remains manual
+
+**Did not** execute Databricks. **Did not** regenerate Stage 2 CSVs. **Did not** duplicate Bronze/Silver/Gold transforms into a notebook.
+
+## Explicitly not started after the Databricks workflow redesign
+
+Databricks cluster/SQL warehouse execution of `run_pipeline.py`. Databricks SQL Dashboard UI rendering. Local tests exist; Databricks tables have not been created from this environment.

@@ -1,6 +1,6 @@
 # Design notes
 
-Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated). **Gold SQL aggregations and `create_gold_tables.py` exist** (local Spark / parquet validated). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` exist** (local Spark / parquet validated). Bronze/Silver/Gold tables have **not** been created in a Databricks workspace. A Databricks SQL dashboard has **not** been rendered. No Databricks runtime results exist.
+Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated). **Gold SQL aggregations and `create_gold_tables.py` exist** (local Spark / parquet validated). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` exist** (local Spark / parquet validated). **Databricks bootstrap/orchestration exists in `src/databricks/`** (local contract tests; workspace **not** executed). Bronze/Silver/Gold tables have **not** been created in a Databricks workspace. A Databricks SQL dashboard has **not** been rendered. No Databricks runtime results exist.
 
 Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard guide. Rejected extras are listed at the end of this file.
 
@@ -384,7 +384,7 @@ If a test cannot run (no Spark), say so and do not claim PASS.
 | Silver | PySpark |
 | Gold | `.sql` files executed by Spark SQL / Databricks SQL |
 | Dashboard | Databricks SQL |
-| Orchestration | `ingest_all.py`, `create_silver_tables.py`, `create_gold_tables.py` run the above; they must not replace Gold SQL with hidden PySpark aggregations |
+| Orchestration | Databricks: `src/databricks/run_pipeline.py` calls the existing `ingest_all.py`, `create_silver_tables.py`, and `create_gold_tables.py`. Local parquet CLIs remain. Orchestrators must not replace Gold SQL with hidden PySpark aggregations |
 
 ---
 

@@ -486,7 +486,7 @@ A later complete submission should include:
 - [x] Responsible AI: synthetic data only; no secrets in repo or prompts (re-checked at audit)
 - [x] Meaningful Git history (not a single dump of finished work)
 
-**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze through dashboard **query** code exists and is locally tested. Databricks Bronze/Silver/Gold tables and a Databricks SQL Dashboard UI have **not** been created from this environment.
+**Current status of these checkboxes:** source CSVs contain the listed quality issues (Stage 2). Bronze through dashboard **query** code exists and is locally tested. A repository-owned Databricks bootstrap/validation workflow exists in `src/databricks/` and is locally contract-tested. Databricks Bronze/Silver/Gold tables and a Databricks SQL Dashboard UI have **not** been created from this environment.
 
 ## 12. Requirements traceability matrix
 
@@ -587,6 +587,6 @@ This satisfies the explicit repository structure and the Silver paragraph that a
 That stage did not implement generation or the pipeline. Later stages completed data generation, Bronze, Silver, Gold, dashboard queries, local Spark tests, and a Databricks compatibility **code review**. Still out of scope until requested:
 
 - Databricks SQL Dashboard UI rendering in a workspace
-- Databricks cluster / SQL warehouse execution
+- Databricks cluster / SQL warehouse execution of `src/databricks/run_pipeline.py`
 - Fabricated runtime results
 - Pushing this repository to GitHub from the audit turn

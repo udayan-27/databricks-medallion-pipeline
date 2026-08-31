@@ -132,3 +132,35 @@ No `src/` or `tests/` edits. Full suite not re-run. Last sequential relevant res
 
 Code is compatible pending runtime parameters. Do not start Databricks until asked.
 
+---
+
+## Prompt 4 — 2026-08-31 — Databricks workflow redesign (not a runtime debug cycle)
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 7 / P016. Investigate the supported Databricks Free Edition/Serverless mechanism for copying Git-folder workspace files into a Unity Catalog volume. Do not guess. Do not execute Databricks. Record genuine remaining manual actions.
+
+### AI RESPONSE SUMMARY
+
+Used official Databricks file documentation: workspace files (Git folders) and UC Volumes both expose POSIX paths to OSS Python on Runtime / serverless environment 2+; Spark/`dbutils.fs` require `file:/` for workspace files. Implemented copy as POSIX byte copy → driver-temp + volume write → `dbutils.fs.cp`, with SHA-256 verification and a clear remaining manual upload action if all fail. No Databricks CLI/REST credentials. No Databricks job was run, so this is a design/compatibility note, not a workspace failure.
+
+### ACCEPTED
+
+Documented fallback order instead of pretending one API always works. RESET is explicit and scoped.
+
+### CHANGED
+
+`src/databricks/bootstrap.py` copy/reset helpers; `debugging-notes.md` Stage 11 entry.
+
+### REJECTED
+
+Fabricating a copy that was not executed in Databricks; attributing earlier exploratory notebook setup to Cursor; using PATs in the repo.
+
+### VALIDATION
+
+Local copy test on temp dirs preserved SHA-256 (`7f8ae14c…`, `b244c3d9…`, `a7e568ac…`). Full sequential suite **223/223 OK**. Databricks copy **not executed**.
+
+### FINAL DECISION
+
+Treat POSIX/FUSE Python I/O as the primary serverless-compatible copy, with documented fallbacks. Do not execute Databricks until asked.
+
