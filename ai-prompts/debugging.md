@@ -94,3 +94,41 @@ Did not launch a second concurrent full suite.
 ### FINAL DECISION
 
 Treat the incident as local Spark-on-Windows gateway/temp isolation, not Gold. Run Spark tests sequentially. Isolation helper is test/runtime infrastructure only. Databricks not claimed. Dashboard not started.
+
+## Prompt 3 — 2026-08-31 — Databricks compatibility audit (no execution)
+
+### PROMPT SENT
+
+Prepare the completed local DE C1 pipeline for Databricks validation. Do not start new features, regenerate Stage 2 data, change Gold/dashboard business logic, or reinitialize Git. Perform a strict compatibility audit of local Spark config, Windows filesystem code, parquet vs Delta, catalog/schema, path handling (C:\ D:\ dbfs:/ /Volumes/ s3:// abfss://), saveAsTable, SparkSession, env vars, Java, warehouse, `_ingest_row_id`, metadata, Bronze/Silver/Gold/dashboard SQL. Databricks must not depend on Windows paths, winutils, NoWinutils, local parquet defaults, warehouse/TEMP hacks, or `.venv`. Catalog must stay configurable. If code changes are required, make the minimum change, re-run 203+ tests, and commit. If no repository change is necessary, do not commit. Do not start Databricks execution.
+
+### AI RESPONSE SUMMARY
+
+Reviewed requirements, design, and `src/`. Local Windows Spark workarounds are already gated: active cluster session first; `apply_local_spark_config` only on `os.name == "nt"`; warehouse/`TEMP` isolation only in the test helper; default table format `delta`; remote URIs pass through; catalog unset by default. Bronze/Silver semantics and Gold `Completed` + `PASS` are unchanged. Dashboard SQL reads Gold only. No production code change was required. Runtime catalog and data path remain operator parameters. Databricks was not started.
+
+### ACCEPTED
+
+- Isolation already present; do not rewrite SparkSession or path helpers.
+- Catalog as `MEDALLION_CATALOG` placeholder, not a committed workspace name.
+- Documentation of the audit and a Databricks runtime-parameter checklist.
+
+### CHANGED
+
+- Docs only: `debugging-notes.md`, `README.md`, `database/setup-notes.md`, `cursor-workflow/task-breakdown.md`, `cursor-workflow/project-context.md`, this file, `ai-prompts/documentation.md`.
+
+### REJECTED
+
+- Installing delta-spark locally for the audit.
+- Hard-coding a catalog name.
+- Adding a Databricks-only parquet refusal (default is already `delta`; parquet is an explicit local flag).
+- Changing Gold/dashboard SQL.
+- Regenerating CSVs.
+- Starting Databricks jobs.
+
+### VALIDATION
+
+No `src/` or `tests/` edits. Full suite not re-run. Last sequential relevant result remains **203/203 OK** (548.539s). Gold SQL last commit remains `eb25da1`. Working tree was clean before this documentation update.
+
+### FINAL DECISION
+
+Code is compatible pending runtime parameters. Do not start Databricks until asked.
+

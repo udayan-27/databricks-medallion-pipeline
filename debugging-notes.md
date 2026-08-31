@@ -255,6 +255,26 @@ Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`. No Gold SQL change.
 - **AI suggestion:** accepted the alias fix; rejected rewriting the histogram query.
 - **Tests re-run:** `python -m unittest tests.test_dashboard_queries -v` → **Ran 13 tests in 70.184s OK**. Combined dashboard: **Ran 28 tests in 69.924s OK**. Combined relevant suite: **Ran 203 tests in 548.539s OK**.
 
+## Stage 8 — Databricks compatibility audit (2026-08-31)
+
+Code review only. Databricks was **not** executed. Stage 2 CSVs, Gold SQL, and dashboard business SQL were not changed. No production code change was required.
+
+### 13. Local Windows Spark workarounds must not run on Databricks
+
+- **Symptom (prevented):** Local Spark on this Windows machine needs `NoWinutilsRawLocalFileSystem`, isolated warehouse/`TEMP` dirs, `--table-format parquet`, project `.venv`, and `JAVA_HOME`. Copying that stack onto a Databricks cluster would be the wrong runtime.
+- **Expected vs actual:** Databricks must use the cluster `SparkSession`, Delta, and a configured volume/DBFS/S3/ABFSS data path. Review of `src/` matches that split.
+- **Root cause / isolation already in code:**
+  - `get_spark_session` returns `SparkSession.getActiveSession()` when one exists (Databricks cluster session). Local Hadoop FS config is applied only when **creating** a session.
+  - `apply_local_spark_config` is a no-op unless `os.name == "nt"`. Databricks Runtime is Linux, so `NoWinutilsRawLocalFileSystem` is never compiled or installed as `fs.file.impl`.
+  - `start_local_test_spark` warehouse dir, `spark.local.dir`, and `TEMP`/`TMP`/`TMPDIR` redirection exist only for unittests. Production ingest/Silver/Gold call `get_spark_session`, not the test helper.
+  - Default `MEDALLION_TABLE_FORMAT` is `delta`. Local tests pass `parquet` explicitly. Databricks operators must omit that flag.
+  - `spark_input_path` passes `dbfs:/`, `/Volumes/`, `s3://`, and `abfss://` through unchanged. `C:\` / `D:\` are local OS paths (`has_uri_scheme` is false) and are converted with `as_posix()`, not `Path.as_uri()`.
+- **Catalog:** `MEDALLION_CATALOG` default is unset. SQL uses `{silver_schema}` / `{gold_schema}` which become `bronze`/`silver`/`gold` or `<catalog>.<layer>`. No personal or production catalog is committed.
+- **Data quality / Gold / dashboard:** Bronze still retains duplicates, NULLs, and orphan FKs; Silver joins on `_ingest_row_id` and distinct parent keys (no RI/BL fan-out); Gold eligibility remains `Completed` + `PASS`; dashboard SELECTs Gold only.
+- **Files changed this increment:** documentation only (`debugging-notes.md`, `README.md`, `database/setup-notes.md`, workflow/prompt logs). No `src/` change.
+- **Tests re-run:** none (no production or test code changed). Last sequential relevant suite remains **203/203 OK**.
+- **Rejected:** installing delta-spark locally; regenerating Stage 2 CSVs; changing Gold/dashboard logic; hard-coding a workspace catalog; starting Databricks execution.
+
 Use this file during later stages to capture:
 
 - Symptom

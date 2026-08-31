@@ -22,6 +22,7 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Silver completeness / uniqueness / type / RI / business logic | Implemented (`src/silver/01_quality_completeness.py` through `05_quality_business_logic.py`, `quality_common.py`, `create_silver_tables.py`). Local Spark validated. Combined Silver tables written in tests as parquet. |
 | Gold aggregations | Implemented (`src/gold/01_sales_by_product.sql` through `04_customer_segmentation.sql`, `create_gold_tables.py`). Local Spark / parquet validated. Databricks Gold **not** run. |
 | Dashboard | Queries + guide implemented (`src/dashboard/dashboard_queries.sql`, `DASHBOARD_GUIDE.md`). Local Spark query tests against Gold parquet. Databricks SQL Dashboard UI **not** rendered. |
+| Databricks compatibility audit | **Code review complete.** Local Windows Spark workarounds are gated off the Databricks path. Runtime catalog/data-path remain placeholders. Databricks execution has **not** started. |
 | Tests | Generator **14/14 OK**; Bronze contract **38/38 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; Dashboard contract **15/15 OK**; Dashboard Spark **13/13 OK**. Sequential generator/Bronze/Silver **148/148 OK**; sequential Gold **27/27 OK**; sequential Dashboard **28/28 OK**; combined relevant **203/203 OK** (0 failed, 0 errors, 0 skipped) in **548.539s**. |
 
 Completeness, uniqueness, type validation, RI, and business logic run on Bronze DataFrames locally. `create_silver_tables.py` writes combined Silver tables and `silver.quality_metrics` (local parquet in tests). `create_gold_tables.py` executes the Gold SQL files against Silver and overwrites Gold tables (local parquet in tests). The CSVs in `data/` are real generated inputs.
@@ -67,7 +68,7 @@ Configuration (no secrets in git):
 | `MEDALLION_BRONZE_SCHEMA` / `--bronze-schema` | Schema name | `bronze` |
 | `MEDALLION_TABLE_FORMAT` / `--table-format` | `delta` or `parquet` | `delta` |
 
-**Databricks:** run on a cluster with an active SparkSession. Point `MEDALLION_DATA_PATH` at a UC volume, DBFS, or S3 prefix that contains `customers.csv`, `orders.csv`, and `products.csv`. Set `MEDALLION_CATALOG` if using Unity Catalog. Default format `delta` is the Databricks path.
+**Databricks:** run on a cluster with an active SparkSession. Point `MEDALLION_DATA_PATH` at a UC volume, DBFS, S3, or ABFSS prefix that contains `customers.csv`, `orders.csv`, and `products.csv`. Set `MEDALLION_CATALOG` at runtime if using Unity Catalog (do not commit a workspace catalog name). Default format `delta` is the Databricks path. Do **not** copy the local Windows stack: no project `.venv`, winutils, `JAVA_HOME` from this laptop, or `--table-format parquet`. Runtime parameter checklist: `database/setup-notes.md`.
 
 ```
 python src/bronze/ingest_all.py --data-path /Volumes/<catalog>/<schema>/<volume>

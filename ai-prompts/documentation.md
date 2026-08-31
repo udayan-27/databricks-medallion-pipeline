@@ -212,3 +212,38 @@ Smoke test passed. Contract tests 33/33 OK. Spark ingest tests ran (not skipped)
 ### FINAL DECISION
 
 Local Spark **runtime** is installed. Local parquet Bronze **ingest validation is not complete**. Databricks remains blocked until a workspace job is actually run. Stop after environment setup; do not start Silver.
+
+---
+
+## Prompt 5 — 2026-08-31 — Databricks compatibility audit documentation
+
+### Prompt text (summary)
+
+Audit the completed local pipeline for Databricks compatibility. Do not start Databricks, change Gold/dashboard logic, or regenerate Stage 2 data. Document only justified findings. Catalog/schema must stay parameterized.
+
+### AI response summary
+
+No `src/` change. Runtime parameters (catalog, data path, default Delta) were already designed. README and `database/setup-notes.md` now state that Databricks must not use the local Windows Spark stack, and that `MEDALLION_CATALOG` is a runtime placeholder.
+
+### Accepted and why
+
+- Audit recorded in `debugging-notes.md`.
+- Operator checklist in `database/setup-notes.md` without inventing a catalog name.
+
+### Changed and why
+
+Documentation only. Gold SQL, dashboard queries, and pipeline code unchanged.
+
+### Rejected and why
+
+- Hard-coded workspace/catalog names.
+- Local Delta install for the audit.
+- Databricks execution this turn.
+
+### Validation performed
+
+No production tests re-run (no code change). Prior relevant suite **203/203 OK**.
+
+### Final decision
+
+Docs updated so the next Databricks run uses cluster session + Delta + configured paths. Do not start that run until asked.

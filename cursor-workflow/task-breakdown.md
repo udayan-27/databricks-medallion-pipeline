@@ -108,6 +108,8 @@ Do not start final submission audit until requested.
 
 Gold QA (prior increment): concurrent/overlapping Spark suites vs sequential. Root cause is PySpark `launch_gateway` Windows `PermissionError` on a unique temp connection-info file — not Gold logic. Test helper isolates `spark.local.dir` / Py4J temp per class and retries that gateway error only.
 
+Databricks compatibility audit (this increment): **code review done**. Local Windows Spark (winutils adapter, parquet, `.venv`, warehouse/`TEMP` isolation) is already gated off the Databricks path. Default table format is `delta`. Catalog/data-path are runtime parameters, not committed names. No `src/` change required. Databricks jobs have **not** been started.
+
 ## Stage 9 — Documentation closeout
 
 - README setup that matches reality.
@@ -122,6 +124,6 @@ Gold QA (prior increment): concurrent/overlapping Spark suites vs sequential. Ro
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after Dashboard complete
+## Explicitly not started after compatibility audit
 
-Databricks SQL Dashboard UI rendering. Generator, Bronze, Silver, Gold, and Dashboard query tests exist. Databricks tables have not been created.
+Databricks cluster/SQL warehouse execution. Databricks SQL Dashboard UI rendering. Generator, Bronze, Silver, Gold, and Dashboard query tests exist and were locally validated. Databricks tables have not been created.

@@ -23,7 +23,7 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 9. `data-quality-strategy.md`
 10. Matching `ai-prompts/<area>.md` before changing that area
 
-## Current stage (as of Stage 6 Dashboard complete)
+## Current stage (as of Databricks compatibility audit)
 
 | Stage | Status |
 |---|---|
@@ -37,11 +37,12 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 4 Silver business logic + `create_silver_tables.py` | **Done**. Local Spark tests **passed**. |
 | 5 Gold | **Code complete.** Local Spark tests **passed**. Databricks / Delta / UC Gold **not** run. |
 | 6 Dashboard | **Queries + guide complete** for this increment. Local Spark tests run against Gold parquet. Databricks SQL Dashboard UI **not** rendered. |
-| 7–10 Debugging closeout through submission | **Not started** |
+| 8 Databricks compatibility audit | **Done** (code review). Local Windows Spark workarounds are isolated. No `src/` change. Databricks execution **not** started. |
+| 7–10 Debugging closeout through submission | **Not started** (do not start Databricks until asked) |
 
 `data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). All five Silver modules plus the combiner write combined flags locally. Gold SQL files plus `create_gold_tables.py` write Gold aggregations locally. Dashboard SQL plus `DASHBOARD_GUIDE.md` are implemented; the Databricks dashboard product has not been used.
 
-**Next requested stage should be debugging/hardening or documentation closeout only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold/dashboard exist until that runtime is executed.
+**Next requested stage should be Databricks execution or documentation closeout only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold/dashboard exist until that runtime is executed. Do not re-apply local Windows Spark workarounds on the cluster.
 
 ## Frozen decisions (do not reopen unless the user or official spec contradicts them)
 

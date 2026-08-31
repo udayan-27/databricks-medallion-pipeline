@@ -9,7 +9,7 @@ If this is a **new chat**, read `cursor-workflow/project-context.md` first.
 - Current completed work: repository init + requirements/architecture/DQ design + Stage 2 sample data + Bronze ingest code + **all five Silver quality modules and Silver table orchestration** + **Gold SQL aggregations and Gold table orchestration** + **Dashboard SQL queries and guide**.
 - Do not regenerate sample data unless asked.
 - Do not start final submission audit until that stage is requested.
-- Local Spark Bronze/Silver/Gold/Dashboard query tests run in this environment; Databricks tables and a Databricks SQL dashboard have not been created. Do not claim Databricks execution passed.
+- Local Spark Bronze/Silver/Gold/Dashboard query tests run in this environment; Databricks tables and a Databricks SQL dashboard have not been created. A compatibility audit confirmed local Windows Spark workarounds are isolated. Do not claim Databricks execution passed. Do not apply `.venv` / winutils / parquet flags on the cluster.
 
 ## Frozen analysis (do not silently reverse)
 

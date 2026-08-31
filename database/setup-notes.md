@@ -1,6 +1,6 @@
 # Database setup notes
 
-Status: Databricks objects have not been created from this repository.
+Status: Databricks objects have not been created from this repository. A code-level compatibility audit (2026-08-31) found the Databricks path already isolated from local Windows Spark workarounds. Execution has **not** started.
 
 ## Planned setup (not executed)
 
@@ -8,6 +8,30 @@ Status: Databricks objects have not been created from this repository.
 2. Apply `database/schema.sql` once, or let Bronze `CREATE SCHEMA IF NOT EXISTS` plus `saveAsTable` create the Bronze objects on first ingest.
 3. Run Bronze ingest, then Silver, then Gold SQL.
 4. Point Databricks SQL dashboard datasets at Gold tables/views.
+
+## Databricks runtime parameters (placeholders — do not commit a workspace name)
+
+Copy CSVs to a distributed path first. Then set these at job/cluster time. Do not invent or commit a personal/production catalog.
+
+| Parameter | Purpose | How to set |
+|---|---|---|
+| `MEDALLION_DATA_PATH` / `--data-path` | Directory that already contains `customers.csv`, `orders.csv`, `products.csv` | `/Volumes/<catalog>/<schema>/<volume>`, `dbfs:/...`, `s3://...`, or `abfss://...`. Not `C:\` / `D:\`. |
+| `MEDALLION_CATALOG` / `--catalog` | Unity Catalog catalog | Runtime value for this workspace. Omit on Hive metastore. Do not default to `main` in git. |
+| `MEDALLION_BRONZE_SCHEMA` | Bronze schema | `bronze` |
+| `MEDALLION_SILVER_SCHEMA` | Silver schema | `silver` |
+| `MEDALLION_GOLD_SCHEMA` | Gold schema | `gold` |
+| `MEDALLION_TABLE_FORMAT` / `--table-format` | Table format | **omit** (default `delta`). Do **not** pass `parquet`. |
+
+Do **not** bring the local Windows stack onto Databricks:
+
+- project `.venv`
+- winutils / Hadoop `HADOOP_HOME`
+- `NoWinutilsRawLocalFileSystem` (local Windows sessions only)
+- laptop `JAVA_HOME` / PowerShell `TEMP` hacks
+- `--table-format parquet`
+- local `spark.sql.warehouse.dir`
+
+`get_spark_session` reuses the cluster session. Gold SQL is executed by `create_gold_tables.py`, which substitutes `{silver_schema}` / `{gold_schema}`. Do not paste unsubstituted Gold files into the SQL editor. Dashboard queries: replace `{gold_schema}` with `gold` or `<catalog>.gold` as in `DASHBOARD_GUIDE.md`.
 
 ## Bronze job (code exists; not run here)
 
@@ -17,7 +41,7 @@ On a Databricks cluster:
 python src/bronze/ingest_all.py --data-path <volume-or-dbfs-or-s3-dir>
 ```
 
-Optional: `--catalog`, `--bronze-schema` (default `bronze`), `--table-format delta`.
+Optional: `--catalog`, `--bronze-schema` (default `bronze`). Omit `--table-format` so the default `delta` is used.
 
 Local Spark without Delta: `--table-format parquet`.
 
