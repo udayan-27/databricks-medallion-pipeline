@@ -1,6 +1,6 @@
 # Seed data notes
 
-Status: Stage 2 sample CSVs are generated. Local Spark parquet Bronze ingest tests measured physical counts **10,010 / 100,020 / 500**. They have **not** been loaded into Databricks Bronze tables from this environment.
+Status: Stage 2 sample CSVs are generated. Local Spark parquet Bronze ingest tests measured physical counts **10,010 / 100,020 / 500**. Databricks Bronze (Delta) measured the same physical counts after `python src/databricks/run_pipeline.py` (**PASS**). CSVs were not regenerated.
 
 ## How `data/*.csv` were generated
 
@@ -20,4 +20,4 @@ Details: `src/data_generation/DATA_GENERATION_NOTES.md`. Synthetic names/emails 
 
 Mandatory injected issues: 50 NULL emails; 10 extra duplicate customer rows; 100 NULL order customer_id; 200 NULL order product_id; 50 orphan customer_id; 30 orphan product_id; 20 extra duplicate order rows. Optional: 30 future signup dates (not in the 460).
 
-Bronze ingest must read these files without transformation. Local parquet Bronze tests measured **10,010 / 100,020 / 500**. Databricks Bronze tables have not been written from this environment.
+Bronze ingest must read these files without transformation. Local parquet Bronze tests measured **10,010 / 100,020 / 500**. Databricks Bronze tables measured the same counts (Delta; NULL/duplicates/orphans preserved).

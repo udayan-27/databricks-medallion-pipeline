@@ -20,7 +20,7 @@ This project is developed in Cursor with Git history and written specifications 
 | Git | Meaningful commit history; no fabricated history |
 | PySpark | Distributed Bronze and Silver processing |
 | Spark SQL / Databricks SQL | Required Gold aggregations and dashboard queries |
-| Databricks | Target runtime for tables, jobs, and the SQL dashboard (not executed from this environment) |
+| Databricks | Target runtime for tables, jobs, and the SQL dashboard (`run_pipeline.py` executed in the workspace; visual dashboard rendered manually in the UI) |
 | unittest | Contract tests and local Spark integration tests |
 
 ## What is not allowed

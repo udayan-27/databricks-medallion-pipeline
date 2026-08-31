@@ -165,3 +165,35 @@ Covered by the P016 sequential suite (**223 tests in 534.573s OK**). Bronze Spar
 ### FINAL DECISION
 
 Bronze application code stays the source of truth. Databricks execution still not run.
+
+---
+
+## Prompt 4 — 2026-08-31 — Closeout: Databricks Bronze PASS (no Bronze code change)
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 8 / P017. Record the actual workspace Bronze PASS. Do not modify ingest logic.
+
+### AI RESPONSE SUMMARY
+
+No Bronze source change. Documented Databricks Bronze: customers/orders/products 10,010 / 100,020 / 500; all Delta; `_ingest_row_id` unique; NULL/duplicates/orphans preserved; metadata SUCCESS.
+
+### ACCEPTED
+
+Reuse existing `ingest_all`. Treat the workspace run as Databricks evidence, distinct from local parquet.
+
+### CHANGED
+
+Documentation/current-status only.
+
+### REJECTED
+
+Rewriting ingest; claiming Cursor ran Bronze in this closeout chat; regenerating CSVs.
+
+### VALIDATION
+
+Local closeout suite **223/223 OK**. Stage 2 SHA-256 unchanged. Databricks Bronze PASS is the candidate’s workspace result.
+
+### FINAL DECISION
+
+Bronze application code stays the source of truth. Databricks Bronze is complete.

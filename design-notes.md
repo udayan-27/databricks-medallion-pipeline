@@ -1,8 +1,8 @@
 # Design notes
 
-Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated). **Gold SQL aggregations and `create_gold_tables.py` exist** (local Spark / parquet validated). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` exist** (local Spark / parquet validated). **Databricks bootstrap/orchestration exists in `src/databricks/`** (local contract tests; workspace **not** executed). Bronze/Silver/Gold tables have **not** been created in a Databricks workspace. A Databricks SQL dashboard has **not** been rendered. No Databricks runtime results exist.
+Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated; Databricks Delta **PASS**). **Gold SQL aggregations and `create_gold_tables.py` exist** (local Spark / parquet validated; Databricks Gold **PASS**). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` exist** (local Spark / parquet validated; Databricks dashboard SQL **PASS**). **Databricks bootstrap/orchestration exists in `src/databricks/`** and **has been executed** (`python src/databricks/run_pipeline.py`). The published dashboard **DE C1 E-Commerce Sales Dashboard** was rendered **manually in the Databricks SQL UI** (not by Cursor).
 
-Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard guide. Rejected extras are listed at the end of this file.
+Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard. Rejected extras are listed at the end of this file.
 
 ## Goal
 
@@ -281,12 +281,12 @@ Tiles read Gold, not Silver:
 2. Customer revenue distribution — `gold.revenue_by_customer.lifetime_value_actual` (histogram in Databricks SQL). Population is all canonical customers, including zeros. Binning is a visualization setting, not SQL.
 3. Customer segmentation — `gold.customer_segmentation` (pie on `customer_count`). SQL does not recompute the 1000.00 / Repeat / One-Time CASE.
 
-Filters (implemented in the guide; Databricks widgets not attached in this environment):
+Filters (implemented in the guide; Databricks widgets attached on the published dashboard):
 
 - `category` on Tile 1 as a query parameter **before** `LIMIT 10`
 - `customer_segment` on Tile 2
 
-Rejected for these tiles: order date range (no date grain), `country` (not on Gold), `segment_type` on the pie (would hide the four-way mix). Exact widget steps: `DASHBOARD_GUIDE.md`. No fake screenshots.
+Rejected for these tiles: order date range (no date grain), `country` (not on Gold), `segment_type` on the pie (would hide the four-way mix). Exact widget steps: `DASHBOARD_GUIDE.md`. Visual rendering was completed manually in the Databricks UI. No fake screenshots. Cursor did not generate the visual dashboard.
 
 ---
 

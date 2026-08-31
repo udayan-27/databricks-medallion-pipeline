@@ -22,6 +22,7 @@ Format: prompt ID, lifecycle activity, evidence file, purpose, resulting artifac
 | P014 | Databricks compatibility preparation | [debugging.md](debugging.md) Prompt 3; [documentation.md](documentation.md) Prompt 5 | Code review that local Windows workarounds stay off the cluster path | Docs only (`README.md`, `database/setup-notes.md`, debugging notes) | `eb9c61c` |
 | P015 | Documentation / public repository audit | [documentation.md](documentation.md) Prompt 6 | Structure, security, prompt index, reproducibility, `FINAL_AUDIT.md` | This index, `FINAL_AUDIT.md`, README/reflection closeout | `chore: complete public repository readiness audit` |
 | P016 | Databricks workflow redesign | [documentation.md](documentation.md) Prompt 7; [bronze-layer.md](bronze-layer.md) Prompt 3; [silver-layer.md](silver-layer.md) Prompt 4; [gold-layer.md](gold-layer.md) Prompt 3; [dashboard.md](dashboard.md) Prompt 2; [debugging.md](debugging.md) Prompt 4 | Automate Databricks bootstrap, Git-folder→volume copy, pipeline run, and validation without duplicating Bronze/Silver/Gold | `src/databricks/`, `tests/test_databricks_workflow.py`, README / setup-notes | `feat: automate Databricks environment and pipeline validation` |
+| P017 | Documentation / Databricks closeout | [documentation.md](documentation.md) Prompt 8; [bronze-layer.md](bronze-layer.md) Prompt 4; [silver-layer.md](silver-layer.md) Prompt 5; [gold-layer.md](gold-layer.md) Prompt 4; [dashboard.md](dashboard.md) Prompt 3; [debugging.md](debugging.md) Prompt 5 | Record actual workspace `run_pipeline.py` PASS results and the manually published dashboard; do not change pipeline/Gold/dashboard SQL | `FINAL_AUDIT.md`, README, setup-notes, prompt index, reflection | `docs: close out Databricks validation and dashboard` |
 
 ## How to read the prompt files
 
@@ -33,7 +34,7 @@ Every meaningful prompt file uses:
 - **VALIDATION** — commands that were actually run
 - **FINAL DECISION** — what shipped
 
-Do not treat an older VALIDATION block as the latest test run. Latest sequential counts: **Ran 223 tests in 534.573s OK** (this Databricks-workflow increment, including `tests.test_databricks_workflow`). The public-repo audit recorded 203 tests in `FINAL_AUDIT.md`.
+Do not treat an older VALIDATION block as the latest test run. Latest sequential **local** counts: **Ran 223 tests in 840.713s OK** (this closeout, including `tests.test_databricks_workflow`). Databricks workspace PASS results are a separate evidence class in `FINAL_AUDIT.md`. The public-repo audit recorded 203 tests.
 
 ## Duplicate file pointers (same interaction, two logs)
 
@@ -42,6 +43,7 @@ Do not treat an older VALIDATION block as the latest test run. Latest sequential
 | P007 | Implementation in `bronze-layer.md`; debugging cycle in `debugging.md` |
 | P012 | Debugging diagnosis in `debugging.md`; Gold file notes that SQL was unchanged |
 | P016 | Official Databricks process recorded in documentation; layer files record that existing transforms were reused, not rewritten |
+| P017 | Closeout records the actual workspace run and the manually published dashboard; layer files record that transforms and dashboard SQL were not changed |
 
 ## Lifecycle coverage
 
@@ -63,6 +65,7 @@ Do not treat an older VALIDATION block as the latest test run. Latest sequential
 | 14. Gold QA/debugging | P012 |
 | 15. Dashboard | P013 |
 | 16. Databricks compatibility preparation | P014 |
-| 17. Documentation | P002, P003, P015, P016 |
+| 17. Documentation | P002, P003, P015, P016, P017 |
 | 18. Environment/debugging interactions | P006, P007, P012 |
 | 19. Databricks workflow redesign | P016 |
+| 20. Databricks workspace execution + published dashboard (recorded, not fabricated) | P017 |

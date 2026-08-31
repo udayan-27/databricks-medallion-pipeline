@@ -286,6 +286,19 @@ Code and documentation only. Databricks was **not** executed. This is not a runt
 - **Tests re-run:** Spark-free `tests.test_databricks_workflow` plus the sequential full relevant suite (see the prompt record for this increment).
 - **Rejected:** Duplicating Bronze/Silver/Gold into a notebook; regenerating CSVs; claiming earlier manual Databricks setup as Cursor history; executing Databricks from this turn; pushing.
 
+## Stage 12 — Databricks workspace execution and published dashboard (2026-08-31)
+
+Not a defect cycle. Pipeline logic, Gold SQL, and dashboard SQL were not changed.
+
+- **What ran:** `python src/databricks/run_pipeline.py` in the Databricks workspace (Git-folder root). This is **Databricks validation**, not local parquet.
+- **Result:** Bootstrap/source **PASS**; Bronze **PASS**; Silver **PASS**; Gold **PASS**; dashboard SQL **PASS**.
+- **Silver (workspace):** customers FAIL 100; orders FAIL 420; products FAIL 0; completeness 50 / 100 / 200; uniqueness participating rows 20 / 40; RI orphans 50 / 30; future signups 30; type failures 0. Physical rows 10,010 / 100,020 / 500.
+- **Gold (workspace):** sales_by_product 500; revenue_by_customer 10,000; daily_trends 1,339; weekly_trends 193; customer_segmentation 4; eligible revenue 46,083,475.86; eligible orders 74,587; segmentation population 10,000.
+- **Dashboard SQL (workspace):** Top 10 = 10; histogram population = 10,000; four segmentation buckets; category filter before LIMIT 10; customer_segment slices the histogram.
+- **Published dashboard:** **DE C1 E-Commerce Sales Dashboard**, created and rendered **manually in the Databricks SQL UI** (bar, histogram, pie/donut, two filters tested and returned to All). Sharing: Anyone in my account can view. Not public internet access. Cursor did not generate the visual dashboard.
+- **Local closeout tests:** `Ran 223 tests in 840.713s OK`. Stage 2 SHA-256 unchanged.
+- **Rejected:** Treating local parquet as Databricks; claiming Cursor rendered the tiles; changing Gold or dashboard SQL; regenerating CSVs.
+
 Use this file during later stages to capture:
 
 - Symptom

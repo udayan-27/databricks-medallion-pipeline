@@ -1,14 +1,16 @@
 # Reflection
 
-Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, and the Databricks workflow redesign. Databricks workspace execution has not been done, so this does not invent a Databricks success or failure story. Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path.
+Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, the Databricks workflow redesign, **actual Databricks workspace execution**, and the **manually rendered** published SQL dashboard. Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path. Cursor did not generate the visual dashboard.
 
 ## What went well
 
-Persistent written specifications (`cursor-workflow/`, `requirements-analysis.md`, `data-quality-strategy.md`) kept later stages from re-opening frozen decisions. The 460-vs-700 gap, five Silver modules, NULL-versus-orphan split, and Gold `Completed` + `PASS` rule stayed stable from design through Gold and the dashboard.
+Persistent written specifications (`cursor-workflow/`, `requirements-analysis.md`, `data-quality-strategy.md`) kept later stages from re-opening frozen decisions. The 460-vs-700 gap, five Silver modules, NULL-versus-orphan split, and Gold `Completed` + `PASS` rule stayed stable from design through Gold, the dashboard, and the workspace run.
 
-Stage discipline also worked. Each increment had a real prompt record, tests, and a descriptive Git commit. The history is requirements → design → data → Bronze → Silver → Gold → dashboard → compatibility, not a single dump of finished work.
+Stage discipline also worked. Each increment had a real prompt record, tests, and a descriptive Git commit. The history is requirements → design → data → Bronze → Silver → Gold → dashboard → compatibility → Databricks automation → workspace validation, not a single dump of finished work.
 
 Synthetic data generation was deterministic on the first seed-42 run. Built-in validation and 14 unit tests matched the listed defect counts without padding to 700.
+
+The official Databricks path (`python src/databricks/run_pipeline.py`) reused the same Bronze/Silver/Gold modules. Workspace counts matched the frozen local contract (physical rows, FAIL rows, eligible revenue 46,083,475.86, eligible orders 74,587, segmentation population 10,000). That is stronger evidence than inventing a second transform path in a notebook.
 
 ## What was difficult
 
@@ -16,7 +18,7 @@ Local Windows Spark was harder than the pipeline logic. In-memory `createDataFra
 
 A later Gold QA run showed that overlapping Spark unittest processes on Windows can fail during JVM gateway startup (`PermissionError` on a Py4J temp connection-info file). The operating rule is one Spark process at a time.
 
-Keeping documentation honest was also work. Status lines drifted toward “Spark skipped” or “not yet implemented” after those stages had actually passed locally. The audit had to correct that without claiming Databricks results. The later Databricks workflow redesign had the same rule: automate schema/volume/source copy/pipeline/validation in git, and leave login, Git-folder connection, and visual dashboard rendering as the only unavoidable UI actions.
+Keeping documentation honest was also work. Status lines drifted toward “Spark skipped” or “Databricks not executed” after those stages had actually passed. Closeout had to correct current status without rewriting historical prompt decisions, and without claiming Cursor rendered the Databricks SQL tiles.
 
 ## Where AI helped
 
@@ -26,6 +28,7 @@ AI was most useful for:
 - scaffolding tests that assert injected defect counts rather than “zero failures”
 - recording accept/change/reject notes in `ai-prompts/`
 - keeping Gold logic in `.sql` files while the orchestrator only executes them
+- designing the repository-owned Databricks bootstrap/validation workflow so the submission does not depend on exploratory notebook cells
 - drafting reviewer-facing documentation once the facts were known
 
 Context-setting mattered more than clever one-line prompts. A new chat that read `cursor-workflow/project-context.md` first stayed inside the assignment. Vague prompts would have invited dbt, streaming, or padding defects to 700.
@@ -52,7 +55,9 @@ Validation was execution, not reading generated code:
 
 - Generator: seed-42 run plus `tests.test_generate_sample_data` (physical rows, unique keys, NULLs, duplicates, orphans, SHA-256).
 - Bronze/Silver/Gold/Dashboard: Spark-free contract tests plus local Spark parquet tests against fixtures and committed CSVs.
-- Results were recorded as actual unittest counts. Skips were never called PASS. Databricks was never claimed from local parquet.
+- Databricks: the user executed `python src/databricks/run_pipeline.py` in the workspace. Cursor recorded those actual PASS counts; it did not invent them and did not run the cluster from this closeout chat.
+- Visual dashboard: completed manually in the Databricks SQL UI. Not an AI-generated artifact.
+- Closeout local suite: **Ran 223 tests in 840.713s OK**. Skips were never called PASS. Local parquet was never claimed as Databricks.
 
 ## Where human judgment was applied
 
@@ -64,6 +69,8 @@ Validation was execution, not reading generated code:
 - Gold facts use `Completed` + `PASS`; `lifetime_value_actual` is order revenue, not source `lifetime_value`.
 - Stay inside batch PySpark + SQL. Reject dbt, Airflow, streaming, SCD2, and extra DQ platforms.
 - Isolate Windows Spark workarounds so Databricks still uses the cluster session, Delta, and configured paths.
+- Keep visual dashboard rendering as a UI operation. Do not pretend Cursor published the tiles.
+- Describe dashboard sharing as **Anyone in my account can view**, not as public internet access.
 
 ## Windows Spark debugging
 

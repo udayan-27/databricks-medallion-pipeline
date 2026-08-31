@@ -1,6 +1,6 @@
 # Data model
 
-Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`). Gold SQL aggregations and `create_gold_tables.py` produce Gold tables locally. Dashboard queries read those Gold tables (`src/dashboard/`). Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`) and in Databricks Delta. Gold SQL aggregations and `create_gold_tables.py` produce Gold tables locally and in Databricks. Dashboard queries read those Gold tables (`src/dashboard/`). CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 
@@ -272,4 +272,4 @@ Not in this model unless a later spec change says so:
 
 ## Current files on disk
 
-`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied to a warehouse. Bronze, Silver, and Gold job code write the same names when Spark is available (local parquet validated; Databricks not run).
+`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL contract. Bronze, Silver, and Gold job code write the same names locally (parquet) and in Databricks (Delta via `run_pipeline.py`). Dashboard queries read Gold only.

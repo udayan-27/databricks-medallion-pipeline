@@ -1,8 +1,8 @@
 # Dashboard guide
 
-Status: **queries implemented and locally validated**. A Databricks SQL dashboard has **not** been created or rendered in a workspace from this environment. There are no screenshots. Do not treat this file as evidence that Tile 1–3 were published.
+Status: **queries implemented and locally validated**. Databricks dashboard SQL **PASS** (`run_pipeline.py`). Published Databricks SQL Dashboard: **DE C1 E-Commerce Sales Dashboard**, rendered **manually in the Databricks UI**. Cursor did not generate the visual tiles. Sharing is **Anyone in my account can view** (account-scoped; not public internet access).
 
-Local validation uses PySpark `spark.sql` against Gold parquet tables. Databricks validation would use Databricks SQL against Delta tables in Unity Catalog or the Hive metastore. Those are different runtimes.
+Local validation uses PySpark `spark.sql` against Gold parquet tables. Databricks SQL validation uses the Gold Delta tables produced by `run_pipeline.py`. Visual bar/histogram/pie widgets are a UI operation.
 
 ## 1. Prerequisites
 
@@ -23,7 +23,7 @@ Local-only path (this repository's tests):
 
 That local path does **not** create a Databricks dashboard.
 
-Automated Databricks SQL validation (queries against `workspace.gold.*`) is part of `python src/databricks/run_pipeline.py`. That command has **not** been executed from this environment. Visual tile rendering remains a Databricks UI action and has **not** been created or rendered.
+Automated Databricks SQL validation (queries against `workspace.gold.*`) is part of `python src/databricks/run_pipeline.py`. That command **has been executed** in the workspace: dashboard SQL **PASS**. Visual tile rendering remains a Databricks UI action and **has been completed** for **DE C1 E-Commerce Sales Dashboard**. Cursor did not generate those tiles.
 
 ## 2. Catalog / schema assumptions
 
@@ -71,7 +71,7 @@ Qualifying-order definition is already inside Gold (`Completed` + `quality_check
 
 ## 4. Dashboard creation steps
 
-These are workspace click-path instructions. They have **not** been executed here. Repository automation validates the SQL; it does not create the visual dashboard.
+These are workspace click-path instructions. They **have been executed** for the published dashboard **DE C1 E-Commerce Sales Dashboard**. Repository automation validates the SQL; it does not create the visual dashboard. Visual rendering was completed manually in the Databricks UI. Cursor did not generate the tiles.
 
 1. Confirm Gold tables exist: `SHOW TABLES IN gold` (or `SHOW TABLES IN <catalog>.gold`).
 2. Open **SQL Editor**. Create a new query. Paste each `DASHBOARD_QUERY` from `src/dashboard/dashboard_queries.sql` after substituting `{gold_schema}`.
@@ -226,27 +226,24 @@ Use this in Databricks after the dashboard is actually built. Items marked local
 - [x] **Local:** no eligibility/`1000.00`/segmentation `CASE` reimplementation in dashboard SQL
 - [x] **Local:** no SQL histogram buckets
 - [x] **Local:** category filter-before-limit pattern does not equal filter-after-limit
-- [ ] **Databricks UI:** bar / histogram / pie actually rendered — **not done**
-- [ ] **Databricks UI:** category parameter recomputes Top 10 inside the category — **not done**
-- [ ] **Databricks UI:** histogram bins configured in the viz — **not done**
-- [ ] **Databricks UI:** pie shows Gold `customer_count` (not a count of four rows) — **not done**
-- [ ] **Databricks UI:** zero-count segments visible or documented as a viz hide — **not done**
+- [x] **Databricks UI:** bar / histogram / pie actually rendered — published **DE C1 E-Commerce Sales Dashboard** (manual UI; not Cursor)
+- [x] **Databricks UI:** category parameter recomputes Top 10 inside the category — Databricks SQL PASS (filter before LIMIT 10); filter tested and returned to All
+- [x] **Databricks UI:** histogram visualization configured — Customer Revenue Distribution; population 10,000
+- [x] **Databricks UI:** pie/donut shows Gold segmentation — four buckets
+- [ ] **Databricks UI:** zero-count segments visible or documented as a viz hide — four Gold buckets exist; empty-slice hide was not separately recorded
 
-Do not check the Databricks boxes without a warehouse run.
+Do not treat Cursor as the author of the visual dashboard.
 
 ## 12. Local vs Databricks limitations
 
-| | LOCAL VALIDATION | DATABRICKS VALIDATION |
-|---|---|---|
-| Engine | PySpark | Databricks SQL warehouse |
-| Table format | parquet | Delta |
-| Catalog | none / Hive metastore | Unity Catalog or workspace HMS |
-| What was run | `spark.sql` of `dashboard_queries.sql` in unit tests | **not run** |
-| Automated SQL checks | local Spark against parquet Gold | `src/databricks` dashboard SQL validation (**not run** in a workspace from this environment) |
-| What it proves | Query logic vs Gold contract, Top-N, population, segments, filter pattern | Tiles, viz types, widget filters, warehouse permissions |
-| What it cannot prove | Bar/histogram/pie rendering, widget UX, auto-bin appearance | Nothing until executed |
-
-Never claim the dashboard was rendered in Databricks unless that run happened.
+| | LOCAL VALIDATION | DATABRICKS SQL VALIDATION | PUBLISHED DASHBOARD |
+|---|---|---|---|
+| Engine | PySpark | Databricks SQL / Spark SQL on Delta Gold | Databricks SQL UI |
+| Table format | parquet | Delta | Delta (same Gold tables) |
+| Catalog | none / Hive metastore | Unity Catalog or workspace HMS | same |
+| What was run | `spark.sql` of `dashboard_queries.sql` in unit tests | `run_pipeline.py` dashboard SQL **PASS** | Manual tile/widget configuration |
+| What it proves | Query logic vs Gold contract, Top-N, population, segments, filter pattern | Same queries against workspace Gold | Bar, histogram, pie/donut, two filters |
+| What it cannot prove | Visual rendering | Visual rendering | Public internet access (sharing is account-scoped) |
 
 ## Tile documentation summary
 

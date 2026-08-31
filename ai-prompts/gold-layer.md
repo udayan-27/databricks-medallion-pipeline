@@ -136,3 +136,35 @@ P016 sequential suite **223/223 OK**. Gold Spark tests unchanged.
 ### FINAL DECISION
 
 Gold application SQL stays the source of truth.
+
+---
+
+## Prompt 4 — 2026-08-31 — Closeout: Databricks Gold PASS (no Gold SQL change)
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 8 / P017. Record the actual workspace Gold PASS. Do not change Gold SQL semantics.
+
+### AI RESPONSE SUMMARY
+
+No Gold SQL or orchestrator change. Documented Databricks Gold: sales_by_product 500; revenue_by_customer 10,000; daily_trends 1,339; weekly_trends 193; customer_segmentation 4; eligible revenue 46,083,475.86; eligible order count 74,587; segmentation population 10,000.
+
+### ACCEPTED
+
+Keep Completed + PASS eligibility. Keep `lifetime_value_actual` from orders.
+
+### CHANGED
+
+Documentation/current-status only.
+
+### REJECTED
+
+Rewriting Gold aggregations; claiming Cursor computed Gold in this closeout chat.
+
+### VALIDATION
+
+Local closeout suite **223/223 OK**. Databricks Gold PASS is the candidate’s workspace result.
+
+### FINAL DECISION
+
+Gold application SQL stays the source of truth. Databricks Gold is complete.

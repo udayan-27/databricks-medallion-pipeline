@@ -46,7 +46,7 @@ Do not regenerate CSVs unless the seed or contract changes. Bronze ingest code e
 ## Stage 3 — Database contracts (DDL already aligned; not applied)
 
 - `database/schema.sql` already includes `_ingest_row_id` and `bronze.ingest_metadata` matching the implemented Bronze code.
-- Setup/seed notes describe Databricks apply steps. Objects have **not** been created in a workspace.
+- Setup/seed notes describe Databricks apply steps. Objects **have been created** by `python src/databricks/run_pipeline.py` (Spark tables), not by executing `schema.sql` as a warehouse script.
 
 ## Stage 4 — Bronze (done as the user-requested "Stage 3 Bronze Layer")
 
@@ -56,7 +56,7 @@ Commit message (this stage): `feat: add Bronze ingestion pipeline`
 - Config: `src/config.py` (env/CLI; no personal paths).
 - Explicit schema, PERMISSIVE, raw write, `_ingest_row_id` (per-execution), append-only `bronze.ingest_metadata`.
 - Tests: `tests/test_bronze_contract.py` (always run); `tests/test_bronze_ingest.py` (requires local PySpark+JDK).
-- Local Spark environment (2026-08-31): Python 3.11.9 `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. In-memory smoke test passed. Spark ingest tests **passed** after a local-Windows path/Hadoop adapter (`spark_input_path` uses `as_posix()`; `NoWinutilsRawLocalFileSystem` for local sessions only). Contract tests 37/37 OK. Databricks / Delta / UC still **not** executed.
+- Local Spark environment (2026-08-31): Python 3.11.9 `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. In-memory smoke test passed. Spark ingest tests **passed** after a local-Windows path/Hadoop adapter (`spark_input_path` uses `as_posix()`; `NoWinutilsRawLocalFileSystem` for local sessions only). Contract tests 37/37 OK. Databricks / Delta Bronze later **PASS** via `run_pipeline.py`.
 - `ai-prompts/bronze-layer.md` updated with the Bronze implementation interaction; environment setup is in `ai-prompts/documentation.md`.
 
 Do not start Silver until that stage is requested.
@@ -83,7 +83,7 @@ Commit message (this stage): `feat: add Gold analytical aggregations`
 - SQL: `01_sales_by_product.sql`, `02_revenue_by_customer.sql`, `03_daily_weekly_trends.sql` (daily + weekly), `04_customer_segmentation.sql`.
 - Orchestrator: `create_gold_tables.py` executes those files; does not replace them with PySpark aggregations.
 - Eligibility: Completed + PASS. `lifetime_value_actual` from orders. All canonical customers including zeros. Segmentation exclusive priority; threshold 1000.00 unchanged.
-- Tests: `tests/test_gold_contract.py`, `tests/test_gold_aggregations.py`. Sequential Gold **27/27 OK**. Sequential generator/Bronze/Silver **148/148 OK** after Spark test-isolation hardening (combined relevant **175**, including one new Spark-free helper contract test). Databricks Gold **not** written.
+- Tests: `tests/test_gold_contract.py`, `tests/test_gold_aggregations.py`. Sequential Gold **27/27 OK**. Sequential generator/Bronze/Silver **148/148 OK** after Spark test-isolation hardening (combined relevant **175**, including one new Spark-free helper contract test). Databricks Gold later **PASS** via `run_pipeline.py`.
 - Gold QA checkpoint: a second concurrent full-suite process failed in Bronze `setUpClass` with a Windows Py4J temp-file `PermissionError`. That is Spark-on-Windows gateway startup, not Gold SQL. Production Gold was not changed. Local Spark tests must be run **sequentially** (one process). See `debugging-notes.md`.
 
 Do not start Dashboard until that stage is requested.
@@ -95,7 +95,7 @@ Commit message (this stage): `feat: add Databricks SQL dashboard queries and gui
 - SQL: `src/dashboard/dashboard_queries.sql` — Top 10 products, customer revenue distribution (raw `lifetime_value_actual` for a Databricks histogram), customer segmentation (`segment_type` + `customer_count`), plus filter-value queries.
 - Guide: `src/dashboard/DASHBOARD_GUIDE.md` — prerequisites, catalog/schema, Gold tables, tile mapping, viz/axis/histogram/filter configuration, QA checklist, local vs Databricks.
 - Filters: `category` before LIMIT on Tile 1; `customer_segment` on Tile 2. Date range rejected for these tiles (no date grain on those Gold tables).
-- Tests: `tests/test_dashboard_contract.py`, `tests/test_dashboard_queries.py`. Local Spark against Gold parquet. Databricks SQL Dashboard UI **not** rendered.
+- Tests: `tests/test_dashboard_contract.py`, `tests/test_dashboard_queries.py`. Local Spark against Gold parquet. Databricks dashboard SQL later **PASS**. Visual tiles rendered **manually** in the Databricks SQL UI.
 - Gold production SQL/orchestrator unchanged. Stage 2 CSVs unchanged.
 
 Do not start final submission audit until requested.
@@ -108,7 +108,7 @@ Do not start final submission audit until requested.
 
 Gold QA (prior increment): concurrent/overlapping Spark suites vs sequential. Root cause is PySpark `launch_gateway` Windows `PermissionError` on a unique temp connection-info file — not Gold logic. Test helper isolates `spark.local.dir` / Py4J temp per class and retries that gateway error only.
 
-Databricks compatibility audit (this increment): **code review done**. Local Windows Spark (winutils adapter, parquet, `.venv`, warehouse/`TEMP` isolation) is already gated off the Databricks path. Default table format is `delta`. Catalog/data-path are runtime parameters, not committed names. No `src/` change required. Databricks jobs have **not** been started.
+Databricks compatibility audit (this increment): **code review done**. Local Windows Spark (winutils adapter, parquet, `.venv`, warehouse/`TEMP` isolation) is already gated off the Databricks path. Default table format is `delta`. Catalog/data-path are runtime parameters, not committed names. No `src/` change required. Databricks jobs were started later (Stage 12).
 
 ## Stage 9 — Documentation closeout (done as part of the public-repository audit)
 
@@ -124,11 +124,11 @@ Databricks compatibility audit (this increment): **code review done**. Local Win
 - Git history is staged and descriptive; not squashed.
 - Secrets scan performed (see `FINAL_AUDIT.md`).
 - Organizational Git account/email process still not stored as a secret in-repo.
-- **Do not push** until the user asks. Databricks workspace execution is still not started.
+- **Do not push** this closeout until the user asks. Databricks workspace execution is complete.
 
-## Stage 11 — Databricks bootstrap / execution / validation workflow (code complete; workspace not run)
+## Stage 11 — Databricks bootstrap / execution / validation workflow (code complete; later executed)
 
-Commit intended for this stage: `feat: automate Databricks environment and pipeline validation`
+Commit for this stage: `feat: automate Databricks environment and pipeline validation` (`063854b`)
 
 - `src/databricks/bootstrap.py` — catalog/schema/volume, Git-folder → UC Volume copy, optional `--reset`
 - `src/databricks/validate.py` — source / Bronze / Silver / Gold / dashboard SQL checks with CHECK/EXPECTED/ACTUAL/STATUS/NOTES
@@ -137,8 +137,16 @@ Commit intended for this stage: `feat: automate Databricks environment and pipel
 - Official Databricks command: `python src/databricks/run_pipeline.py` from the Git-folder root
 - Visual dashboard UI remains manual
 
-**Did not** execute Databricks. **Did not** regenerate Stage 2 CSVs. **Did not** duplicate Bronze/Silver/Gold transforms into a notebook.
+That commit did **not** execute Databricks. It did **not** regenerate Stage 2 CSVs. It did **not** duplicate Bronze/Silver/Gold transforms into a notebook.
 
-## Explicitly not started after the Databricks workflow redesign
+## Stage 12 — Databricks workspace execution (done)
 
-Databricks cluster/SQL warehouse execution of `run_pipeline.py`. Databricks SQL Dashboard UI rendering. Local tests exist; Databricks tables have not been created from this environment.
+The candidate ran `python src/databricks/run_pipeline.py` in the workspace. Bootstrap/source, Bronze, Silver, Gold, and dashboard SQL all **PASS**. Counts: `FINAL_AUDIT.md`. This was a workspace run, not a Cursor cluster job from the closeout chat.
+
+## Stage 13 — Published dashboard (done; manual UI)
+
+**DE C1 E-Commerce Sales Dashboard**: Top 10 bar, customer revenue histogram, segmentation pie/donut, category filter, customer segment filter. Both filters tested and returned to All. Sharing: Anyone in my account can view (not public internet). Cursor did not generate the visual dashboard.
+
+## Stage 14 — Repository closeout (this increment)
+
+Documentation and prompt history only. Pipeline logic, Gold SQL, dashboard SQL, and the published dashboard were not modified. Local closeout suite: **223/223 OK**. Do not push until asked.

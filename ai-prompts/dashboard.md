@@ -91,3 +91,35 @@ P016 sequential suite **223/223 OK**, including existing dashboard contract/Spar
 ### FINAL DECISION
 
 Dashboard SQL remains Gold-only. Visual rendering is still not automated and has not been executed.
+
+---
+
+## Prompt 3 — 2026-08-31 — Closeout: dashboard SQL PASS + published UI (manual)
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 8 / P017. Record Databricks dashboard SQL PASS and the published dashboard. Do not change dashboard SQL semantics. Do not modify the Databricks dashboard. Do not claim Cursor generated the visual tiles.
+
+### AI RESPONSE SUMMARY
+
+No `dashboard_queries.sql` change. Documented Databricks SQL: Top 10 = 10 rows; histogram population = 10,000; segmentation = four buckets; category filter before LIMIT 10; customer_segment slices histogram. Published title: **DE C1 E-Commerce Sales Dashboard** (bar, histogram, pie/donut, two filters tested and returned to All). Sharing: Anyone in my account can view. Visual rendering was completed manually in the Databricks UI.
+
+### ACCEPTED
+
+SQL validation is automated; tile rendering is a UI operation. Cursor did not generate the visual dashboard.
+
+### CHANGED
+
+Guide/README/FINAL_AUDIT current-status only.
+
+### REJECTED
+
+Editing dashboard SQL; calling account-scoped sharing public internet access; attributing the visual dashboard to Cursor.
+
+### VALIDATION
+
+Local closeout suite **223/223 OK**. Databricks dashboard SQL PASS and published-dashboard facts are the candidate’s workspace/UI result.
+
+### FINAL DECISION
+
+Dashboard SQL remains Gold-only and unchanged. The published dashboard is a manual UI artifact.

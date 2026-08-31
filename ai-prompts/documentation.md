@@ -346,3 +346,56 @@ Copy-test SHA-256 of the three CSVs matched `DATA_GENERATION_NOTES.md`. Truncate
 ### FINAL DECISION
 
 Ship the repository-owned Databricks workflow as the official supported process. Do not execute it in Databricks until asked. Do not push.
+
+---
+
+## Prompt 8 — 2026-08-31 — Final repository closeout (Databricks evidence)
+
+### PROMPT SENT
+
+The Databricks implementation and dashboard are now genuinely complete. Perform the FINAL REPOSITORY CLOSEOUT. Do not modify pipeline logic, regenerate data, change Gold or dashboard SQL semantics, or modify the Databricks dashboard.
+
+The Databricks workflow was executed successfully in the workspace using `python src/databricks/run_pipeline.py`. Actual results: bootstrap/source, Bronze, Silver, Gold, and dashboard SQL all PASS. Published dashboard: **DE C1 E-Commerce Sales Dashboard** (bar, histogram, pie/donut, category filter, customer segment filter; both filters tested and returned to All). Sharing: Anyone in my account can view. Do not call this public internet access.
+
+Record the measured workspace counts (source 10,010 / 100,020 / 500; 460 issue instances; Silver FAIL 100 / 420 / 0; Gold grains and eligible revenue 46,083,475.86 / orders 74,587 / segmentation 10,000). Update stale current-status documentation. Update prompt history with this closeout. Do not fabricate earlier manual actions as AI actions. Run git inspection, SHA-256, security audit, and the complete sequential local test suite. Create one documentation/evidence commit: `docs: close out Databricks validation and dashboard`. Do not push.
+
+### AI RESPONSE SUMMARY
+
+Read the repository. Did not change Bronze/Silver/Gold/dashboard SQL or Stage 2 CSVs. Updated current-status docs so local validation, Databricks `run_pipeline.py` PASS, and the manually published dashboard are distinct. Added a final validation section to `FINAL_AUDIT.md`. Recorded this interaction as P017. Ran the sequential local suite: **Ran 223 tests in 840.713s OK**. SHA-256 unchanged. No secrets, `.env`, `.venv`, or Spark artifacts tracked. No personal workspace paths in `src/`.
+
+### ACCEPTED
+
+- Record the candidate’s actual workspace PASS results; do not invent extra checks.
+- Keep visual dashboard rendering as a manual Databricks UI operation. Cursor did not generate the tiles.
+- Describe sharing as Anyone in my account can view, not public internet access.
+- Preserve historical prompt FINAL DECISION blocks that said Databricks was not yet executed (true at those times).
+- One documentation commit; do not push.
+
+### CHANGED
+
+- Current-status language in README, FINAL_AUDIT, setup-notes, workflow files, and related docs.
+- Prompt index P017 and matching prompt-file entries.
+- `DASHBOARD_GUIDE.md` QA checklist for tiles that were actually published (empty-slice viz hide left unchecked; not separately recorded).
+
+### REJECTED
+
+- Modifying pipeline logic, Gold SQL, or dashboard SQL.
+- Regenerating Stage 2 CSVs.
+- Claiming Cursor executed `run_pipeline.py` from this closeout chat or generated the visual dashboard.
+- Fabricating earlier exploratory notebook work as Cursor history.
+- Pushing.
+- Weakening tests.
+
+### VALIDATION
+
+Dataset SHA-256 match `DATA_GENERATION_NOTES.md`. Sequential unittest:
+
+`python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries tests.test_databricks_workflow -v`
+
+→ **Ran 223 tests in 840.713s OK** (0 failed, 0 errors, 0 skipped). Local, not Databricks.
+
+Databricks evidence is the candidate’s recorded workspace run, not a re-execution from this chat.
+
+### FINAL DECISION
+
+Ship the documentation/evidence closeout. Databricks pipeline and published dashboard are complete. Stop after the requested commit. Do not push.

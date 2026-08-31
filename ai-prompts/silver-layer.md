@@ -285,3 +285,35 @@ P016 sequential suite **223/223 OK**. Silver Spark tests unchanged.
 ### FINAL DECISION
 
 Silver application code stays the source of truth.
+
+---
+
+## Prompt 5 — 2026-08-31 — Closeout: Databricks Silver PASS (no Silver code change)
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 8 / P017. Record the actual workspace Silver PASS. Do not change quality-module semantics.
+
+### AI RESPONSE SUMMARY
+
+No Silver source change. Documented Databricks Silver: physical rows 10,010 / 100,020 / 500; customers FAIL 100; orders FAIL 420; products FAIL 0; completeness 50 / 100 / 200; uniqueness participating rows 20 / 40; RI orphans 50 / 30; future signups 30; type failures 0.
+
+### ACCEPTED
+
+Flag, do not delete. Keep listed 460 issue instances and optional 30 future signups as separate classes.
+
+### CHANGED
+
+Documentation/current-status only.
+
+### REJECTED
+
+Changing Silver rules; padding to 700; treating NULL FKs as orphans.
+
+### VALIDATION
+
+Local closeout suite **223/223 OK**. Databricks Silver PASS is the candidate’s workspace result.
+
+### FINAL DECISION
+
+Silver application code stays the source of truth. Databricks Silver is complete.

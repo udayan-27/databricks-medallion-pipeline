@@ -1,15 +1,17 @@
 # Database setup notes
 
-Status: Databricks objects have **not** been created from this environment. The official workspace process is the repository workflow in `src/databricks/`. Do not use ad-hoc notebook cells as the submission path.
+Status: Databricks objects **have been created** by the official workspace workflow `python src/databricks/run_pipeline.py`. Bootstrap/source, Bronze, Silver, Gold, and dashboard SQL all **PASS**. Visual tiles were rendered afterwards in the Databricks SQL UI (not by this command). Do not use ad-hoc notebook cells as the submission path.
+
+Local parquet jobs remain a separate evidence class. They are not Databricks.
 
 ## MANUAL vs AUTOMATED
 
-### MANUAL — genuinely unavoidable
+### MANUAL — genuinely unavoidable (completed for this submission)
 
 1. **Databricks login / account authorization** for the workspace.
 2. **GitHub authorization** if Databricks Git folders require it.
 3. **Git-folder creation/connection** if the Databricks UI/API requires it. Connect [this GitHub repository](https://github.com/udayan-27/databricks-medallion-pipeline.git) so the repo root (including `data/` and `src/`) is available as workspace files. Example location in one Free Edition workspace (do not hard-code this in jobs): `/Workspace/Users/<your-user>/databricks-medallion-pipeline`.
-4. **Visual dashboard rendering** in the Databricks SQL UI after Gold tables exist. See `src/dashboard/DASHBOARD_GUIDE.md`. Query correctness is validated by the workflow; bar/histogram/pie widgets are not created by the repository command.
+4. **Visual dashboard rendering** in the Databricks SQL UI after Gold tables exist. See `src/dashboard/DASHBOARD_GUIDE.md`. Query correctness is validated by the workflow; bar/histogram/pie widgets are not created by the repository command. The published dashboard **DE C1 E-Commerce Sales Dashboard** was created this way. Cursor did not generate the visual dashboard. Sharing is **Anyone in my account can view** (account-scoped; not public internet access).
 
 ### AUTOMATED
 
@@ -105,7 +107,21 @@ python src/silver/create_silver_tables.py --table-format parquet
 python src/gold/create_gold_tables.py --table-format parquet
 ```
 
-That is local evidence, not a Databricks/Delta/UC pass.
+That is local evidence, not a Databricks/Delta/UC pass. The workspace run used the default **delta** format via `run_pipeline.py`.
+
+## Workspace run result (actual Databricks validation)
+
+Executed: `python src/databricks/run_pipeline.py`
+
+| Stage | Status |
+|---|---|
+| Bootstrap / source | PASS |
+| Bronze | PASS |
+| Silver | PASS |
+| Gold | PASS |
+| Dashboard SQL | PASS |
+
+Measured Gold facts: eligible revenue **46,083,475.86**; eligible order count **74,587**; segmentation population **10,000**. Full counts: `FINAL_AUDIT.md`.
 
 ## Secrets
 

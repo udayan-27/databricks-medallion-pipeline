@@ -164,3 +164,34 @@ Local copy test on temp dirs preserved SHA-256 (`7f8ae14c…`, `b244c3d9…`, `a
 
 Treat POSIX/FUSE Python I/O as the primary serverless-compatible copy, with documented fallbacks. Do not execute Databricks until asked.
 
+---
+
+## Prompt 5 — 2026-08-31 — Closeout: no new runtime defect
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/documentation.md` Prompt 8 / P017. Record the successful workspace run. Do not invent a debugging cycle.
+
+### AI RESPONSE SUMMARY
+
+No production code change. Added `debugging-notes.md` Stage 12 with the actual PASS counts and the distinction that visual dashboard rendering was a Databricks UI operation.
+
+### ACCEPTED
+
+Document success as success. Do not retrofit a fake failure.
+
+### CHANGED
+
+Debugging notes status/evidence only.
+
+### REJECTED
+
+Fabricating a Databricks defect; claiming Cursor rendered tiles; changing pipeline code.
+
+### VALIDATION
+
+Local closeout suite **223/223 OK**. Workspace PASS is the candidate’s run.
+
+### FINAL DECISION
+
+No new defect. Databricks execution and published dashboard are complete.

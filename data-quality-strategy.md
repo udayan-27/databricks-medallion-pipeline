@@ -1,6 +1,6 @@
 # Data quality strategy
 
-Status: **strategy frozen**. Completeness, uniqueness, type validation, referential integrity, and business logic are implemented as PySpark transforms. `create_silver_tables.py` combines per-module flags and writes Silver entity tables plus `silver.quality_metrics` (local parquet validated; Databricks/Delta/UC not run). Do not delete bad rows.
+Status: **strategy frozen**. Completeness, uniqueness, type validation, referential integrity, and business logic are implemented as PySpark transforms. `create_silver_tables.py` combines per-module flags and writes Silver entity tables plus `silver.quality_metrics` (local parquet validated; Databricks Delta **PASS** with the same seed-42 fail counts). Do not delete bad rows.
 
 This file is the source of truth for Silver modules. Implementation must copy these rules, not invent new ones silently.
 
@@ -63,7 +63,7 @@ Each implemented module attaches its **own** columns and does not write `quality
 
 `src/silver/quality_common.py` `attach_module_result` concatenates into the module’s array (`array_distinct`) so a later call cannot replace an earlier code on the same `_ingest_row_id`. Combined `failed_checks` and `quality_check_result` are written by `create_silver_tables.py` (`combine_quality_status`).
 
-Observed local Spark counts on seed-42 Bronze (physical rows, not distinct keys):
+Observed local Spark counts on seed-42 Bronze (physical rows, not distinct keys). Databricks Silver validation measured the same fail counts:
 
 | Check | fail_count | total_evaluated |
 |---|---|---|
