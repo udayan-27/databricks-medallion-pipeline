@@ -1,0 +1,331 @@
+{
+  "datasets": [
+    {
+      "name": "a1d9e50d",
+      "displayName": "top_10_products",
+      "queryLines": [
+        "SELECT\r\n",
+        "    product_id,\r\n",
+        "    product_name,\r\n",
+        "    category,\r\n",
+        "    total_revenue,\r\n",
+        "    total_orders\r\n",
+        "FROM workspace.gold.sales_by_product\r\n",
+        "ORDER BY total_revenue DESC, product_id ASC\r\n",
+        "LIMIT 10;"
+      ]
+    },
+    {
+      "name": "60e0bea2",
+      "displayName": "customer_revenue_distribution",
+      "queryLines": [
+        "SELECT\r\n",
+        "    customer_id,\r\n",
+        "    customer_segment,\r\n",
+        "    lifetime_value_actual\r\n",
+        "FROM workspace.gold.revenue_by_customer;"
+      ]
+    },
+    {
+      "name": "efc5fc5b",
+      "displayName": "customer_segmentation",
+      "queryLines": [
+        "SELECT\r\n",
+        "    segment_type,\r\n",
+        "    customer_count\r\n",
+        "FROM workspace.gold.customer_segmentation;"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "e8379ec7",
+      "displayName": "dashboard",
+      "layout": [
+        {
+          "widget": {
+            "name": "top-10-products-by-revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a1d9e50d",
+                  "fields": [
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "sum(total_revenue)",
+                      "expression": "SUM(`total_revenue`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Top 10 Products by Revenue",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_name",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(total_revenue)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "customer-revenue-distribution",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "60e0bea2",
+                  "fields": [
+                    {
+                      "name": "bin(lifetime_value_actual, binWidth=30)",
+                      "expression": "BIN_FLOOR(`lifetime_value_actual`, 30)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`customer_segment` IN (`customer_segment`) OR TRUE"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Customer Revenue Distribution",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "bin(lifetime_value_actual, binWidth=30)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "customer-segmentation",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "efc5fc5b",
+                  "fields": [
+                    {
+                      "name": "sum(customer_count)",
+                      "expression": "SUM(`customer_count`)"
+                    },
+                    {
+                      "name": "segment_type",
+                      "expression": "`segment_type`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Customer Segmentation",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(customer_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "segment_type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "b8eccad8",
+            "queries": [
+              {
+                "name": "dashboards/01f1a504245c12b9807ea30300628445/datasets/01f1a504df6610fabcb53c46aa2be104_category",
+                "query": {
+                  "datasetName": "a1d9e50d",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "category_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "category",
+                    "queryName": "dashboards/01f1a504245c12b9807ea30300628445/datasets/01f1a504df6610fabcb53c46aa2be104_category"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "customer-segment1",
+            "queries": [
+              {
+                "name": "dashboards/01f1a504245c12b9807ea30300628445/datasets/01f1a505a4d71f3aaf7c0b2b3b7a899f_customer_segment",
+                "query": {
+                  "datasetName": "60e0bea2",
+                  "fields": [
+                    {
+                      "name": "customer_segment",
+                      "expression": "`customer_segment`"
+                    },
+                    {
+                      "name": "customer_segment_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Customer Segment\n<p>&nbsp;</p>\n",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "customer_segment",
+                    "queryName": "dashboards/01f1a504245c12b9807ea30300628445/datasets/01f1a505a4d71f3aaf7c0b2b3b7a899f_customer_segment"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "0ccd964c",
+      "displayName": "Global Filters",
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

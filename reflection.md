@@ -1,6 +1,6 @@
 # Reflection
 
-Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, the Databricks workflow redesign, **actual Databricks workspace execution**, and the **manually rendered** published SQL dashboard. Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path. Cursor did not generate the visual dashboard.
+Written after local implementation, testing, Windows Spark debugging, the public-repository readiness audit, the Databricks workflow redesign, **actual Databricks workspace execution**, the **manually rendered** published SQL dashboard, and a **read-only export** of that dashboard’s serialized definition into Git. Earlier exploratory Databricks notebook work, if any, is not treated as Cursor history and is not the official submission path. Cursor did not generate the visual dashboard. Cursor did not perform Databricks account authorization (OAuth was a manual browser step).
 
 ## What went well
 
@@ -56,7 +56,7 @@ Validation was execution, not reading generated code:
 - Generator: seed-42 run plus `tests.test_generate_sample_data` (physical rows, unique keys, NULLs, duplicates, orphans, SHA-256).
 - Bronze/Silver/Gold/Dashboard: Spark-free contract tests plus local Spark parquet tests against fixtures and committed CSVs.
 - Databricks: the user executed `python src/databricks/run_pipeline.py` in the workspace. Cursor recorded those actual PASS counts; it did not invent them and did not run the cluster from this closeout chat.
-- Visual dashboard: completed manually in the Databricks SQL UI. Not an AI-generated artifact.
+- Visual dashboard: completed manually in the Databricks SQL UI. Not an AI-generated artifact. The serialized definition was later exported read-only into `dashboards/` after user-completed CLI OAuth.
 - Closeout local suite: **Ran 223 tests in 840.713s OK**. Skips were never called PASS. Local parquet was never claimed as Databricks.
 
 ## Where human judgment was applied
@@ -70,6 +70,7 @@ Validation was execution, not reading generated code:
 - Stay inside batch PySpark + SQL. Reject dbt, Airflow, streaming, SCD2, and extra DQ platforms.
 - Isolate Windows Spark workarounds so Databricks still uses the cluster session, Delta, and configured paths.
 - Keep visual dashboard rendering as a UI operation. Do not pretend Cursor published the tiles.
+- Export the existing Lakeview definition rather than reconstructing `.lvdash.json` from SQL.
 - Describe dashboard sharing as **Anyone in my account can view**, not as public internet access.
 
 ## Windows Spark debugging

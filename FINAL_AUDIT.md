@@ -22,10 +22,10 @@ Three evidence classes (do not collapse them):
 | Assignment tree | Required root docs exist | `README.md`, `candidate-info.md`, `tool-workflow.md`, `requirements-analysis.md`, `design-notes.md`, `data-model.md`, `data-quality-strategy.md`, `debugging-notes.md`, `reflection.md`, `final-ai-usage-summary.md` | PASS | Bodies are filled |
 | Cursor workflow | `cursor-workflow/` four files | `project-context.md`, `spec.md`, `cursor-rules-or-instructions.md`, `task-breakdown.md` | PASS | Persistent context for a new chat |
 | Prompt files | Required `ai-prompts/*.md` | data-generation, bronze, silver, gold, dashboard, debugging, documentation | PASS | Real interactions; not fabricated |
-| Prompt index | `ai-prompts/prompt-index.md` | P001–P017 mapped to lifecycle, files, commits | PASS | No invented prompts to fill a sequence |
+| Prompt index | `ai-prompts/prompt-index.md` | P001–P018 mapped to lifecycle, files, commits | PASS | No invented prompts to fill a sequence |
 | Source tree | `src/data_generation`, `bronze`, `silver`, `gold`, `dashboard`, `databricks` | Numbered modules plus shared helpers and workspace orchestrator | PASS | Extra helpers are required engineering, not scope creep |
 | Database notes | `database/schema.sql`, `seed-data-notes.md`, `setup-notes.md` | Files exist; Databricks tables written by `run_pipeline.py` (Spark), not by executing `schema.sql` as a warehouse script | PASS | Design DDL remains the contract; objects exist via the official workflow |
-| Tests directory | Meaningful tests | 10 unittest modules; fixtures for Bronze/Silver/Gold/type/BL | PASS | Absent from the assignment tree; required by “meaningful tests” |
+| Tests directory | Meaningful tests | 11 unittest modules; fixtures for Bronze/Silver/Gold/type/BL | PASS | Absent from the assignment tree; required by “meaningful tests” |
 | Local runtime helpers | Windows Spark without winutils | `src/spark_local.py`, `src/local_runtime/NoWinutilsRawLocalFileSystem.java` | PASS | Gated to locally created Windows sessions; Databricks uses the cluster session |
 | Empty files | No accidental empty artifacts | Required docs/src are non-empty. `tests/fixtures/bronze/empty/customers.csv` is 0 bytes **on purpose** | PASS | Empty fixture proves Bronze fails on empty input |
 | Dataset physical rows | 10,010 / 100,020 / 500 | Read-only CSV count this cycle | PASS | CSVs not modified |
@@ -47,7 +47,7 @@ Three evidence classes (do not collapse them):
 | Responsible AI docs | Synthetic data; no secrets in prompts | `tool-workflow.md`, `final-ai-usage-summary.md`, README | PASS | Claims limited to what this repo actually contains |
 | Reproducibility | Fresh-clone setup | README + `requirements.txt` (`pyspark==3.5.6`) | PASS | Generator is stdlib-only; Spark tests need JDK 17 + Python 3.11 venv |
 | Configuration | `MEDALLION_CATALOG`, `MEDALLION_DATA_PATH`, `MEDALLION_TABLE_FORMAT` | `src/config.py` | PASS | Catalog default unset (not `main`) |
-| Local tests this cycle | One sequential relevant suite | `Ran 223 tests in 840.713s OK` | PASS | 0 failed, 0 errors, 0 skipped. Command in README. **Not Databricks** |
+| Local tests this cycle | One sequential relevant suite | P017: `Ran 223 tests in 840.713s OK`. P018: `Ran 232 tests in 558.859s OK` | PASS | 0 failed, 0 errors, 0 skipped. Command in README. **Not Databricks** |
 | Test coverage | Generator, Bronze, Silver, Gold, dashboard, Databricks workflow, reconciliation, errors, local Spark | unittest modules listed in README | PASS | Concurrent Spark suites remain unsupported |
 | Git history | Meaningful iteration | 15 commits from `16ee902` through `063854b` before this closeout | PASS | requirements → design → data → Bronze → Silver → Gold → dashboard → compatibility → automation |
 | README | Fresh-clone reviewer path | Setup, local vs Databricks vs published dashboard, data, execution, tests, navigation | PASS | Stale “Databricks not executed” current-status language removed |
@@ -55,7 +55,7 @@ Three evidence classes (do not collapse them):
 | Databricks Silver | Workspace Silver tables | `run_pipeline.py` SILVER PASS | PASS | See final validation section |
 | Databricks Gold | Workspace Gold Delta tables | `run_pipeline.py` GOLD PASS | PASS | See final validation section |
 | Databricks dashboard SQL | Gold-only queries against workspace Gold | `run_pipeline.py` DASHBOARD SQL PASS | PASS | SQL unchanged; not visual rendering |
-| Databricks SQL Dashboard UI | 3 tiles + widgets rendered | Published **DE C1 E-Commerce Sales Dashboard**; manual UI | PASS | Cursor did not generate the visual dashboard. Sharing: Anyone in my account can view (not public internet) |
+| Databricks SQL Dashboard UI | 3 tiles + widgets rendered | Published **DE C1 E-Commerce Sales Dashboard**; manual UI; serialized definition in `dashboards/` | PASS | Cursor did not generate the visual dashboard. Sharing: Anyone in my account can view (not public internet). Git holds the `.lvdash.json`, not every publish ACL. |
 | Push to GitHub | Publish this closeout commit | User forbade push | NOT APPLICABLE | Stopped before `git push` |
 
 ## Final Databricks validation (workspace)
@@ -152,8 +152,22 @@ Visual dashboard rendering was completed **manually in the Databricks UI**. That
 | Category filter | Present; tested and returned to All |
 | Customer Segment filter | Present; tested and returned to All |
 | Sharing | Anyone in my account can view |
+| Serialized definition in Git | `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json` (read-only export; dashboard ID `01f1a504245c12b9807ea30300628445`) |
 
-Do not call that sharing setting public internet access.
+Do not call that sharing setting public internet access. The `.lvdash.json` is the Lakeview payload (datasets, widgets, filters). It does **not** contain account-level sharing, warehouse binding, or `embed_credentials`. Those remain workspace runtime settings.
+
+## Dashboard definition export (this increment)
+
+Read-only. The published dashboard was not created, updated, published, or deleted from this chat.
+
+| Item | Value |
+|---|---|
+| CLI | Databricks CLI v1.14.1 (installed this increment via winget) |
+| Profile | `DE_C1` (user-completed browser OAuth; Cursor did not perform account authorization) |
+| Mechanism | `databricks workspace export` of the existing Lakeview object (`--format AUTO`) |
+| Artifact | `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json` |
+| Match to API | Byte-equivalent to `serialized_dashboard` from `databricks lakeview get` |
+| Screenshot | None found (repo / Desktop / Downloads / Pictures); not fabricated |
 
 ## Closeout-cycle local test record
 
@@ -172,7 +186,26 @@ python -m unittest tests.test_generate_sample_data tests.test_bronze_contract te
 | Skipped | 0 |
 | Runtime | 840.713s |
 
-This replaces older prompt-file timings as the current **local** result. It does not replace the Databricks workspace PASS record above.
+This is the P017 closeout result. It does not replace the Databricks workspace PASS record above.
+
+## Dashboard-export increment local test record (P018)
+
+Environment: Python 3.11.9 project `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. One process.
+
+```
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_artifact tests.test_dashboard_queries tests.test_databricks_workflow -v
+```
+
+| Metric | This increment |
+|---|---|
+| Tests run | 232 |
+| Passed | 232 |
+| Failed | 0 |
+| Errors | 0 |
+| Skipped | 0 |
+| Runtime | 558.859s |
+
+Nine Spark-free tests in `tests.test_dashboard_artifact` were added. Existing SQL/Gold/Spark tests were not weakened. Local tests are not Databricks.
 
 ## Historical local audit (public-repo readiness, before Databricks execution)
 
@@ -198,6 +231,7 @@ Matches `src/data_generation/DATA_GENERATION_NOTES.md`.
 - No Databricks PAT, cloud keys, or private keys in tracked files.
 - No personal workspace paths (`C:\Users\`, `D:\DE C1`, `/Workspace/Users/`) in `src/`.
 - Dashboard SQL and Gold SQL files were not edited this cycle.
+- Exported `.lvdash.json` was scanned for PAT/OAuth/password/key/local-path patterns: none found.
 
 ## Remaining steps before final submission
 
@@ -205,4 +239,4 @@ Databricks pipeline execution and the published dashboard are complete. Remainin
 
 1. Push this closeout commit to `origin/master` when asked (`git push`; do not force-push).
 2. Follow the organizational Git account/email process and submit the repository link plus any required short written responses.
-3. Do not regenerate Stage 2 CSVs. Do not change Bronze/Silver/Gold/dashboard SQL semantics. Do not modify the published Databricks dashboard.
+3. Do not regenerate Stage 2 CSVs. Do not change Bronze/Silver/Gold/dashboard SQL semantics. Do not modify the published Databricks dashboard. The serialized definition in `dashboards/` is an export, not a license to rewrite the live object.

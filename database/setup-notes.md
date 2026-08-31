@@ -11,7 +11,7 @@ Local parquet jobs remain a separate evidence class. They are not Databricks.
 1. **Databricks login / account authorization** for the workspace.
 2. **GitHub authorization** if Databricks Git folders require it.
 3. **Git-folder creation/connection** if the Databricks UI/API requires it. Connect [this GitHub repository](https://github.com/udayan-27/databricks-medallion-pipeline.git) so the repo root (including `data/` and `src/`) is available as workspace files. Example location in one Free Edition workspace (do not hard-code this in jobs): `/Workspace/Users/<your-user>/databricks-medallion-pipeline`.
-4. **Visual dashboard rendering** in the Databricks SQL UI after Gold tables exist. See `src/dashboard/DASHBOARD_GUIDE.md`. Query correctness is validated by the workflow; bar/histogram/pie widgets are not created by the repository command. The published dashboard **DE C1 E-Commerce Sales Dashboard** was created this way. Cursor did not generate the visual dashboard. Sharing is **Anyone in my account can view** (account-scoped; not public internet access).
+4. **Visual dashboard rendering** in the Databricks SQL UI after Gold tables exist. See `src/dashboard/DASHBOARD_GUIDE.md`. Query correctness is validated by the workflow; bar/histogram/pie widgets are not created by the repository command. The published dashboard **DE C1 E-Commerce Sales Dashboard** was created this way. Cursor did not generate the visual dashboard. Sharing is **Anyone in my account can view** (account-scoped; not public internet access). The serialized Lakeview definition is version-controlled in `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json` (read-only export). Publishing and sharing ACLs are not fully stored in that file.
 
 ### AUTOMATED
 

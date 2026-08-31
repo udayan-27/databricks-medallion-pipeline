@@ -107,9 +107,9 @@ class TestDashboardFiles(unittest.TestCase):
         self.assertTrue(DASHBOARD_SQL_PATH.is_file())
         self.assertTrue(DASHBOARD_GUIDE_PATH.is_file())
         guide = DASHBOARD_GUIDE_PATH.read_text(encoding="utf-8").lower()
-        self.assertIn("**not** been created or rendered", guide)
+        self.assertIn("does **not** create a databricks dashboard", guide)
         self.assertIn("local validation", guide)
-        self.assertIn("databricks validation", guide)
+        self.assertIn("databricks sql validation", guide)
         self.assertIn("parquet", guide)
         self.assertIn("delta", guide)
 
@@ -259,10 +259,9 @@ class TestDashboardFilterContract(unittest.TestCase):
     def test_guide_does_not_claim_databricks_ui(self) -> None:
         guide = DASHBOARD_GUIDE_PATH.read_text(encoding="utf-8")
         lowered = guide.lower()
-        self.assertIn("**not done**", lowered)
-        self.assertIn("not run", lowered)
+        self.assertIn("cursor did not generate", lowered)
+        self.assertIn("manually in the databricks ui", lowered)
         self.assertIn("NOT rendered from this environment", DASHBOARD_SQL_PATH.read_text(encoding="utf-8"))
-        self.assertIn("never claim the dashboard was rendered in databricks unless", lowered)
         self.assertNotIn("dashboard ui rendering: passed", lowered)
         self.assertNotIn("rendered successfully in databricks", lowered)
 

@@ -123,3 +123,59 @@ Local closeout suite **223/223 OK**. Databricks dashboard SQL PASS and published
 ### FINAL DECISION
 
 Dashboard SQL remains Gold-only and unchanged. The published dashboard is a manual UI artifact.
+
+---
+
+## Prompt 4 — 2026-08-31 — Version-control the actual published dashboard definition (P018)
+
+### PROMPT SENT
+
+Version-control the actual existing Databricks dashboard definition. Do not create a fake `.lvdash.json`. Do not recreate the dashboard from SQL. Do not modify the published dashboard, Bronze, Silver, Gold, or dashboard SQL. Do not push.
+
+Retrieve the real published **DE C1 E-Commerce Sales Dashboard** via Databricks CLI/API and store it as `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`. Install the CLI if needed. Use an existing profile if valid. Browser OAuth if authentication is missing; never ask for a PAT. Locate with `lakeview list/get/get-published` (read-only). Export via `workspace export` if possible. Validate structure, Gold-only sources, three visualizations, two filters. Security-scan. Add `dashboards/README.md` and local `tests/test_dashboard_artifact.py`. Optional genuine screenshot only. Update prompt history and justified project docs. One commit: `feat: version-control Databricks dashboard definition`.
+
+### AI RESPONSE SUMMARY
+
+Cursor installed Databricks CLI v1.14.1 (`winget`). No profile existed on first inspection; Cursor stopped for browser OAuth. The user completed `databricks auth login` (profile `DE_C1`). Cursor then used that profile for read-only discovery and export. `databricks workspace export` wrote the real Lakeview file. It matches `serialized_dashboard` from `lakeview get`. Cursor did not create, update, publish, or delete the live dashboard. Dashboard SQL and medallion transforms were not changed. No screenshot was found. Two P013 guide assertions in `tests/test_dashboard_contract.py` were already failing after P017’s status rewrite; they were aligned to the documented manual-UI facts without loosening Gold/SQL contracts.
+
+### ACCEPTED
+
+- Export the existing published definition; do not fabricate JSON.
+- Profile `DE_C1` for all CLI calls after the user finished OAuth.
+- Read-only Lakeview + workspace export only.
+- Document that Git holds the serialized definition, not every publish/sharing ACL.
+- Local structural tests; no Databricks required for those tests.
+
+### CHANGED
+
+- CLI was not pre-installed; installed via winget.
+- OAuth was a manual browser step by the user; Cursor did not perform account authorization.
+- Workspace path in docs uses `/Users/<workspace-user>/...` rather than the personal folder name.
+- Two stale `test_dashboard_contract` guide assertions (P013 “not created / not done”) updated to match P017+P018 documented status.
+
+### REJECTED
+
+- Hand-written or SQL-reconstructed `.lvdash.json`.
+- Create/update/publish/delete Lakeview APIs.
+- Editing Bronze/Silver/Gold or `dashboard_queries.sql`.
+- Asking for a PAT or committing `.databrickscfg`.
+- Inventing a screenshot.
+- Pushing to GitHub.
+
+### VALIDATION
+
+Identity: `databricks auth profiles` showed `DE_C1` VALID; `databricks current-user me --profile DE_C1` succeeded.
+
+Export: `databricks workspace export` of the Lakeview object; file equals `serialized_dashboard` from `lakeview get`. JSON parsed. Widgets: bar / histogram / pie with the three required titles; `filter-single-select` on `category` and `customer_segment`; datasets query `workspace.gold.*` only. No PAT/OAuth/password/key/local-path matches in the artifact.
+
+Spark-free: `python -m unittest tests.test_dashboard_artifact tests.test_dashboard_contract -v` → **Ran 24 tests in 0.009s OK**.
+
+Complete sequential suite (venv Python 3.11.9 + Temurin 17; one process):
+
+`python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_artifact tests.test_dashboard_queries tests.test_databricks_workflow -v`
+
+→ **Ran 232 tests in 558.859s OK** (0 failed, 0 errors, 0 skipped).
+
+### FINAL DECISION
+
+Ship the exported Lakeview definition plus docs/tests. Do not treat Git as controlling warehouse binding or account-level sharing. Do not push.

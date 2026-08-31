@@ -23,6 +23,7 @@ Format: prompt ID, lifecycle activity, evidence file, purpose, resulting artifac
 | P015 | Documentation / public repository audit | [documentation.md](documentation.md) Prompt 6 | Structure, security, prompt index, reproducibility, `FINAL_AUDIT.md` | This index, `FINAL_AUDIT.md`, README/reflection closeout | `chore: complete public repository readiness audit` |
 | P016 | Databricks workflow redesign | [documentation.md](documentation.md) Prompt 7; [bronze-layer.md](bronze-layer.md) Prompt 3; [silver-layer.md](silver-layer.md) Prompt 4; [gold-layer.md](gold-layer.md) Prompt 3; [dashboard.md](dashboard.md) Prompt 2; [debugging.md](debugging.md) Prompt 4 | Automate Databricks bootstrap, Git-folder→volume copy, pipeline run, and validation without duplicating Bronze/Silver/Gold | `src/databricks/`, `tests/test_databricks_workflow.py`, README / setup-notes | `feat: automate Databricks environment and pipeline validation` |
 | P017 | Documentation / Databricks closeout | [documentation.md](documentation.md) Prompt 8; [bronze-layer.md](bronze-layer.md) Prompt 4; [silver-layer.md](silver-layer.md) Prompt 5; [gold-layer.md](gold-layer.md) Prompt 4; [dashboard.md](dashboard.md) Prompt 3; [debugging.md](debugging.md) Prompt 5 | Record actual workspace `run_pipeline.py` PASS results and the manually published dashboard; do not change pipeline/Gold/dashboard SQL | `FINAL_AUDIT.md`, README, setup-notes, prompt index, reflection | `docs: close out Databricks validation and dashboard` |
+| P018 | Dashboard definition export | [dashboard.md](dashboard.md) Prompt 4; [documentation.md](documentation.md) Prompt 9 | Export the real published Lakeview definition into Git; do not recreate it from SQL or modify the live dashboard | `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`, `dashboards/README.md`, `tests/test_dashboard_artifact.py` | `feat: version-control Databricks dashboard definition` |
 
 ## How to read the prompt files
 
@@ -34,7 +35,7 @@ Every meaningful prompt file uses:
 - **VALIDATION** — commands that were actually run
 - **FINAL DECISION** — what shipped
 
-Do not treat an older VALIDATION block as the latest test run. Latest sequential **local** counts: **Ran 223 tests in 840.713s OK** (this closeout, including `tests.test_databricks_workflow`). Databricks workspace PASS results are a separate evidence class in `FINAL_AUDIT.md`. The public-repo audit recorded 203 tests.
+Do not treat an older VALIDATION block as the latest test run. Latest sequential **local** counts: **Ran 232 tests in 558.859s OK** (P018, including `tests.test_dashboard_artifact`). P017 closeout recorded 223 tests in 840.713s. Databricks workspace PASS results remain a separate evidence class in `FINAL_AUDIT.md`. The public-repo audit recorded 203 tests.
 
 ## Duplicate file pointers (same interaction, two logs)
 
@@ -44,6 +45,7 @@ Do not treat an older VALIDATION block as the latest test run. Latest sequential
 | P012 | Debugging diagnosis in `debugging.md`; Gold file notes that SQL was unchanged |
 | P016 | Official Databricks process recorded in documentation; layer files record that existing transforms were reused, not rewritten |
 | P017 | Closeout records the actual workspace run and the manually published dashboard; layer files record that transforms and dashboard SQL were not changed |
+| P018 | Dashboard export recorded in dashboard.md; documentation.md records that the live dashboard was not modified |
 
 ## Lifecycle coverage
 
@@ -63,9 +65,10 @@ Do not treat an older VALIDATION block as the latest test run. Latest sequential
 | 12. Silver business logic/orchestration | P010 |
 | 13. Gold | P011 |
 | 14. Gold QA/debugging | P012 |
-| 15. Dashboard | P013 |
+| 15. Dashboard | P013, P018 |
 | 16. Databricks compatibility preparation | P014 |
-| 17. Documentation | P002, P003, P015, P016, P017 |
+| 17. Documentation | P002, P003, P015, P016, P017, P018 |
 | 18. Environment/debugging interactions | P006, P007, P012 |
 | 19. Databricks workflow redesign | P016 |
 | 20. Databricks workspace execution + published dashboard (recorded, not fabricated) | P017 |
+| 21. Version-controlled serialized dashboard definition | P018 |

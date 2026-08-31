@@ -399,3 +399,39 @@ Databricks evidence is the candidate’s recorded workspace run, not a re-execut
 ### FINAL DECISION
 
 Ship the documentation/evidence closeout. Databricks pipeline and published dashboard are complete. Stop after the requested commit. Do not push.
+
+---
+
+## Prompt 9 — 2026-08-31 — Version-control published dashboard definition (P018)
+
+### PROMPT SENT
+
+Same interaction as `ai-prompts/dashboard.md` Prompt 4 / P018. Retrieve the real published Lakeview definition with Databricks CLI/API. Do not fabricate the JSON. Do not modify the live dashboard or pipeline SQL. Do not push.
+
+### AI RESPONSE SUMMARY
+
+Cursor installed the CLI, stopped for manual OAuth, then (after the user authenticated profile `DE_C1`) exported the existing dashboard via `workspace export`. Added `dashboards/README.md`, structural tests, and documentation that Git versions the serialized definition only. No push.
+
+### ACCEPTED
+
+Read-only export of the published object. Honest split between serialized JSON and runtime publish/sharing settings.
+
+### CHANGED
+
+CLI install; user-completed OAuth; two stale dashboard-guide contract assertions aligned to current UI status.
+
+### REJECTED
+
+Fake `.lvdash.json`; Databricks write APIs; PAT in chat; push.
+
+### VALIDATION
+
+Spark-free dashboard artifact + contract tests **24/24 OK**. Sequential full suite:
+
+`python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_artifact tests.test_dashboard_queries tests.test_databricks_workflow -v`
+
+→ **Ran 232 tests in 558.859s OK**.
+
+### FINAL DECISION
+
+Commit the exported definition and supporting docs/tests. Do not push.

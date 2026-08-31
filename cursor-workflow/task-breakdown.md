@@ -95,7 +95,7 @@ Commit message (this stage): `feat: add Databricks SQL dashboard queries and gui
 - SQL: `src/dashboard/dashboard_queries.sql` — Top 10 products, customer revenue distribution (raw `lifetime_value_actual` for a Databricks histogram), customer segmentation (`segment_type` + `customer_count`), plus filter-value queries.
 - Guide: `src/dashboard/DASHBOARD_GUIDE.md` — prerequisites, catalog/schema, Gold tables, tile mapping, viz/axis/histogram/filter configuration, QA checklist, local vs Databricks.
 - Filters: `category` before LIMIT on Tile 1; `customer_segment` on Tile 2. Date range rejected for these tiles (no date grain on those Gold tables).
-- Tests: `tests/test_dashboard_contract.py`, `tests/test_dashboard_queries.py`. Local Spark against Gold parquet. Databricks dashboard SQL later **PASS**. Visual tiles rendered **manually** in the Databricks SQL UI.
+- Tests: `tests/test_dashboard_contract.py`, `tests/test_dashboard_queries.py`. Local Spark against Gold parquet. Databricks dashboard SQL later **PASS**. Visual tiles rendered **manually** in the Databricks SQL UI. Serialized Lakeview definition later exported read-only (Stage 15 / P018).
 - Gold production SQL/orchestrator unchanged. Stage 2 CSVs unchanged.
 
 Do not start final submission audit until requested.
@@ -147,6 +147,10 @@ The candidate ran `python src/databricks/run_pipeline.py` in the workspace. Boot
 
 **DE C1 E-Commerce Sales Dashboard**: Top 10 bar, customer revenue histogram, segmentation pie/donut, category filter, customer segment filter. Both filters tested and returned to All. Sharing: Anyone in my account can view (not public internet). Cursor did not generate the visual dashboard.
 
-## Stage 14 — Repository closeout (this increment)
+## Stage 14 — Repository closeout (done)
 
 Documentation and prompt history only. Pipeline logic, Gold SQL, dashboard SQL, and the published dashboard were not modified. Local closeout suite: **223/223 OK**. Do not push until asked.
+
+## Stage 15 — Version-control dashboard definition (this increment)
+
+The published Lakeview object **DE C1 E-Commerce Sales Dashboard** was exported read-only to `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`. It was not reconstructed from SQL. The live dashboard was not modified. Databricks CLI OAuth was a manual browser step. Do not push until asked.

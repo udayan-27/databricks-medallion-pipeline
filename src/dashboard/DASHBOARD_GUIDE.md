@@ -1,8 +1,8 @@
 # Dashboard guide
 
-Status: **queries implemented and locally validated**. Databricks dashboard SQL **PASS** (`run_pipeline.py`). Published Databricks SQL Dashboard: **DE C1 E-Commerce Sales Dashboard**, rendered **manually in the Databricks UI**. Cursor did not generate the visual tiles. Sharing is **Anyone in my account can view** (account-scoped; not public internet access).
+Status: **queries implemented and locally validated**. Databricks dashboard SQL **PASS** (`run_pipeline.py`). Published Databricks SQL Dashboard: **DE C1 E-Commerce Sales Dashboard**, rendered **manually in the Databricks UI**. Cursor did not generate the visual tiles. Sharing is **Anyone in my account can view** (account-scoped; not public internet access). The actual serialized Lakeview definition is version-controlled at `dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json` (read-only export; the live dashboard was not modified).
 
-Local validation uses PySpark `spark.sql` against Gold parquet tables. Databricks SQL validation uses the Gold Delta tables produced by `run_pipeline.py`. Visual bar/histogram/pie widgets are a UI operation.
+Local validation uses PySpark `spark.sql` against Gold parquet tables. Databricks SQL validation uses the Gold Delta tables produced by `run_pipeline.py`. Visual bar/histogram/pie widgets are a UI operation. Git stores the serialized definition; it does not store every publish/sharing ACL.
 
 ## 1. Prerequisites
 
@@ -268,3 +268,9 @@ Do not treat Cursor as the author of the visual dashboard.
 | No Gold customers | Tile 2 returns 0 rows; Tile 3 still has four zero-count types if Gold was built from an empty canonical set |
 
 Do not over-engineer extra dashboard datasets for these cases.
+
+## 13. Version-controlled serialized definition
+
+The published Lakeview object was exported **read-only** into [`dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json`](../../dashboards/DE_C1_E-Commerce_Sales_Dashboard.lvdash.json). That file is the Databricks-serialized definition (datasets, widgets, filters). It was not reconstructed from this SQL file.
+
+Dashboard SQL in this guide remains the query contract. Publishing, warehouse binding, and account-level sharing are workspace runtime settings. They are documented in `dashboards/README.md` and are not fully represented in the `.lvdash.json`. The live dashboard was not modified by the export.

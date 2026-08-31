@@ -2,7 +2,7 @@
 
 Status: complete for the work that actually happened in this repository. Databricks workspace jobs were executed with `python src/databricks/run_pipeline.py` (human-run in the workspace; Cursor recorded the results). The Databricks SQL dashboard UI was rendered **manually**. Cursor did not generate the visual tiles.
 
-Cursor was the AI tool. Git, unittest, local PySpark, and the repository Databricks workflow were the validation tools. Technical decisions are owned by the candidate.
+Cursor was the AI tool. Git, unittest, local PySpark, and the repository Databricks workflow were the validation tools. Technical decisions are owned by the candidate. Databricks CLI OAuth for the dashboard export was a **manual browser step** by the user; Cursor did not perform account authorization.
 
 ## What Cursor was used for
 
@@ -25,10 +25,11 @@ Cursor was the AI tool. Git, unittest, local PySpark, and the repository Databri
 | Public repository readiness audit | documentation Prompt 6 / P015 | Structure, security, prompt index, `FINAL_AUDIT.md` |
 | Databricks workflow redesign | documentation Prompt 7 / bronze, silver, gold, dashboard, debugging / P016 | `src/databricks/` bootstrap + validate + `run_pipeline.py`; existing modules remain the transform source of truth; that turn did **not** execute Databricks |
 | Repository closeout | documentation Prompt 8 / bronze, silver, gold, dashboard, debugging / P017 | Record actual workspace PASS results and the published dashboard; docs only; pipeline/Gold/dashboard SQL unchanged |
+| Dashboard definition export | `ai-prompts/dashboard.md` Prompt 4 / documentation Prompt 9 / P018 | Read-only CLI export of the published Lakeview `.lvdash.json`; structural tests; no live-dashboard change |
 
 Index: `ai-prompts/prompt-index.md`.
 
-The workspace command `python src/databricks/run_pipeline.py` was executed by the candidate in Databricks, not by Cursor in this closeout chat. Visual bar/histogram/pie widgets were created in the Databricks SQL UI. Those are not AI actions.
+The workspace command `python src/databricks/run_pipeline.py` was executed by the candidate in Databricks, not by Cursor in this closeout chat. Visual bar/histogram/pie widgets were created in the Databricks SQL UI. Those are not AI actions. Cursor later exported the already-published serialized definition with the Databricks CLI after the user completed OAuth. That export is not the same as creating or publishing the dashboard.
 
 ## Quality of AI use (what this repository actually did)
 
