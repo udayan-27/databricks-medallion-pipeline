@@ -119,10 +119,13 @@
 -- CREATE TABLE silver.quality_metrics (
 --   table_name STRING,
 --   check_name STRING,
+--   total_evaluated BIGINT,
 --   pass_count BIGINT,
 --   fail_count BIGINT,
 --   pass_pct DECIMAL(7, 4),
 --   fail_pct DECIMAL(7, 4),
+--   expected_fail_count BIGINT,
+--   population_kind STRING,
 --   computed_at TIMESTAMP
 -- );
 

@@ -1,6 +1,6 @@
 # Design notes
 
-Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **Silver completeness, uniqueness, type validation, and referential integrity transforms exist** (local Spark validated). Bronze/Silver tables have **not** been created in a Databricks workspace. Business logic / Gold / Dashboard have not been built. No Databricks runtime results exist.
+Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated). Bronze/Silver tables have **not** been created in a Databricks workspace. Gold / Dashboard have not been built. No Databricks runtime results exist.
 
 Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard guide. Rejected extras are listed at the end of this file.
 
@@ -193,12 +193,14 @@ Join key for combining is `_ingest_row_id`, never `order_id` / `customer_id` alo
 `silver.quality_metrics`:
 
 - `table_name`
-- `check_name` (module or rule code)
-- `pass_count`, `fail_count`
-- `pass_pct`, `fail_pct` (fail_count / row_count of that table)
+- `check_name` (module, rule code, distinct-key uniqueness, or combined `quality_check_result`)
+- `total_evaluated`, `pass_count`, `fail_count`
+- `pass_pct`, `fail_pct` (fail_count / **that check’s** total_evaluated)
+- `expected_fail_count` (nullable Stage 2 contract)
+- `population_kind` (`physical_row` / `distinct_key` / `table_outcome`)
 - `computed_at`
 
-Also emit a small **table-level** summary: distinct rows with `quality_check_result = FAIL`.
+Also emit a **table-level** summary: distinct physical rows with `quality_check_result = FAIL`.
 
 Do not gate the job on `fail_pct = 0`. Intentional defects must fail checks. Tests assert expected fail counts, not a clean warehouse.
 

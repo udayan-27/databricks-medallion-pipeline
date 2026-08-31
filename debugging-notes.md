@@ -98,6 +98,31 @@ Two independent defects blocked file-based Bronze tests. In-memory Spark already
 - **Winutils:** not installed, not committed, not required for this local path.
 - **Still not claimed:** Databricks, Delta, DBFS, Unity Catalog.
 
+## Stage 4 Silver business logic and orchestration (2026-08-31)
+
+### 9. Canonical parent window used pre-alias column names
+
+- **Symptom (caught in review before Spark tests):** `canonical_customer_signup` selected aliased `_bl_customer_id` then partitioned the window by `customer_id`, which no longer existed on that projection.
+- **Expected vs actual:** lookup must be unique per `customer_id` using `min(_ingest_row_id)` so order joins cannot fan out.
+- **Root cause:** window defined on original names after `select` aliases.
+- **Files changed:** `src/silver/05_quality_business_logic.py` (partition/order by `_bl_customer_id` / `_bl_parent_ingest_id`).
+- **Tests:** subsequent Spark suite exercised the lookup (duplicate parent signup disagreement; seed-42 `order_not_before_signup` = 0).
+
+### 10. Fixture metric test compared the wrong populations
+
+- **Symptom:** `test_ri_does_not_fan_out_and_metrics_reconcile` failed with `AssertionError: 7 not greater than 12`.
+- **Expected vs actual:** the test assumed three business-rule fail counts would exceed table-outcome FAIL rows. On the small BL fixture, completeness/RI also fail, so outcome FAIL = 12 and those three BL rules sum to 7.
+- **Root cause:** test assertion, not Silver implementation. Rule-level sums are issue instances; table-outcome is distinct physical FAIL rows.
+- **Files changed:** `tests/test_silver_quality.py` only.
+- **Tests re-run:** `python -m unittest tests.test_silver_quality -v` → **55/55 OK**. Combined relevant set **147/147 OK**.
+
+### 11. `current_date()` string in a docstring
+
+- **Symptom:** Spark-free contract test `assertNotIn("current_date()", bl_src)` failed because the module docstring said not to use that function.
+- **Root cause:** static string match, not a Spark `current_date()` call. As-of date is the frozen `date(2026, 8, 31)` literal.
+- **Files changed:** docstring/comment wording in `05_quality_business_logic.py`.
+- **Not a runtime defect.**
+
 Use this file during later stages to capture:
 
 - Symptom

@@ -1,6 +1,6 @@
 # Data model
 
-Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). Completeness, uniqueness, type validation, and referential integrity quality columns are produced by Silver transforms; combined Silver tables have not been written. Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`). Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 
@@ -167,14 +167,17 @@ Tables: `silver.customers`, `silver.orders`, `silver.products`, `silver.quality_
 | Column | Type | Meaning |
 |---|---|---|
 | table_name | STRING | silver entity |
-| check_name | STRING | module or rule code |
-| pass_count | BIGINT | rows that passed that check |
-| fail_count | BIGINT | rows that failed that check |
-| pass_pct | DECIMAL(7,4) | pass_count / table_rows |
-| fail_pct | DECIMAL(7,4) | fail_count / table_rows |
+| check_name | STRING | module, rule code, distinct-key uniqueness, or `quality_check_result` |
+| total_evaluated | BIGINT | denominator for this check’s population |
+| pass_count | BIGINT | rows/keys that passed that check |
+| fail_count | BIGINT | rows/keys that failed that check |
+| pass_pct | DECIMAL(7,4) | pass_count / total_evaluated (0.0000 if empty) |
+| fail_pct | DECIMAL(7,4) | fail_count / total_evaluated |
+| expected_fail_count | BIGINT | Stage 2 contract when known; null otherwise |
+| population_kind | STRING | `physical_row`, `distinct_key`, or `table_outcome` |
 | computed_at | TIMESTAMP | metrics time |
 
-Do not invent extra metric dimensions (workspace, cluster id).
+Do not invent extra metric dimensions (workspace, cluster id). `distinct_key` uniqueness uses distinct non-null business keys as the denominator, not physical rows.
 
 ---
 
@@ -265,4 +268,4 @@ Not in this model unless a later spec change says so:
 
 ## Current files on disk
 
-`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied to a warehouse. Bronze job code writes the same Bronze names when Spark is available.
+`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied to a warehouse. Bronze and Silver job code write the same names when Spark is available (local parquet validated; Databricks not run).

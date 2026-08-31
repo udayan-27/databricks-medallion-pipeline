@@ -1,0 +1,8 @@
+product_id,product_name,category,price,cost,stock_quantity,reorder_level
+100,Valid Widget,Electronics,10.00,4.00,50,5
+101,Negative Price,Electronics,-1.00,4.00,50,5
+102,Negative Cost,Electronics,10.00,-1.00,50,5
+103,Zero Stock,Electronics,10.00,4.00,0,5
+104,Negative Stock,Electronics,10.00,4.00,-1,5
+105,Negative Reorder,Electronics,10.00,4.00,50,-1
+106,All Valid Other,Clothing,20.00,8.00,10,2

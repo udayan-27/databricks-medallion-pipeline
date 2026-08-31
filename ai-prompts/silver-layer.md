@@ -185,3 +185,71 @@ Adversarial review (duplicate parents, NULL FKs, orphans, empty child dataset, a
 ### FINAL DECISION
 
 Accept this increment. Type validation and referential integrity are implemented and locally validated. Business logic / Silver orchestration / Gold / Dashboard remain stubs. Commit: `feat: add Silver type and referential integrity validation`.
+
+## Prompt 3 — Stage 4 Silver business logic, orchestration, and metrics
+
+### PROMPT SENT
+
+Final Silver increment: freeze documented business rules, implement `05_quality_business_logic.py`, orchestrate all five modules in `create_silver_tables.py`, write quality metrics, reconcile Bronze=Silver physical rows, test against seed-42 and focused fixtures. Do not start Gold or Dashboard. Do not regenerate Stage 2 CSVs. Do not redesign Bronze. Do not reinitialize Git. Commit: `feat: complete Silver quality validation pipeline`.
+
+### AI RESPONSE SUMMARY
+
+Read frozen DQ strategy / design / requirements. Implemented only the 14 rules already listed in `data-quality-strategy.md`. Did not add product cost-vs-price. Future signup uses frozen as-of `2026-08-31`; Stage 2’s 30 future-signup customers remain excluded from orders so `order_not_before_signup` stays 0 and the 460 mandatory count is unchanged. Orchestrator applies completeness → uniqueness → type → RI → business logic, concatenates per-module arrays, writes `quality_check_result`, and overwrites `silver.quality_metrics` with `total_evaluated`, pass/fail counts and percentages, expected vs observed, and `population_kind` (physical_row / distinct_key / table_outcome).
+
+### ACCEPTED
+
+- Frozen business rules only (quantity > 0, non-negative money/stock, amount ±0.01 DECIMAL, Completed/Cancelled payment consistency, payment ≥ order_date, order ≥ signup via min `_ingest_row_id` parent, signup ≤ as-of, LTV ≥ 0).
+- Flag, do not delete. Bronze physical rows = Silver physical rows (10010 / 100020 / 500).
+- `_ingest_row_id` identity; business keys not rewritten.
+- NULL fields skip BL (completeness/type own them). NULL/orphan FKs skip `order_not_before_signup`.
+- Combined `failed_checks` + `quality_check_result`; modules never last-writer-overwrite.
+- Metrics distinguish physical-row failures, distinct duplicate keys, and table-outcome FAIL rows.
+- 30 future signups reported separately from the 460.
+
+### CHANGED
+
+- `quality_metrics` schema gained `total_evaluated`, `expected_fail_count`, `population_kind` so uniqueness keys are not mixed with participating-row counts.
+- Empty-table percentages are 0.0000 / 0.0000 (documented) instead of raising.
+- `PipelineConfig.silver_table()` added next to `bronze_table()`.
+- Focused fixtures under `tests/fixtures/silver/business_logic/` (not Stage 2 CSVs).
+
+### REJECTED
+
+- Gold / Dashboard / regenerating Stage 2 CSVs / redesigning Bronze / Git reinit.
+- Product cost vs list price — not in the frozen rule table.
+- Extra pending-payment rule.
+- Using Spark job-clock date for “future” signup.
+- Padding defects to 700.
+- Treating the sum of rule-level failures as distinct FAIL rows.
+- Weakening tests to obtain a green result (the one Spark failure was a test assertion comparing three BL rules to all-module FAIL rows on a small fixture; the implementation was correct).
+
+### VALIDATION
+
+Environment: Python 3.11.9 `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. Local parquet, not Databricks. Session `JAVA_HOME` must be set.
+
+Commands actually run:
+
+1. `python -m unittest tests.test_silver_contract -v` → **Ran 20 tests in 0.034s OK**
+2. `python -m unittest tests.test_silver_quality -v` → first Spark run **54/55** (1 test assertion); after test fix **Ran 55 tests in 305.812s OK** (0 skipped)
+3. Combined: `python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality -v` → **Ran 147 tests in 393.422s OK** (0 failed, 0 skipped)
+
+Observed seed-42 physical-row counts after all five modules + combine:
+
+| Check | failed | total_evaluated |
+|---|---|---|
+| completeness email / order customer_id / order product_id | 50 / 100 / 200 | 10010 / 100020 / 100020 |
+| uniqueness customer/order participating rows | 20 / 40 | 10010 / 100020 |
+| uniqueness distinct duplicate keys | 10 / 20 | 10000 / 100000 |
+| type | 0 | 10010 / 100020 / 500 |
+| RI orphans | 50 / 30 | 100020 |
+| `signup_not_future` | 30 | 10010 |
+| other frozen BL including `order_not_before_signup` | 0 | |
+| customers / orders table_outcome FAIL rows | 100 / 420 | 10010 / 100020 |
+
+Physical rows unchanged: 10010 / 100020 / 500.
+
+Debugging cycle (real): (1) canonical-parent window originally partitioned on pre-alias column names — fixed before Spark tests. (2) contract test matched `current_date()` in a docstring; docstring wording changed. (3) fixture orchestration test compared sum of three BL rules (7) to all-module FAIL rows (12); assertion fixed, implementation unchanged. (4) this shell needed `JAVA_HOME` set — environment, not Silver logic.
+
+### FINAL DECISION
+
+Accept this increment. Silver is complete locally. Gold / Dashboard remain stubs. Databricks / Delta / UC still not run. Commit: `feat: complete Silver quality validation pipeline`.

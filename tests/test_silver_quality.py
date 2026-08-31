@@ -1,12 +1,13 @@
 """
-Silver quality Spark tests (completeness, uniqueness, type, RI).
+Silver quality Spark tests (completeness, uniqueness, type, RI, business
+logic, and Silver table orchestration).
 
 Requires a local PySpark runtime. If PySpark is not installed, the entire
 module is skipped — that is BLOCKED runtime evidence, not a pass.
 
 Uses Bronze ingest (fixtures and committed CSVs) so NULL semantics match the
-PERMISSIVE empty-field contract. Quality modules are applied in memory; this
-increment does not write Silver tables.
+PERMISSIVE empty-field contract. Combined Silver tables are written only in
+orchestration tests (parquet, local warehouse).
 """
 
 from __future__ import annotations
@@ -15,6 +16,8 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +26,7 @@ BRONZE_DIR = SRC_DIR / "bronze"
 SILVER_DIR = SRC_DIR / "silver"
 FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "bronze"
 TYPE_FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "silver" / "type_validation"
+BL_FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "silver" / "business_logic"
 DATA_DIR = REPO_ROOT / "data"
 
 for _path in (str(SRC_DIR), str(BRONZE_DIR), str(SILVER_DIR)):
@@ -48,11 +52,17 @@ from contracts import ENTITY_CONTRACTS, INGEST_ROW_ID_COLUMN  # noqa: E402
 from ingest_core import add_ingest_row_id, ingest_all, read_source_csv  # noqa: E402
 from spark_local import apply_local_spark_config  # noqa: E402
 from quality_common import (  # noqa: E402
+    COMBINED_FAILED_CHECKS_COLUMN,
+    MODULE_BUSINESS,
     MODULE_COMPLETENESS,
     MODULE_RI,
     MODULE_TYPE,
     MODULE_UNIQUENESS,
+    POPULATION_DISTINCT_KEY,
+    POPULATION_TABLE_OUTCOME,
+    QUALITY_CHECK_RESULT_COLUMN,
     QualityError,
+    combine_quality_status,
     lineage_and_source_columns,
 )
 
@@ -74,6 +84,8 @@ type_validation = _load_silver("03_quality_type_validation.py", "quality_type_va
 referential_integrity = _load_silver(
     "04_quality_referential_integrity.py", "quality_referential_integrity"
 )
+business_logic = _load_silver("05_quality_business_logic.py", "quality_business_logic")
+create_silver = _load_silver("create_silver_tables.py", "create_silver_tables")
 
 EMAIL_CODE = "completeness:customers.email"
 ORDER_CUSTOMER_CODE = "completeness:orders.customer_id"
@@ -91,6 +103,20 @@ TYPE_PRICE_CODE = "type:products.price"
 TYPE_STOCK_CODE = "type:products.stock_quantity"
 CUSTOMER_ORPHAN_CODE = "ri:orders.customer_id_orphan"
 PRODUCT_ORPHAN_CODE = "ri:orders.product_id_orphan"
+QTY_POSITIVE_CODE = "business:orders.quantity_positive"
+UNIT_PRICE_NN_CODE = "business:orders.unit_price_non_negative"
+TOTAL_AMOUNT_NN_CODE = "business:orders.total_amount_non_negative"
+AMOUNT_EQ_CODE = "business:orders.amount_equals_qty_price"
+COMPLETED_PAY_CODE = "business:orders.completed_has_payment"
+CANCELLED_PAY_CODE = "business:orders.cancelled_without_payment"
+PAYMENT_AFTER_CODE = "business:orders.payment_on_or_after_order"
+ORDER_SIGNUP_CODE = "business:orders.order_not_before_signup"
+SIGNUP_FUTURE_CODE = "business:customers.signup_not_future"
+LTV_NN_CODE = "business:customers.lifetime_value_non_negative"
+PRICE_NN_CODE = "business:products.price_non_negative"
+COST_NN_CODE = "business:products.cost_non_negative"
+STOCK_NN_CODE = "business:products.stock_non_negative"
+REORDER_NN_CODE = "business:products.reorder_non_negative"
 
 
 def _code_count(dataframe, column: str, code: str) -> int:
@@ -107,11 +133,16 @@ def _apply_implemented_quality(
     after = completeness.apply_completeness(dataframe, table_name)
     after = uniqueness.apply_uniqueness(after, table_name)
     after = type_validation.apply_type_validation(after, table_name)
-    return referential_integrity.apply_referential_integrity(
+    after = referential_integrity.apply_referential_integrity(
         after,
         table_name,
         customers=customers,
         products=products,
+    )
+    return business_logic.apply_business_logic(
+        after,
+        table_name,
+        customers=customers,
     )
 
 
@@ -438,6 +469,15 @@ class TestSilverCommittedSource(SilverSparkTestCase):
         cls.order_ri_metrics = referential_integrity.referential_integrity_metrics(
             cls.orders, "orders"
         )
+        cls.customer_bl_metrics = business_logic.business_logic_metrics(
+            cls.customers, "customers"
+        )
+        cls.order_bl_metrics = business_logic.business_logic_metrics(
+            cls.orders, "orders"
+        )
+        cls.product_bl_metrics = business_logic.business_logic_metrics(
+            cls.products, "products"
+        )
 
     def _metric(self, metrics, check_name: str):
         matches = [item for item in metrics if item.check_name == check_name]
@@ -608,6 +648,7 @@ class TestSilverCommittedSource(SilverSparkTestCase):
         self.assertIn("uniqueness_pass", self.customers.columns)
         self.assertIn("type_validation_pass", self.customers.columns)
         self.assertIn("referential_integrity_pass", self.customers.columns)
+        self.assertIn("business_logic_pass", self.customers.columns)
         self.assertEqual(
             _code_count(self.customers, "completeness_failed_checks", EMAIL_CODE),
             50,
@@ -623,6 +664,46 @@ class TestSilverCommittedSource(SilverSparkTestCase):
             0,
         )
         self.assertEqual(email_fail_rows.filter(~F.col("type_validation_pass")).count(), 0)
+
+
+    def test_optional_future_signup_is_separate_from_mandatory_460(self) -> None:
+        self.assertEqual(
+            _code_count(self.customers, "business_logic_failed_checks", SIGNUP_FUTURE_CODE),
+            30,
+        )
+        signup = self._metric(self.customer_bl_metrics, SIGNUP_FUTURE_CODE)
+        self.assertEqual(signup.total_evaluated, 10010)
+        self.assertEqual(signup.failed, 30)
+        self.assertEqual(signup.passed, 9980)
+        ltv = self._metric(self.customer_bl_metrics, LTV_NN_CODE)
+        self.assertEqual(ltv.failed, 0)
+        customer_bl = self._metric(self.customer_bl_metrics, MODULE_BUSINESS)
+        self.assertEqual(customer_bl.failed, 30)
+        # Future-signup customers were excluded from orders in Stage 2.
+        self.assertEqual(
+            _code_count(self.orders, "business_logic_failed_checks", ORDER_SIGNUP_CODE),
+            0,
+        )
+        for code in (
+            QTY_POSITIVE_CODE,
+            UNIT_PRICE_NN_CODE,
+            TOTAL_AMOUNT_NN_CODE,
+            AMOUNT_EQ_CODE,
+            COMPLETED_PAY_CODE,
+            CANCELLED_PAY_CODE,
+            PAYMENT_AFTER_CODE,
+        ):
+            self.assertEqual(
+                _code_count(self.orders, "business_logic_failed_checks", code),
+                0,
+                code,
+            )
+        order_bl = self._metric(self.order_bl_metrics, MODULE_BUSINESS)
+        self.assertEqual(order_bl.failed, 0)
+        self.assertEqual(order_bl.total_evaluated, 100020)
+        product_bl = self._metric(self.product_bl_metrics, MODULE_BUSINESS)
+        self.assertEqual(product_bl.failed, 0)
+        self.assertEqual(self.products.filter(~F.col("business_logic_pass")).count(), 0)
 
 
 @unittest.skipUnless(
@@ -1017,8 +1098,547 @@ class TestSilverTypeAndRISynthetic(SilverSparkTestCase):
             self.assertIn(PRODUCT_ORPHAN_CODE, ri_codes)
             self.assertNotIn(CUSTOMER_ORPHAN_CODE, ri_codes)
             self.assertNotIn(ORDER_CUSTOMER_CODE, type_codes)
+            self.assertTrue(row["business_logic_pass"])
+            self.assertNotIn(ORDER_SIGNUP_CODE, list(row["business_logic_failed_checks"] or []))
             self.assertEqual(row["order_id"], 10)
             self.assertIn(row[INGEST_ROW_ID_COLUMN], (1, 2))
+
+
+def _bl_codes(row) -> list[str]:
+    return list(row["business_logic_failed_checks"] or [])
+
+
+@unittest.skipUnless(
+    PYSPARK_AVAILABLE,
+    f"PySpark is not installed ({PYSPARK_IMPORT_ERROR or 'no module'}). "
+    "Silver Spark tests are BLOCKED in this environment.",
+)
+class TestSilverBusinessLogicFixture(SilverSparkTestCase):
+    """
+    Focused business-logic CSV fixture (not Stage 2 data).
+
+    Order ids:
+    1 valid completed; 2 qty=0; 3 qty=1; 4 unit_price=0; 5 negative price/amount;
+    6 amount +0.01 (pass); 7 amount +0.02 (fail); 8 completed no payment;
+    9 cancelled with payment; 10 cancelled no payment; 11 pending null pay;
+    12 pending with payment; 13 payment before order; 14 payment = order date;
+    15 order before signup; 16 order = signup; 17 null quantity; 18 null customer_id;
+    19 orphan customer; 20 multiple BL failures; 21 negative amount mismatch;
+    22 as-of signup/order same day.
+    Customers: 2 as-of boundary; 3 future no order; 4 no order valid; 5 negative LTV;
+    6 null signup.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.customers = add_ingest_row_id(
+            read_source_csv(
+                cls.spark,
+                str(BL_FIXTURE_DIR / "customers.csv"),
+                ENTITY_CONTRACTS["customers"],
+            )
+        )
+        cls.orders = add_ingest_row_id(
+            read_source_csv(
+                cls.spark,
+                str(BL_FIXTURE_DIR / "orders.csv"),
+                ENTITY_CONTRACTS["orders"],
+            )
+        )
+        cls.products = add_ingest_row_id(
+            read_source_csv(
+                cls.spark,
+                str(BL_FIXTURE_DIR / "products.csv"),
+                ENTITY_CONTRACTS["products"],
+            )
+        )
+        cls.bl_customers = business_logic.apply_business_logic(cls.customers, "customers")
+        cls.bl_orders = business_logic.apply_business_logic(
+            cls.orders, "orders", customers=cls.customers
+        )
+        cls.bl_products = business_logic.apply_business_logic(cls.products, "products")
+
+    def _order(self, order_id: int):
+        rows = self.bl_orders.filter(F.col("order_id") == order_id).collect()
+        self.assertEqual(len(rows), 1, order_id)
+        return rows[0]
+
+    def _customer(self, customer_id: int):
+        rows = self.bl_customers.filter(F.col("customer_id") == customer_id).collect()
+        self.assertEqual(len(rows), 1, customer_id)
+        return rows[0]
+
+    def test_fixture_rows_and_lineage_preserved(self) -> None:
+        self.assertEqual(self.bl_customers.count(), 7)
+        self.assertEqual(self.bl_orders.count(), 22)
+        self.assertEqual(self.bl_products.count(), 7)
+        self.assertEqual(self.bl_customers.count(), self.customers.count())
+        self.assertEqual(self.bl_orders.count(), self.orders.count())
+        self.assertEqual(self.bl_products.count(), self.products.count())
+        cols = lineage_and_source_columns(self.orders)
+        self.assertEqual(
+            self.orders.select(*cols).exceptAll(self.bl_orders.select(*cols)).count(),
+            0,
+        )
+        ids = [row[INGEST_ROW_ID_COLUMN] for row in self.bl_orders.collect()]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_valid_and_boundary_examples(self) -> None:
+        self.assertTrue(self._order(1)["business_logic_pass"])
+        self.assertEqual(_bl_codes(self._order(1)), [])
+        self.assertTrue(self._order(3)["business_logic_pass"])
+        self.assertTrue(self._order(4)["business_logic_pass"])
+        self.assertTrue(self._order(6)["business_logic_pass"])
+        self.assertTrue(self._order(10)["business_logic_pass"])
+        self.assertTrue(self._order(11)["business_logic_pass"])
+        self.assertTrue(self._order(12)["business_logic_pass"])
+        self.assertTrue(self._order(14)["business_logic_pass"])
+        self.assertTrue(self._order(16)["business_logic_pass"])
+        self.assertTrue(self._order(22)["business_logic_pass"])
+        self.assertTrue(self._customer(1)["business_logic_pass"])
+        self.assertTrue(self._customer(2)["business_logic_pass"])
+        self.assertTrue(self._customer(4)["business_logic_pass"])
+
+    def test_quantity_and_money_rules(self) -> None:
+        self.assertIn(QTY_POSITIVE_CODE, _bl_codes(self._order(2)))
+        self.assertNotIn(AMOUNT_EQ_CODE, _bl_codes(self._order(2)))
+        self.assertIn(UNIT_PRICE_NN_CODE, _bl_codes(self._order(5)))
+        self.assertIn(TOTAL_AMOUNT_NN_CODE, _bl_codes(self._order(5)))
+        self.assertNotIn(AMOUNT_EQ_CODE, _bl_codes(self._order(6)))
+        self.assertIn(AMOUNT_EQ_CODE, _bl_codes(self._order(7)))
+        self.assertIn(TOTAL_AMOUNT_NN_CODE, _bl_codes(self._order(21)))
+        self.assertIn(AMOUNT_EQ_CODE, _bl_codes(self._order(21)))
+
+    def test_status_and_payment_rules(self) -> None:
+        self.assertIn(COMPLETED_PAY_CODE, _bl_codes(self._order(8)))
+        self.assertIn(CANCELLED_PAY_CODE, _bl_codes(self._order(9)))
+        self.assertNotIn(COMPLETED_PAY_CODE, _bl_codes(self._order(11)))
+        self.assertNotIn(CANCELLED_PAY_CODE, _bl_codes(self._order(12)))
+        self.assertIn(PAYMENT_AFTER_CODE, _bl_codes(self._order(13)))
+        self.assertNotIn(PAYMENT_AFTER_CODE, _bl_codes(self._order(14)))
+
+    def test_signup_timing_and_null_deferral(self) -> None:
+        self.assertIn(SIGNUP_FUTURE_CODE, _bl_codes(self._customer(3)))
+        self.assertEqual(
+            self.bl_orders.filter(F.col("customer_id") == 3).count(),
+            0,
+        )
+        self.assertTrue(self._customer(4)["business_logic_pass"])
+        self.assertIn(LTV_NN_CODE, _bl_codes(self._customer(5)))
+        self.assertNotIn(SIGNUP_FUTURE_CODE, _bl_codes(self._customer(6)))
+        self.assertTrue(self._customer(6)["business_logic_pass"])
+        self.assertIn(ORDER_SIGNUP_CODE, _bl_codes(self._order(15)))
+        null_qty = self._order(17)
+        self.assertIsNone(null_qty["quantity"])
+        self.assertNotIn(QTY_POSITIVE_CODE, _bl_codes(null_qty))
+        null_fk = self._order(18)
+        self.assertIsNone(null_fk["customer_id"])
+        self.assertNotIn(ORDER_SIGNUP_CODE, _bl_codes(null_fk))
+        orphan = self._order(19)
+        self.assertEqual(orphan["customer_id"], 90001)
+        self.assertNotIn(ORDER_SIGNUP_CODE, _bl_codes(orphan))
+
+    def test_multiple_simultaneous_business_failures(self) -> None:
+        codes = _bl_codes(self._order(20))
+        self.assertIn(QTY_POSITIVE_CODE, codes)
+        self.assertIn(AMOUNT_EQ_CODE, codes)
+        self.assertIn(COMPLETED_PAY_CODE, codes)
+        self.assertGreaterEqual(len(codes), 3)
+
+    def test_product_non_negative_rules(self) -> None:
+        by_id = {
+            row.product_id: row
+            for row in self.bl_products.collect()
+        }
+        self.assertTrue(by_id[100]["business_logic_pass"])
+        self.assertIn(PRICE_NN_CODE, _bl_codes(by_id[101]))
+        self.assertIn(COST_NN_CODE, _bl_codes(by_id[102]))
+        self.assertTrue(by_id[103]["business_logic_pass"])
+        self.assertIn(STOCK_NN_CODE, _bl_codes(by_id[104]))
+        self.assertIn(REORDER_NN_CODE, _bl_codes(by_id[105]))
+        self.assertTrue(by_id[106]["business_logic_pass"])
+
+
+@unittest.skipUnless(
+    PYSPARK_AVAILABLE,
+    f"PySpark is not installed ({PYSPARK_IMPORT_ERROR or 'no module'}). "
+    "Silver Spark tests are BLOCKED in this environment.",
+)
+class TestSilverBusinessLogicSynthetic(SilverSparkTestCase):
+    def _orders_schema(self):
+        return T.StructType(
+            [
+                T.StructField("order_id", T.IntegerType(), True),
+                T.StructField("customer_id", T.IntegerType(), True),
+                T.StructField("order_date", T.DateType(), True),
+                T.StructField("product_id", T.IntegerType(), True),
+                T.StructField("quantity", T.IntegerType(), True),
+                T.StructField("unit_price", T.DecimalType(18, 2), True),
+                T.StructField("total_amount", T.DecimalType(18, 2), True),
+                T.StructField("order_status", T.StringType(), True),
+                T.StructField("payment_date", T.DateType(), True),
+                T.StructField(INGEST_ROW_ID_COLUMN, T.LongType(), False),
+            ]
+        )
+
+    def _customers_schema(self):
+        return T.StructType(
+            [
+                T.StructField("customer_id", T.IntegerType(), True),
+                T.StructField("signup_date", T.DateType(), True),
+                T.StructField("lifetime_value", T.DecimalType(18, 2), True),
+                T.StructField(INGEST_ROW_ID_COLUMN, T.LongType(), False),
+            ]
+        )
+
+    def test_decimal_rounding_stays_decimal(self) -> None:
+        customers = self.spark.createDataFrame(
+            [(1, date(2024, 1, 1), Decimal("1.00"), 1)],
+            schema=self._customers_schema(),
+        )
+        orders = self.spark.createDataFrame(
+            [
+                (
+                    1,
+                    1,
+                    date(2024, 6, 1),
+                    100,
+                    3,
+                    Decimal("6.67"),
+                    Decimal("20.01"),
+                    "Pending",
+                    None,
+                    1,
+                ),
+                (
+                    2,
+                    1,
+                    date(2024, 6, 1),
+                    100,
+                    3,
+                    Decimal("6.67"),
+                    Decimal("20.03"),
+                    "Pending",
+                    None,
+                    2,
+                ),
+            ],
+            schema=self._orders_schema(),
+        )
+        flagged = business_logic.apply_business_logic(
+            orders, "orders", customers=customers
+        )
+        exact = flagged.filter(F.col("order_id") == 1).collect()[0]
+        off = flagged.filter(F.col("order_id") == 2).collect()[0]
+        # 3 * 6.67 = 20.01 (DECIMAL). 20.03 is 0.02 outside the 0.01 tolerance.
+        self.assertNotIn(AMOUNT_EQ_CODE, _bl_codes(exact))
+        self.assertIn(AMOUNT_EQ_CODE, _bl_codes(off))
+        self.assertEqual(exact["total_amount"], Decimal("20.01"))
+
+    def test_duplicate_parent_signup_uses_min_ingest_row(self) -> None:
+        customers = self.spark.createDataFrame(
+            [
+                (1, date(2024, 3, 1), Decimal("1.00"), 10),
+                (1, date(2025, 12, 1), Decimal("1.00"), 20),
+            ],
+            schema=self._customers_schema(),
+        )
+        orders = self.spark.createDataFrame(
+            [
+                (1, 1, date(2024, 6, 1), 100, 1, Decimal("10.00"), Decimal("10.00"), "Pending", None, 1),
+                (2, 1, date(2024, 2, 1), 100, 1, Decimal("10.00"), Decimal("10.00"), "Pending", None, 2),
+            ],
+            schema=self._orders_schema(),
+        )
+        flagged = business_logic.apply_business_logic(
+            orders, "orders", customers=customers
+        )
+        self.assertEqual(flagged.count(), 2)
+        later_ok = flagged.filter(F.col("order_id") == 1).collect()[0]
+        earlier_fail = flagged.filter(F.col("order_id") == 2).collect()[0]
+        self.assertNotIn(ORDER_SIGNUP_CODE, _bl_codes(later_ok))
+        self.assertIn(ORDER_SIGNUP_CODE, _bl_codes(earlier_fail))
+
+    def test_empty_and_repeated_execution(self) -> None:
+        customers = self.spark.createDataFrame(
+            [(1, date(2024, 1, 1), Decimal("1.00"), 1)],
+            schema=self._customers_schema(),
+        )
+        empty = self.spark.createDataFrame([], schema=self._orders_schema())
+        first = business_logic.apply_business_logic(
+            empty, "orders", customers=customers
+        )
+        second = business_logic.apply_business_logic(
+            first, "orders", customers=customers
+        )
+        self.assertEqual(first.count(), 0)
+        self.assertEqual(second.count(), 0)
+        invalid = self.spark.createDataFrame(
+            [
+                (1, 1, date(2024, 6, 1), 100, 0, Decimal("-1.00"), Decimal("-1.00"), "Completed", None, 1),
+            ],
+            schema=self._orders_schema(),
+        )
+        once = business_logic.apply_business_logic(
+            invalid, "orders", customers=customers
+        )
+        twice = business_logic.apply_business_logic(
+            once, "orders", customers=customers
+        )
+        self.assertEqual(once.count(), 1)
+        self.assertEqual(twice.count(), 1)
+        codes = _bl_codes(twice.collect()[0])
+        self.assertEqual(codes.count(QTY_POSITIVE_CODE), 1)
+        self.assertEqual(codes.count(UNIT_PRICE_NN_CODE), 1)
+        self.assertEqual(codes.count(COMPLETED_PAY_CODE), 1)
+
+    def test_all_valid_and_all_invalid_customers(self) -> None:
+        valid = self.spark.createDataFrame(
+            [(1, date(2026, 8, 31), Decimal("0.00"), 1)],
+            schema=self._customers_schema(),
+        )
+        invalid = self.spark.createDataFrame(
+            [(2, date(2026, 9, 1), Decimal("-0.01"), 2)],
+            schema=self._customers_schema(),
+        )
+        valid_f = business_logic.apply_business_logic(valid, "customers")
+        invalid_f = business_logic.apply_business_logic(invalid, "customers")
+        self.assertTrue(valid_f.collect()[0]["business_logic_pass"])
+        bad = invalid_f.collect()[0]
+        self.assertIn(SIGNUP_FUTURE_CODE, _bl_codes(bad))
+        self.assertIn(LTV_NN_CODE, _bl_codes(bad))
+
+
+@unittest.skipUnless(
+    PYSPARK_AVAILABLE,
+    f"PySpark is not installed ({PYSPARK_IMPORT_ERROR or 'no module'}). "
+    "Silver Spark tests are BLOCKED in this environment.",
+)
+class TestSilverOrchestrationAndReconciliation(SilverSparkTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.config = cls._fixture_config(BL_FIXTURE_DIR, schema="silver_bl_orch")
+        ingest_all(cls.spark, cls.config)
+        cls.result = create_silver.create_silver_tables(
+            cls.spark, cls.config, write=True
+        )
+
+    def _metric(self, check_name: str, table_name: str):
+        matches = [
+            item
+            for item in self.result.metrics
+            if item.table_name == table_name and item.check_name == check_name
+        ]
+        self.assertEqual(len(matches), 1, check_name)
+        return matches[0]
+
+    def test_written_silver_row_counts_match_bronze(self) -> None:
+        for table_name in ("customers", "orders", "products"):
+            bronze = self.spark.table(self.config.bronze_table(table_name))
+            silver = self.spark.table(self.config.silver_table(table_name))
+            self.assertEqual(silver.count(), bronze.count())
+            self.assertEqual(
+                self.result.table_results[table_name].bronze_rows,
+                self.result.table_results[table_name].silver_rows,
+            )
+            cols = lineage_and_source_columns(bronze)
+            self.assertEqual(bronze.select(*cols).exceptAll(silver.select(*cols)).count(), 0)
+            self.assertEqual(silver.select(*cols).exceptAll(bronze.select(*cols)).count(), 0)
+            self.assertEqual(
+                silver.select(INGEST_ROW_ID_COLUMN).distinct().count(),
+                silver.count(),
+            )
+            self.assertIn(QUALITY_CHECK_RESULT_COLUMN, silver.columns)
+            self.assertIn(COMBINED_FAILED_CHECKS_COLUMN, silver.columns)
+            self.assertIn("completeness_pass", silver.columns)
+            self.assertIn("business_logic_pass", silver.columns)
+
+    def test_combined_status_accumulates_without_overwrite(self) -> None:
+        silver_orders = self.spark.table(self.config.silver_table("orders"))
+        multi = silver_orders.filter(F.col("order_id") == 20).collect()[0]
+        combined = list(multi[COMBINED_FAILED_CHECKS_COLUMN] or [])
+        self.assertIn(QTY_POSITIVE_CODE, combined)
+        self.assertIn(AMOUNT_EQ_CODE, combined)
+        self.assertIn(COMPLETED_PAY_CODE, combined)
+        self.assertFalse(multi["business_logic_pass"])
+        self.assertEqual(multi[QUALITY_CHECK_RESULT_COLUMN], "FAIL")
+        self.assertTrue(multi["completeness_pass"])
+        null_fk = silver_orders.filter(F.col("order_id") == 18).collect()[0]
+        combined_null = list(null_fk[COMBINED_FAILED_CHECKS_COLUMN] or [])
+        self.assertIn(ORDER_CUSTOMER_CODE, combined_null)
+        self.assertNotIn(ORDER_SIGNUP_CODE, combined_null)
+        self.assertNotIn(CUSTOMER_ORPHAN_CODE, combined_null)
+        self.assertEqual(null_fk[QUALITY_CHECK_RESULT_COLUMN], "FAIL")
+        self.assertFalse(null_fk["completeness_pass"])
+        self.assertTrue(null_fk["referential_integrity_pass"])
+        self.assertTrue(null_fk["business_logic_pass"])
+
+    def test_ri_does_not_fan_out_and_metrics_reconcile(self) -> None:
+        silver_orders = self.result.tables["orders"]
+        self.assertEqual(silver_orders.count(), 22)
+        per_id = silver_orders.groupBy(INGEST_ROW_ID_COLUMN).count()
+        self.assertEqual(per_id.filter(F.col("count") > 1).count(), 0)
+        outcome = self._metric(QUALITY_CHECK_RESULT_COLUMN, "orders")
+        self.assertEqual(outcome.population_kind, POPULATION_TABLE_OUTCOME)
+        self.assertEqual(
+            outcome.failed + outcome.passed,
+            outcome.total_evaluated,
+        )
+        self.assertEqual(outcome.failed, self.result.table_results["orders"].fail_rows)
+        qty = self._metric(QTY_POSITIVE_CODE, "orders")
+        amount = self._metric(AMOUNT_EQ_CODE, "orders")
+        completed = self._metric(COMPLETED_PAY_CODE, "orders")
+        # Order 20 fails all three of these rules. Rule-level sums are issue
+        # instances, not distinct FAIL rows (outcome also includes completeness/RI).
+        self.assertNotEqual(
+            qty.failed + amount.failed + completed.failed,
+            outcome.failed,
+        )
+        self.assertEqual(outcome.failed + outcome.passed, 22)
+        metrics_table = self.spark.table(self.config.silver_table("quality_metrics"))
+        self.assertEqual(metrics_table.count(), len(self.result.metrics))
+        self.assertIn("total_evaluated", metrics_table.columns)
+        self.assertIn("expected_fail_count", metrics_table.columns)
+        self.assertIn("population_kind", metrics_table.columns)
+
+    def test_repeated_orchestration_does_not_change_counts(self) -> None:
+        again = create_silver.create_silver_tables(self.spark, self.config, write=True)
+        for table_name in ("customers", "orders", "products"):
+            self.assertEqual(
+                again.table_results[table_name].silver_rows,
+                self.result.table_results[table_name].silver_rows,
+            )
+            self.assertEqual(
+                again.table_results[table_name].fail_rows,
+                self.result.table_results[table_name].fail_rows,
+            )
+
+
+@unittest.skipUnless(
+    PYSPARK_AVAILABLE,
+    f"PySpark is not installed ({PYSPARK_IMPORT_ERROR or 'no module'}). "
+    "Silver Spark tests are BLOCKED in this environment.",
+)
+class TestSilverCommittedOrchestration(SilverSparkTestCase):
+    """Full seed-42 Bronze → combined Silver in memory (local parquet warehouse)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.config = cls._fixture_config(DATA_DIR, schema="silver_full_orch")
+        ingest_all(cls.spark, cls.config)
+        cls.result = create_silver.build_silver_dataframes(cls.spark, cls.config)
+
+    def _metric(self, check_name: str, table_name: str):
+        matches = [
+            item
+            for item in self.result.metrics
+            if item.table_name == table_name and item.check_name == check_name
+        ]
+        self.assertEqual(len(matches), 1, check_name)
+        return matches[0]
+
+    def test_physical_reconciliation_and_mandatory_counts(self) -> None:
+        self.assertEqual(self.result.table_results["customers"].bronze_rows, 10010)
+        self.assertEqual(self.result.table_results["customers"].silver_rows, 10010)
+        self.assertEqual(self.result.table_results["orders"].bronze_rows, 100020)
+        self.assertEqual(self.result.table_results["orders"].silver_rows, 100020)
+        self.assertEqual(self.result.table_results["products"].bronze_rows, 500)
+        self.assertEqual(self.result.table_results["products"].silver_rows, 500)
+        self.assertEqual(self._metric(EMAIL_CODE, "customers").failed, 50)
+        self.assertEqual(self._metric(ORDER_CUSTOMER_CODE, "orders").failed, 100)
+        self.assertEqual(self._metric(ORDER_PRODUCT_CODE, "orders").failed, 200)
+        self.assertEqual(self._metric(CUSTOMER_UNIQ_CODE, "customers").failed, 20)
+        self.assertEqual(self._metric(ORDER_UNIQ_CODE, "orders").failed, 40)
+        self.assertEqual(self._metric(CUSTOMER_ORPHAN_CODE, "orders").failed, 50)
+        self.assertEqual(self._metric(PRODUCT_ORPHAN_CODE, "orders").failed, 30)
+        self.assertEqual(self._metric(MODULE_TYPE, "customers").failed, 0)
+        self.assertEqual(self._metric(MODULE_TYPE, "orders").failed, 0)
+        self.assertEqual(self._metric(MODULE_TYPE, "products").failed, 0)
+        self.assertEqual(self._metric(SIGNUP_FUTURE_CODE, "customers").failed, 30)
+        self.assertEqual(self._metric(ORDER_SIGNUP_CODE, "orders").failed, 0)
+        self.assertEqual(self._metric(MODULE_BUSINESS, "orders").failed, 0)
+        dup_keys = self._metric(
+            "uniqueness:customers.customer_id.duplicate_keys", "customers"
+        )
+        self.assertEqual(dup_keys.failed, 10)
+        self.assertEqual(dup_keys.total_evaluated, 10000)
+        self.assertEqual(dup_keys.population_kind, POPULATION_DISTINCT_KEY)
+        order_keys = self._metric(
+            "uniqueness:orders.order_id.duplicate_keys", "orders"
+        )
+        self.assertEqual(order_keys.failed, 20)
+        self.assertEqual(order_keys.population_kind, POPULATION_DISTINCT_KEY)
+
+    def test_table_outcome_is_not_the_sum_of_rule_failures(self) -> None:
+        customer_fail = self.result.table_results["customers"].fail_rows
+        email = self._metric(EMAIL_CODE, "customers").failed
+        uniq = self._metric(CUSTOMER_UNIQ_CODE, "customers").failed
+        future = self._metric(SIGNUP_FUTURE_CODE, "customers").failed
+        rule_sum = email + uniq + future
+        self.assertEqual(email, 50)
+        self.assertEqual(uniq, 20)
+        self.assertEqual(future, 30)
+        self.assertEqual(rule_sum, 100)
+        self.assertEqual(customer_fail, 100)
+        outcome = self._metric(QUALITY_CHECK_RESULT_COLUMN, "customers")
+        self.assertEqual(outcome.failed, customer_fail)
+        self.assertEqual(outcome.passed, 10010 - customer_fail)
+        order_fail = self.result.table_results["orders"].fail_rows
+        order_rule_sum = (
+            self._metric(ORDER_CUSTOMER_CODE, "orders").failed
+            + self._metric(ORDER_PRODUCT_CODE, "orders").failed
+            + self._metric(ORDER_UNIQ_CODE, "orders").failed
+            + self._metric(CUSTOMER_ORPHAN_CODE, "orders").failed
+            + self._metric(PRODUCT_ORPHAN_CODE, "orders").failed
+        )
+        self.assertEqual(order_rule_sum, 420)
+        self.assertEqual(order_fail, 420)
+        self.assertEqual(self._metric(QUALITY_CHECK_RESULT_COLUMN, "orders").failed, 420)
+        # Documented: summing rule failures is not the definition of FAIL rows.
+        # On this seed they happen to match because mandatory classes are disjoint.
+        self.assertEqual(
+            self.result.table_results["customers"].pass_rows
+            + self.result.table_results["customers"].fail_rows,
+            10010,
+        )
+
+    def test_expected_vs_observed_on_seed_42(self) -> None:
+        for key, expected in create_silver.INTENTIONAL_FAIL_COUNTS.items():
+            table_name, check_name = key
+            matches = [
+                item
+                for item in self.result.metrics
+                if item.table_name == table_name and item.check_name == check_name
+            ]
+            if not matches:
+                continue
+            item = matches[0]
+            self.assertEqual(item.expected_fail_count, expected, check_name)
+            self.assertEqual(item.failed, expected, check_name)
+
+    def test_bronze_columns_and_keys_preserved_after_combine(self) -> None:
+        bronze_customers = self.spark.table(self.config.bronze_table("customers"))
+        silver_customers = self.result.tables["customers"]
+        self.assertIn("customer_id", silver_customers.columns)
+        self.assertIn("email", silver_customers.columns)
+        self.assertNotIn("quality_check_result", bronze_customers.columns)
+        valid = silver_customers.filter(
+            (F.col("customer_id") == 1) | (F.col(QUALITY_CHECK_RESULT_COLUMN) == "PASS")
+        )
+        self.assertGreater(valid.count(), 0)
+        future_rows = silver_customers.filter(
+            F.array_contains(F.col("business_logic_failed_checks"), F.lit(SIGNUP_FUTURE_CODE))
+        )
+        self.assertEqual(future_rows.count(), 30)
+        self.assertEqual(future_rows.filter(F.col("completeness_pass")).count(), 30)
+        self.assertEqual(future_rows.filter(F.col("uniqueness_pass")).count(), 30)
+        self.assertEqual(
+            future_rows.filter(F.col(QUALITY_CHECK_RESULT_COLUMN) == "FAIL").count(),
+            30,
+        )
 
 
 if __name__ == "__main__":

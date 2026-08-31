@@ -1,0 +1,8 @@
+customer_id,customer_name,email,country,signup_date,customer_segment,lifetime_value
+1,Valid Past,a@example.com,United States,2024-01-01,Premium,10.00
+2,AsOf Boundary,b@example.com,United States,2026-08-31,Standard,0.00
+3,Future No Order,c@example.com,United States,2026-09-01,Basic,5.00
+4,No Orders Valid,d@example.com,United States,2024-06-01,Premium,1.00
+5,Negative LTV,e@example.com,United States,2024-06-01,Standard,-1.00
+6,Null Signup,f@example.com,United States,,Premium,2.00
+8,Late Signup,h@example.com,United States,2025-06-01,Premium,4.00

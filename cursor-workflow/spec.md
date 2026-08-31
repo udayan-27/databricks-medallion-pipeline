@@ -84,7 +84,7 @@ Flags:
 
 NULL FK = completeness only. Orphan = RI only. Duplicate = uniqueness (all copies). Malformed/enum = type. Cross-field = business logic.
 
-Business-logic rules are copied from `data-quality-strategy.md`; that file is frozen until a documented change.
+Business-logic rules are copied from `data-quality-strategy.md`; that file is frozen until a documented change. Product cost-vs-price is not a frozen rule and is not implemented. As-of date is `2026-08-31`.
 
 Products still run all five modules; RI passes for all product rows.
 

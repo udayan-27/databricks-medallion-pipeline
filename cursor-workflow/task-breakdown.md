@@ -69,12 +69,12 @@ Implement and test in order, using frozen `data-quality-strategy.md`:
 2. Uniqueness — **done**. `02_quality_uniqueness.py`. Local Spark: 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows; all copies flagged; no survivor.
 3. Type validation — **done** (this increment). `03_quality_type_validation.py`. Local Spark: 0 type failures on seed-42 committed data. Malformed INT/DATE/DECIMAL and domain fixtures fail without deleting rows. Completeness-owned NULLs and NULL `payment_date` are not type failures.
 4. Referential integrity (NULL ≠ orphan) — **done** (this increment). `04_quality_referential_integrity.py`. Local Spark: 50 customer orphans, 30 product orphans; 100/200 NULL FKs not orphans; distinct parent-key left join (no fan-out).
-5. Business logic — **not started**
-6. `create_silver_tables.py` combining flags on `_ingest_row_id` and metrics — **not started**
+5. Business logic — **done** (this increment). `05_quality_business_logic.py`. Frozen rules only. Local Spark: 30 `signup_not_future`; 0 other BL on seed-42; future-signup customers have no orders so `order_not_before_signup` stays 0. DECIMAL amount check uses 0.01 tolerance.
+6. `create_silver_tables.py` combining flags on `_ingest_row_id` and metrics — **done** (this increment). Combined `quality_check_result` / `failed_checks`. Local parquet Silver writes in tests. Physical Bronze = Silver counts.
 
-Assert Silver row counts equal Bronze (four implemented transforms already do this in tests). Multi-failure rows keep multiple per-module codes. `ai-prompts/silver-layer.md` Prompts 1–2 record these increments.
+Assert Silver row counts equal Bronze. Multi-failure rows keep multiple per-module codes. `ai-prompts/silver-layer.md` Prompts 1–3 record these increments.
 
-Do not start Gold until remaining Silver modules and the combiner are requested.
+Do not start Gold until requested.
 
 ## Stage 6 — Gold
 
@@ -110,6 +110,6 @@ Do not start Gold until remaining Silver modules and the combiner are requested.
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after type validation / RI
+## Explicitly not started after Silver complete
 
-Business logic, `create_silver_tables.py`, Gold, Dashboard. Generator tests, Bronze tests, and Silver completeness/uniqueness/type/RI tests exist and passed locally. Databricks tables have not been created.
+Gold, Dashboard. Generator tests, Bronze tests, and all Silver tests exist and passed locally. Databricks tables have not been created.

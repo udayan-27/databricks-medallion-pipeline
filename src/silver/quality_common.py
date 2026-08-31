@@ -17,9 +17,9 @@ Design constraints (frozen):
   failure is never replaced by a later one.
 - Metrics count physical rows, not distinct business keys.
 
-Type and RI modules reuse these helpers. Business-logic is not implemented
-here. Shared column names, code format, accumulation, and metrics stay the
-single quality representation so later modules cannot overwrite earlier ones.
+Type, RI, and business-logic modules reuse these helpers. Shared column names,
+code format, accumulation, combiner, and metrics stay the single quality
+representation so later modules cannot overwrite earlier ones.
 """
 
 from __future__ import annotations
@@ -65,6 +65,20 @@ MODULE_FAILED_CHECK_COLUMNS: dict[str, str] = {
 
 COMBINED_FAILED_CHECKS_COLUMN = "failed_checks"
 QUALITY_CHECK_RESULT_COLUMN = "quality_check_result"
+QUALITY_RESULT_PASS = "PASS"
+QUALITY_RESULT_FAIL = "FAIL"
+
+POPULATION_PHYSICAL_ROW = "physical_row"
+POPULATION_DISTINCT_KEY = "distinct_key"
+POPULATION_TABLE_OUTCOME = "table_outcome"
+
+MODULE_ORDER: tuple[str, ...] = (
+    MODULE_COMPLETENESS,
+    MODULE_UNIQUENESS,
+    MODULE_TYPE,
+    MODULE_RI,
+    MODULE_BUSINESS,
+)
 
 QUALITY_ATTRIBUTE_COLUMNS: frozenset[str] = frozenset(
     {
@@ -224,6 +238,19 @@ def concat_code_arrays(parts: Sequence[Any]) -> Any:
     return F.array_distinct(F.concat(*parts))
 
 
+def codes_for_when(condition: Any, code: str) -> Any:
+    """
+    Emit ``code`` when ``condition`` is true; otherwise an empty ARRAY<STRING>.
+
+    Callers must encode NULL-skip logic in ``condition``. This helper never
+    rewrites source columns and never drops rows.
+    """
+    F, _Window = _import_pyspark()
+    if not code:
+        raise QualityError("codes_for_when requires a non-empty quality code.")
+    return F.when(condition, F.array(F.lit(code))).otherwise(empty_string_array(F))
+
+
 def uniqueness_codes_for_key(table: str, key: str, *, module: str = MODULE_UNIQUENESS) -> Any:
     """
     Flag **every** physical row whose non-null business key occurs more than once.
@@ -278,9 +305,42 @@ def concatenate_failed_check_arrays(columns: Sequence[str]) -> Any:
     return F.array_distinct(F.concat(*parts))
 
 
+def combine_quality_status(dataframe: Any) -> Any:
+    """
+    Build combined ``failed_checks`` and ``quality_check_result``.
+
+    Concatenates the five per-module arrays. Does not overwrite module booleans
+    or module arrays. ``FAIL`` iff the combined array is non-empty.
+    """
+    F, _Window = _import_pyspark()
+    require_ingest_row_id(dataframe)
+    module_cols = [failed_checks_column_name(module) for module in MODULE_ORDER]
+    require_columns(dataframe, module_cols, context="combine_quality_status")
+    combined = concatenate_failed_check_arrays(module_cols)
+    result = dataframe.withColumn(COMBINED_FAILED_CHECKS_COLUMN, combined)
+    return result.withColumn(
+        QUALITY_CHECK_RESULT_COLUMN,
+        F.when(F.size(F.col(COMBINED_FAILED_CHECKS_COLUMN)) > 0, F.lit(QUALITY_RESULT_FAIL)).otherwise(
+            F.lit(QUALITY_RESULT_PASS)
+        ),
+    )
+
+
 @dataclass(frozen=True)
 class CheckMetrics:
-    """Physical-row metrics for one check. Percentages use table row count as denominator."""
+    """
+    Metrics for one check.
+
+    ``population_kind`` records the denominator:
+    - ``physical_row``: every input row (default for field/module rules)
+    - ``distinct_key``: distinct non-null business keys (uniqueness key counts)
+    - ``table_outcome``: physical rows with combined ``quality_check_result``
+
+    Percentages use ``total_evaluated`` for *this* check, not a mix of those
+    populations. Empty inputs yield 0.0000 / 0.0000 (not an exception).
+    Rule-level ``failed`` counts must not be summed and treated as distinct
+    FAIL rows: one physical row can fail multiple rules.
+    """
 
     table_name: str
     check_name: str
@@ -289,6 +349,8 @@ class CheckMetrics:
     failed: int
     pass_pct: Decimal
     fail_pct: Decimal
+    expected_fail_count: int | None = None
+    population_kind: str = POPULATION_PHYSICAL_ROW
 
     @property
     def pass_count(self) -> int:
@@ -298,10 +360,39 @@ class CheckMetrics:
     def fail_count(self) -> int:
         return self.failed
 
+    @property
+    def pass_percentage(self) -> Decimal:
+        return self.pass_pct
+
+    @property
+    def fail_percentage(self) -> Decimal:
+        return self.fail_pct
+
+    def with_expected(self, expected_fail_count: int | None) -> "CheckMetrics":
+        if self.expected_fail_count == expected_fail_count:
+            return self
+        return CheckMetrics(
+            table_name=self.table_name,
+            check_name=self.check_name,
+            total_evaluated=self.total_evaluated,
+            passed=self.passed,
+            failed=self.failed,
+            pass_pct=self.pass_pct,
+            fail_pct=self.fail_pct,
+            expected_fail_count=expected_fail_count,
+            population_kind=self.population_kind,
+        )
+
 
 def _ratio(part: int, total: int) -> Decimal:
-    if total <= 0:
-        raise QualityError("Cannot compute quality percentages with total_evaluated = 0.")
+    if total < 0:
+        raise QualityError("Cannot compute quality percentages with a negative total_evaluated.")
+    if total == 0:
+        if part != 0:
+            raise QualityError(
+                f"Cannot compute quality percentages: total_evaluated=0 but part={part}."
+            )
+        return Decimal("0.0000")
     return (Decimal(part) / Decimal(total)).quantize(PCT_QUANTIZE, rounding=ROUND_HALF_EVEN)
 
 
@@ -311,6 +402,8 @@ def metrics_from_counts(
     check_name: str,
     total_evaluated: int,
     failed: int,
+    expected_fail_count: int | None = None,
+    population_kind: str = POPULATION_PHYSICAL_ROW,
 ) -> CheckMetrics:
     passed = total_evaluated - failed
     if failed < 0 or passed < 0:
@@ -326,6 +419,8 @@ def metrics_from_counts(
         failed=failed,
         pass_pct=_ratio(passed, total_evaluated),
         fail_pct=_ratio(failed, total_evaluated),
+        expected_fail_count=expected_fail_count,
+        population_kind=population_kind,
     )
 
 
@@ -405,6 +500,66 @@ def collect_duplicate_key_count(dataframe: Any, key: str, pass_column: str) -> i
     )
     row = dataframe.agg(F.countDistinct(failing_key).alias("duplicate_key_count")).collect()[0]
     return int(row["duplicate_key_count"] or 0)
+
+
+def collect_distinct_key_metrics(
+    dataframe: Any,
+    *,
+    table_name: str,
+    check_name: str,
+    key: str,
+    pass_column: str,
+    expected_fail_count: int | None = None,
+) -> CheckMetrics:
+    """
+    Distinct-key uniqueness metrics.
+
+    total_evaluated = distinct non-null business keys.
+    failed = distinct keys that participate in a uniqueness failure.
+    This denominator is *not* the physical row count.
+    """
+    F, _Window = _import_pyspark()
+    require_columns(dataframe, [key, pass_column], context=f"key metrics for {check_name}")
+    row = dataframe.agg(
+        F.countDistinct(F.col(key)).alias("total_keys"),
+        F.countDistinct(
+            F.when((~F.col(pass_column)) & F.col(key).isNotNull(), F.col(key))
+        ).alias("failed_keys"),
+    ).collect()[0]
+    return metrics_from_counts(
+        table_name=table_name,
+        check_name=check_name,
+        total_evaluated=int(row["total_keys"] or 0),
+        failed=int(row["failed_keys"] or 0),
+        expected_fail_count=expected_fail_count,
+        population_kind=POPULATION_DISTINCT_KEY,
+    )
+
+
+def collect_table_outcome_metrics(dataframe: Any, *, table_name: str) -> CheckMetrics:
+    """Physical rows whose combined ``quality_check_result`` is FAIL."""
+    F, _Window = _import_pyspark()
+    require_columns(
+        dataframe,
+        [QUALITY_CHECK_RESULT_COLUMN],
+        context=f"table outcome for {table_name}",
+    )
+    row = dataframe.agg(
+        F.count(F.lit(1)).alias("total_evaluated"),
+        F.sum(
+            F.when(
+                F.col(QUALITY_CHECK_RESULT_COLUMN) == F.lit(QUALITY_RESULT_FAIL),
+                F.lit(1),
+            ).otherwise(F.lit(0))
+        ).alias("failed"),
+    ).collect()[0]
+    return metrics_from_counts(
+        table_name=table_name,
+        check_name=QUALITY_CHECK_RESULT_COLUMN,
+        total_evaluated=int(row["total_evaluated"] or 0),
+        failed=int(row["failed"] or 0),
+        population_kind=POPULATION_TABLE_OUTCOME,
+    )
 
 
 def assert_no_row_loss(before: Any, after: Any, *, context: str) -> None:

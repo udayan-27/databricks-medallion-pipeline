@@ -1,6 +1,6 @@
 # Data quality strategy
 
-Status: **strategy frozen**. Completeness, uniqueness, type validation, and referential integrity are implemented as PySpark transforms (`src/silver/01_quality_completeness.py`, `src/silver/02_quality_uniqueness.py`, `src/silver/03_quality_type_validation.py`, `src/silver/04_quality_referential_integrity.py`, shared helper `src/silver/quality_common.py`). Business logic and `create_silver_tables.py` are **not** implemented. Do not delete bad rows.
+Status: **strategy frozen**. Completeness, uniqueness, type validation, referential integrity, and business logic are implemented as PySpark transforms. `create_silver_tables.py` combines per-module flags and writes Silver entity tables plus `silver.quality_metrics` (local parquet validated; Databricks/Delta/UC not run). Do not delete bad rows.
 
 This file is the source of truth for Silver modules. Implementation must copy these rules, not invent new ones silently.
 
@@ -59,8 +59,9 @@ Each implemented module attaches its **own** columns and does not write `quality
 | uniqueness | `uniqueness_pass` | `uniqueness_failed_checks` |
 | type | `type_validation_pass` | `type_failed_checks` |
 | referential integrity | `referential_integrity_pass` | `referential_integrity_failed_checks` |
+| business logic | `business_logic_pass` | `business_logic_failed_checks` |
 
-`src/silver/quality_common.py` `attach_module_result` concatenates into the module’s array (`array_distinct`) so a later call cannot replace an earlier code on the same `_ingest_row_id`. Combined `failed_checks` remains the orchestrator’s job.
+`src/silver/quality_common.py` `attach_module_result` concatenates into the module’s array (`array_distinct`) so a later call cannot replace an earlier code on the same `_ingest_row_id`. Combined `failed_checks` and `quality_check_result` are written by `create_silver_tables.py` (`combine_quality_status`).
 
 Observed local Spark counts on seed-42 Bronze (physical rows, not distinct keys):
 
@@ -77,6 +78,14 @@ Observed local Spark counts on seed-42 Bronze (physical rows, not distinct keys)
 | `ri:orders.customer_id_orphan` | 50 | 100,020 |
 | `ri:orders.product_id_orphan` | 30 | 100,020 |
 | orders RI module rollup | 80 | 100,020 |
+| `business:customers.signup_not_future` | 30 | 10,010 |
+| other frozen business rules (orders/products/LTV) | 0 | table row counts |
+| `uniqueness:customers.customer_id.duplicate_keys` | 10 distinct keys | 10,000 distinct non-null keys |
+| `uniqueness:orders.order_id.duplicate_keys` | 20 distinct keys | 100,000 distinct non-null keys |
+| customers table_outcome FAIL rows | 100 | 10,010 |
+| orders table_outcome FAIL rows | 420 | 100,020 |
+
+Customers FAIL rows = 50 NULL email + 20 uniqueness-participating + 30 future signup (disjoint). Orders FAIL rows = 100 + 200 + 40 + 50 + 30 = 420 (disjoint on this seed). Rule-level counts must not be treated as a generic “bad row” total: overlap would make them diverge. The 30 future signups are **not** part of the mandatory 460.
 
 ## Thresholds (assignment meaning)
 
@@ -91,7 +100,7 @@ These are **detection targets**, not job-fail SLOs. The pipeline job succeeds wh
 | uniqueness order_id | orders | 40 rows (20 ids × 2) if both copies flagged | Same interpretation as customers |
 | RI customer orphan | orders | 50 | Non-null only |
 | RI product orphan | orders | 30 | Non-null only |
-| type / business | all | 0 from mandatory list unless extra defects injected | May be > 0 if optional future signups or accidental generator bugs |
+| type / business | all | 0 from mandatory list unless extra defects injected | Seed-42: type 0; business 30 future signups only (optional, not in 460) |
 
 Percentages: `fail_pct = fail_count / table_row_count`. Do not “fix” data to hit 700 failing rows. Listed issue instances total **460**; distinct FAIL rows will differ because each duplicate key flags **two** rows (10+20 extra rows plus their originals).
 
@@ -347,6 +356,8 @@ Generation must not use NULL for these rows.
 
 ## 5. Business logic (`05_quality_business_logic.py`)
 
+**Implemented.** Frozen rules only. Product cost-vs-list-price is **not** in this table and is not implemented. Empty inputs yield `pass_pct`/`fail_pct` = 0.0000 (total_evaluated = 0).
+
 Rules apply to **typed values**. If a field is null, skip rules that need that field (completeness/type already failed). Do not also emit business codes for “quantity null” — that is type/completeness.
 
 ### Fields and rules (frozen)
@@ -368,11 +379,15 @@ Rules apply to **typed values**. If a field is null, skip rules that need that f
 | `business:products.stock_non_negative` | `stock_quantity >= 0` when not null | products |
 | `business:products.reorder_non_negative` | `reorder_level >= 0` when not null | products |
 
-**As-of date:** frozen at generation/implementation in one place (planned `2026-08-31`). Not `current_date()` at job time, which would make historical signups “future” after a later rerun or flip optional defects on and off.
+**As-of date:** frozen `2026-08-31` (`BUSINESS_AS_OF_DATE` in `05_quality_business_logic.py`, same constant as Stage 2 generation). Not the Spark job clock date.
 
 Enums are type, not business.
 
 Pending orders: `payment_date` may be null or set; no extra pending rule.
+
+**Amount equality:** Spark `DECIMAL(18,2)` arithmetic (`quantity` cast to DECIMAL before multiply). Fail when `abs(total_amount - quantity * unit_price) > 0.01`. Boundary 0.01 passes. Floating-point money is not used.
+
+**Signup lookup:** left join to a unique canonical parent (`min(_ingest_row_id)` per `customer_id`). Duplicate parent profiles cannot fan out orders. NULL FK and orphan FKs skip `order_not_before_signup`.
 
 ### Detection method
 
@@ -388,10 +403,13 @@ Per rule + module rollup.
 
 ### Thresholds
 
-Mandatory injected list does not include business defects. Expected 0 unless:
+Mandatory injected list does not include business defects except the optional 30 future signups.
 
-- Optional 30 future signup dates are injected, then `business:customers.signup_not_future` = 30.
-- Generator accidentally violates amount = qty * price.
+Observed seed-42:
+
+- Optional 30 future signup dates → `business:customers.signup_not_future` = 30.
+- `business:orders.order_not_before_signup` = 0 (future-signup customers were excluded from the order pool).
+- Other frozen business rules = 0 (generator does not sabotage quantity/amount/payment).
 
 ### Intentional failure scenarios
 
@@ -426,15 +444,18 @@ Mandatory injected list does not include business defects. Expected 0 unless:
 
 ## Metrics table
 
-For each check and table:
+Written by `create_silver_tables.py` as `silver.quality_metrics` (full-refresh overwrite):
 
-- pass_count
-- fail_count
-- pass_pct
-- fail_pct
+- table_name
+- check_name (module, rule code, distinct-key uniqueness, or `quality_check_result`)
+- total_evaluated
+- pass_count, fail_count
+- pass_pct, fail_pct (denominator = that check’s `total_evaluated`)
+- expected_fail_count (nullable; Stage 2 contract when known)
+- population_kind: `physical_row` | `distinct_key` | `table_outcome`
 - computed_at
 
-Also table-level `quality_check_result` FAIL distinct rows.
+`population_kind` exists so uniqueness **distinct keys** (10 / 20) are not mixed with uniqueness **participating physical rows** (20 / 40). Table-outcome FAIL rows are a third number. Do not sum rule-level failures and call that “bad rows.”
 
 Do not “fix” source data to hit 700 failing rows. Expected mandatory **issue instances** total **460**. Uniqueness **row** flags are higher (all copies). Distinct FAIL rows is a third number and must be reported honestly.
 
