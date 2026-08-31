@@ -8,6 +8,9 @@ module is skipped — that is BLOCKED runtime evidence, not a pass.
 Uses Bronze ingest (fixtures and committed CSVs) so NULL semantics match the
 PERMISSIVE empty-field contract. Combined Silver tables are written only in
 orchestration tests (parquet, local warehouse).
+
+Run Spark suites sequentially (one process). Concurrent full suites can
+collide on Windows temp files during JVM gateway launch.
 """
 
 from __future__ import annotations
@@ -50,7 +53,7 @@ except ImportError as exc:  # pragma: no cover - depends on the environment
 from config import load_config  # noqa: E402
 from contracts import ENTITY_CONTRACTS, INGEST_ROW_ID_COLUMN  # noqa: E402
 from ingest_core import add_ingest_row_id, ingest_all, read_source_csv  # noqa: E402
-from spark_local import apply_local_spark_config  # noqa: E402
+from spark_local import start_local_test_spark, stop_local_test_spark  # noqa: E402
 from quality_common import (  # noqa: E402
     COMBINED_FAILED_CHECKS_COLUMN,
     MODULE_BUSINESS,
@@ -158,26 +161,12 @@ class SilverSparkTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.warehouse_dir = Path(tempfile.mkdtemp(prefix="de_c1_silver_wh_"))
-        builder = (
-            SparkSession.builder.master("local[2]")
-            .appName("de-c1-silver-tests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.sql.shuffle.partitions", "2")
-            .config("spark.sql.warehouse.dir", cls.warehouse_dir.as_posix())
-        )
-        builder = apply_local_spark_config(builder)
-        existing = SparkSession.getActiveSession()
-        if existing is not None:
-            existing.stop()
-        cls.spark = builder.getOrCreate()
-        cls.spark.sparkContext.setLogLevel("ERROR")
+        cls.spark = start_local_test_spark("de-c1-silver-tests", cls.warehouse_dir)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if cls.spark is not None:
-            cls.spark.stop()
-            cls.spark = None
+        stop_local_test_spark(cls.spark, getattr(cls, "warehouse_dir", None))
+        cls.spark = None
 
     @staticmethod
     def _fixture_config(data_path: Path, schema: str):

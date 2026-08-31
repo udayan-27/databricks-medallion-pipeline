@@ -151,6 +151,89 @@ Local Spark / parquet. Databricks Gold was not run.
 - **Files changed:** `tests/test_gold_aggregations.py` builds `createDataFrame([], schema=...)` so the write does not read the target.
 - **Rejected:** deleting Silver FAIL rows to create a zero-eligible population.
 
+## Stage 5 Gold QA — concurrent Spark suite / Windows temp PermissionError (2026-08-31)
+
+Not a Gold aggregation defect. Production Gold SQL and `create_gold_tables.py` were not changed.
+
+### Symptom
+
+A full relevant unittest process failed during Bronze Spark startup:
+
+`ERROR: setUpClass (tests.test_bronze_ingest.TestCommittedSourceIngest)`
+
+The class never reached ingest. The traceback ended in PySpark JVM gateway launch:
+
+```
+pyspark/java_gateway.py launch_gateway
+  with open(conn_info_file, "rb") as info:
+PermissionError: [Errno 13] Permission denied:
+  C:\Users\UDAYAN~1\AppData\Local\Temp\tmp38ammwfx\tmpwmg8qj9e
+```
+
+Unittest continued. `TestFixtureIngest` started a new Spark session ~3 seconds later and passed. Silver and Gold tests in that same process also passed. Result: **Ran 170 tests in 642.476s FAILED (errors=1)**. The four `TestCommittedSourceIngest` methods were not collected after `setUpClass` failed (174 − 4 = 170).
+
+The same command in a second process completed **Ran 174 tests in 628.243s OK**.
+
+### Trigger
+
+Two `python -m unittest` full-suite processes were started close together:
+
+| Terminal | Started (UTC) | Ended (UTC) | Result |
+|---|---|---|---|
+| First process | 2026-08-31T01:10:49Z | 2026-08-31T01:21:33Z | 170 run, 1 error |
+| Second process | 2026-08-31T01:13:50Z | 2026-08-31T01:24:21Z | 174 OK |
+
+They overlapped for about eight minutes. That overlap is an unsupported operating mode.
+
+Clock time of the PermissionError (Spark log `26/08/31 06:41:58` local, ≈ 01:11:58Z) is **about two minutes before** the second process started. The failing `setUpClass` is therefore not “the second suite’s Spark collided with the first suite’s warehouse files at that instant.” It is the first process’s first Spark gateway launch on Windows.
+
+### Evidence
+
+- Stack is `SparkSession.getOrCreate` → `SparkContext.__init__` → `launch_gateway` → `open(conn_info_file)`. No Gold SQL, no ingest, no assertion on revenue.
+- PySpark 3.5.6 `java_gateway.py` creates a unique `tempfile.mkdtemp()` / `mkstemp()`, `os.unlink`s the empty file, waits for the JVM to rewrite it, then opens it. The failing path (`tmp38ammwfx\tmpwmg8qj9e`) is unique, not a shared hardcoded name.
+- Immediately after the error: `ResourceWarning: subprocess ... is still running` — the failed gateway left a Java/`spark-submit` child.
+- `'C1' is not recognized as an internal or external command` appears because the repo path contains a space (`DE C1 Project-...`) and `spark-submit.cmd` splits it. The **same warning** printed on the successful `TestFixtureIngest` launch. It is not the PermissionError.
+- Sequential isolation already used unique `tempfile.mkdtemp(prefix="de_c1_*_wh_")` warehouse dirs per test class. `spark.local.dir` was **not** set (default = process `%TEMP%`). Warehouse dirs were not deleted in `tearDownClass`.
+- Default Hive/Derby metastore still lives at repo-root `metastore_db/` (gitignored). Two overlapping Spark processes can lock that database; that is a real concurrent risk, but this traceback is the Py4J connection-info file, not Derby `XSDB6`.
+
+### Root cause
+
+**Spark-on-Windows JVM gateway startup + temporary-file locking**, not Gold logic and not a sequential test-assertion bug.
+
+Py4J’s connection-info handshake is racy on Windows: Python deletes a temp file, the JVM recreates it, Python opens it. `PermissionError` means the file existed (`os.path.isfile` passed) but could not be opened — typical when the JVM still holds the handle, or when `%TEMP%` is under heavy I/O. Concurrent Spark suites make that class of failure more likely (shared `%TEMP%`, leftover JVMs, Derby). This specific stack trace fired on the **first** Spark launch of the first process, then a later launch in the same process succeeded.
+
+Classification: Spark environment / Windows temp-file race, with concurrency as an unsupported aggravating operating mode. Not Gold SQL. Not Silver/Bronze business logic. Not a weakened or wrong unittest assertion.
+
+### Why it is not a Gold logic defect
+
+- Failure is Bronze `setUpClass` before `ingest_all`.
+- Gold tests in the failed process still ran and passed (`test_zero_eligible_orders_keep_customers_and_empty_facts` ok).
+- Clean sequential process: 174/174 OK, 0 failed, 0 skipped (Gold included).
+- No change to `src/gold/*.sql` or aggregation formulas was required or made for this incident.
+
+### Correct operating procedure
+
+1. Run **one** Spark test process at a time. Do not start a second full suite while another Spark suite is running.
+2. Sequential command (from repo root, project `.venv`, `JAVA_HOME` set):
+
+```
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations -v
+```
+
+3. Test infrastructure now isolates `spark.local.dir` (and Py4J temp) per Spark test class, retries **only** gateway `PermissionError`, and deletes the warehouse on teardown. That does not authorize concurrent suites.
+
+### Final validation
+
+Sequential re-run after the isolation helper (this cycle; not the previous 174):
+
+1. `python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality -v`
+   → **Ran 148 tests in 385.673s OK** (0 failed, 0 skipped). Count is 147 prior relevant tests plus 1 new Spark-free helper contract test.
+
+2. `python -m unittest tests.test_gold_contract tests.test_gold_aggregations -v`
+   → **Ran 27 tests in 122.986s OK** (0 failed, 0 skipped). Gold reconciliation remaining green.
+
+Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`. No Gold SQL change. Databricks not run.
+
 Use this file during later stages to capture:
 
 - Symptom

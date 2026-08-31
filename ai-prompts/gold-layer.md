@@ -100,3 +100,7 @@ First Gold Spark run had 6 errors (stale parquet readers after overwrite; overwr
 ### FINAL DECISION
 
 Gold SQL aggregations and `create_gold_tables.py` are implemented against the frozen Completed+PASS contract. Local Spark/parquet tests pass. Databricks/Delta/UC Gold tables have **not** been written. Dashboard is not started.
+
+## Prompt 2 — Gold QA: concurrent Spark suite vs sequential (not a Gold SQL change)
+
+A later debugging cycle investigated a concurrent full-suite `PermissionError` during Bronze `setUpClass`. Gold production SQL was not modified. See `ai-prompts/debugging.md` Prompt 2 and `debugging-notes.md`. Operating rule: run Spark unittest suites sequentially.

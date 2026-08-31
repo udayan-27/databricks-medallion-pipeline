@@ -6,6 +6,9 @@ module is skipped — that is BLOCKED runtime evidence, not a pass.
 
 Uses Bronze ingest + Silver orchestration so Gold eligibility is the real
 combined quality_check_result, not a hand-stamped flag.
+
+Run Spark suites sequentially (one process). Concurrent full suites can
+collide on Windows temp files during JVM gateway launch.
 """
 
 from __future__ import annotations
@@ -47,7 +50,7 @@ except ImportError as exc:  # pragma: no cover - depends on the environment
 
 from config import load_config  # noqa: E402
 from ingest_core import ingest_all  # noqa: E402
-from spark_local import apply_local_spark_config  # noqa: E402
+from spark_local import start_local_test_spark, stop_local_test_spark  # noqa: E402
 
 import create_gold_tables as create_gold  # noqa: E402
 import create_silver_tables as create_silver  # noqa: E402
@@ -78,26 +81,12 @@ class GoldSparkTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.warehouse_dir = Path(tempfile.mkdtemp(prefix="de_c1_gold_wh_"))
-        builder = (
-            SparkSession.builder.master("local[2]")
-            .appName("de-c1-gold-tests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.sql.shuffle.partitions", "2")
-            .config("spark.sql.warehouse.dir", cls.warehouse_dir.as_posix())
-        )
-        builder = apply_local_spark_config(builder)
-        existing = SparkSession.getActiveSession()
-        if existing is not None:
-            existing.stop()
-        cls.spark = builder.getOrCreate()
-        cls.spark.sparkContext.setLogLevel("ERROR")
+        cls.spark = start_local_test_spark("de-c1-gold-tests", cls.warehouse_dir)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if cls.spark is not None:
-            cls.spark.stop()
-            cls.spark = None
+        stop_local_test_spark(cls.spark, getattr(cls, "warehouse_dir", None))
+        cls.spark = None
 
     @staticmethod
     def _config(data_path: Path, prefix: str):

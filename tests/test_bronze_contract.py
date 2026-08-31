@@ -280,6 +280,15 @@ class TestPathHelpers(unittest.TestCase):
         self.assertIn("listStatus", java_text)
         self.assertIn("setPermission", java_text)
 
+    def test_local_test_spark_helper_isolates_scratch_and_retries_gateway(self) -> None:
+        helper_text = (SRC_DIR / "spark_local.py").read_text(encoding="utf-8")
+        self.assertIn("def start_local_test_spark", helper_text)
+        self.assertIn("spark.local.dir", helper_text)
+        self.assertIn("PermissionError", helper_text)
+        self.assertIn("SPARK_LOCAL_DIRS", helper_text)
+        self.assertIn("def stop_local_test_spark", helper_text)
+        self.assertNotIn("except Exception", helper_text.split("def start_local_test_spark")[1].split("def stop_local_test_spark")[0])
+
 
 class TestHeaderValidation(unittest.TestCase):
     def test_accepts_exact_header(self) -> None:

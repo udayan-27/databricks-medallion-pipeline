@@ -83,7 +83,8 @@ Commit message (this stage): `feat: add Gold analytical aggregations`
 - SQL: `01_sales_by_product.sql`, `02_revenue_by_customer.sql`, `03_daily_weekly_trends.sql` (daily + weekly), `04_customer_segmentation.sql`.
 - Orchestrator: `create_gold_tables.py` executes those files; does not replace them with PySpark aggregations.
 - Eligibility: Completed + PASS. `lifetime_value_actual` from orders. All canonical customers including zeros. Segmentation exclusive priority; threshold 1000.00 unchanged.
-- Tests: `tests/test_gold_contract.py`, `tests/test_gold_aggregations.py`. Combined relevant set **174/174 OK** locally. Databricks Gold **not** written.
+- Tests: `tests/test_gold_contract.py`, `tests/test_gold_aggregations.py`. Sequential Gold **27/27 OK**. Sequential generator/Bronze/Silver **148/148 OK** after Spark test-isolation hardening (combined relevant **175**, including one new Spark-free helper contract test). Databricks Gold **not** written.
+- Gold QA checkpoint: a second concurrent full-suite process failed in Bronze `setUpClass` with a Windows Py4J temp-file `PermissionError`. That is Spark-on-Windows gateway startup, not Gold SQL. Production Gold was not changed. Local Spark tests must be run **sequentially** (one process). See `debugging-notes.md`.
 
 Do not start Dashboard until that stage is requested.
 
@@ -98,6 +99,8 @@ Do not start Dashboard until that stage is requested.
 - Record **real** issues in `debugging-notes.md`.
 - Fix against spec; re-test; record results.
 - Update `ai-prompts/debugging.md`.
+
+Gold QA (this increment): concurrent/overlapping Spark suites vs sequential. Root cause is PySpark `launch_gateway` Windows `PermissionError` on a unique temp connection-info file — not Gold logic. Test helper isolates `spark.local.dir` / Py4J temp per class and retries that gateway error only. Dashboard still not started.
 
 ## Stage 9 — Documentation closeout
 

@@ -54,6 +54,7 @@ If this is a **new chat**, read `cursor-workflow/project-context.md` first.
 - Never claim a test passed unless it was executed in this environment.
 - Record command, scope, and actual output summary in the relevant notes or prompt file.
 - If tests were not run, say so and why.
+- Local Spark unittest suites must be run sequentially (one process). Concurrent suites can fail during JVM gateway launch on Windows.
 
 ## Validation rules
 

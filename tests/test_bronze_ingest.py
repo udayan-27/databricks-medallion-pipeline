@@ -8,6 +8,9 @@ These tests use tiny fixtures under tests/fixtures/bronze/ plus, when Spark
 is available, the committed data/ CSVs. They never collect the full orders
 dataset to the driver.
 
+Run Spark suites sequentially (one process). Concurrent full suites can
+collide on Windows temp files during JVM gateway launch.
+
 Databricks-specific checks (Unity Catalog, Delta commit, DBFS/S3 read, SQL
 warehouse) are not executed here.
 """
@@ -51,7 +54,7 @@ from ingest_core import (  # noqa: E402
     ingest_all,
     ingest_customers,
 )
-from spark_local import apply_local_spark_config  # noqa: E402
+from spark_local import start_local_test_spark, stop_local_test_spark  # noqa: E402
 
 
 def _simple_type(spark_dtype) -> str:
@@ -70,26 +73,12 @@ class BronzeSparkTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.warehouse_dir = Path(tempfile.mkdtemp(prefix="de_c1_bronze_wh_"))
-        builder = (
-            SparkSession.builder.master("local[2]")
-            .appName("de-c1-bronze-tests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.sql.shuffle.partitions", "2")
-            .config("spark.sql.warehouse.dir", cls.warehouse_dir.as_posix())
-        )
-        builder = apply_local_spark_config(builder)
-        existing = SparkSession.getActiveSession()
-        if existing is not None:
-            existing.stop()
-        cls.spark = builder.getOrCreate()
-        cls.spark.sparkContext.setLogLevel("ERROR")
+        cls.spark = start_local_test_spark("de-c1-bronze-tests", cls.warehouse_dir)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if cls.spark is not None:
-            cls.spark.stop()
-            cls.spark = None
+        stop_local_test_spark(cls.spark, getattr(cls, "warehouse_dir", None))
+        cls.spark = None
 
     @staticmethod
     def _fixture_config(data_path: Path, schema: str = "bronze"):

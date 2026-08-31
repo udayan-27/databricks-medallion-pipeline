@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,93 @@ def apply_local_spark_config(builder: Any) -> Any:
         .config("spark.hadoop.fs.file.impl", _FS_CLASS)
         .config("spark.hadoop.fs.file.impl.disable.cache", "true")
     )
+
+
+_GATEWAY_PERMISSION_ATTEMPTS = 3
+_TEMP_ENV_KEYS = ("TMP", "TEMP", "TMPDIR")
+
+
+def start_local_test_spark(app_name: str, warehouse_dir: Path) -> Any:
+    """
+    Start a local SparkSession for unittest with isolated scratch directories.
+
+    Warehouse and ``spark.local.dir`` are unique per test class. During JVM
+    gateway launch, Python ``TEMP``/``TMP``/``TMPDIR`` are redirected into that
+    scratch dir so Py4J's connection-info file is not created in the shared
+    Windows temp folder.
+
+    A PermissionError while opening that connection-info file is a known
+    PySpark-on-Windows race (``java_gateway.launch_gateway``). This helper
+    retries gateway launch only for that error. It does not retry assertion
+    failures and does not change Gold/Silver/Bronze business logic.
+
+    Local Spark tests in this repo are still sequential: do not run two full
+    suites at once. Isolated dirs reduce TEMP collisions; they do not make
+    concurrent suites a supported operating mode (shared CWD Derby metastore,
+    CPU, and Windows file locks remain).
+    """
+    from pyspark.sql import SparkSession
+
+    warehouse_dir.mkdir(parents=True, exist_ok=True)
+    local_dir = warehouse_dir / "spark-local"
+    local_dir.mkdir(parents=True, exist_ok=True)
+    builder = (
+        SparkSession.builder.master("local[2]")
+        .appName(app_name)
+        .config("spark.ui.enabled", "false")
+        .config("spark.sql.session.timeZone", "UTC")
+        .config("spark.sql.shuffle.partitions", "2")
+        .config("spark.sql.warehouse.dir", warehouse_dir.as_posix())
+        .config("spark.local.dir", local_dir.as_posix())
+    )
+    builder = apply_local_spark_config(builder)
+    last_error: BaseException | None = None
+    for attempt in range(1, _GATEWAY_PERMISSION_ATTEMPTS + 1):
+        existing = SparkSession.getActiveSession()
+        if existing is not None:
+            existing.stop()
+        try:
+            spark = _get_or_create_with_isolated_temp(builder, local_dir)
+            spark.sparkContext.setLogLevel("ERROR")
+            return spark
+        except PermissionError as exc:
+            last_error = exc
+            time.sleep(float(attempt))
+    assert last_error is not None
+    raise last_error
+
+
+def stop_local_test_spark(spark: Any, warehouse_dir: Path | None) -> None:
+    """Stop a local test session and best-effort delete its warehouse."""
+    if spark is not None:
+        try:
+            spark.stop()
+        except Exception:
+            pass
+    if warehouse_dir is not None:
+        shutil.rmtree(warehouse_dir, ignore_errors=True)
+
+
+def _get_or_create_with_isolated_temp(builder: Any, local_dir: Path) -> Any:
+    """Launch Spark with Python temp dirs pointed at ``local_dir``, then restore."""
+    scratch = str(local_dir)
+    previous = {key: os.environ.get(key) for key in _TEMP_ENV_KEYS}
+    previous_spark_local = os.environ.get("SPARK_LOCAL_DIRS")
+    try:
+        for key in _TEMP_ENV_KEYS:
+            os.environ[key] = scratch
+        os.environ["SPARK_LOCAL_DIRS"] = scratch
+        return builder.getOrCreate()
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        if previous_spark_local is None:
+            os.environ.pop("SPARK_LOCAL_DIRS", None)
+        else:
+            os.environ["SPARK_LOCAL_DIRS"] = previous_spark_local
 
 
 def _javac_path() -> Path:

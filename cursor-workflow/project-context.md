@@ -118,3 +118,5 @@ Required by the assignment but **missing from the official file tree**. `tests/`
 - `tests/test_silver_quality.py` — PySpark runtime; skipped when Spark is unavailable
 - `tests/test_gold_contract.py` — always runnable (SQL eligibility, DECIMAL, segmentation priority, no source LTV, orchestrator does not reimplement aggregations)
 - `tests/test_gold_aggregations.py` — PySpark runtime; skipped when Spark is unavailable
+
+Spark runtime modules start an isolated local session (`spark.sql.warehouse.dir` + `spark.local.dir` unique per class). Run **one** Spark unittest process at a time. Overlapping full suites are unsupported on Windows (Py4J temp-file `PermissionError` during JVM gateway launch; also a shared CWD Derby `metastore_db`). See `debugging-notes.md`.

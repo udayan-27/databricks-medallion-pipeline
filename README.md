@@ -22,7 +22,7 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Silver completeness / uniqueness / type / RI / business logic | Implemented (`src/silver/01_quality_completeness.py` through `05_quality_business_logic.py`, `quality_common.py`, `create_silver_tables.py`). Local Spark validated. Combined Silver tables written in tests as parquet. |
 | Gold aggregations | Implemented (`src/gold/01_sales_by_product.sql` through `04_customer_segmentation.sql`, `create_gold_tables.py`). Local Spark / parquet validated. Databricks Gold **not** run. |
 | Dashboard | Stubs only |
-| Tests | Generator **14/14 OK**; Bronze contract **37/37 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; combined relevant set **174/174 OK** (0 skipped) |
+| Tests | Generator **14/14 OK**; Bronze contract **38/38 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; sequential generator/Bronze/Silver **148/148 OK**; sequential Gold **27/27 OK**; combined relevant **175** (0 skipped). Prior combined 174 plus 1 Spark-free helper contract test. |
 
 Completeness, uniqueness, type validation, RI, and business logic run on Bronze DataFrames locally. `create_silver_tables.py` writes combined Silver tables and `silver.quality_metrics` (local parquet in tests). `create_gold_tables.py` executes the Gold SQL files against Silver and overwrites Gold tables (local parquet in tests). The CSVs in `data/` are real generated inputs.
 
@@ -140,6 +140,8 @@ python -m unittest tests.test_silver_contract -v
 python -m unittest tests.test_silver_quality -v
 ```
 
+Run **one Spark unittest process at a time**. A second concurrent full suite can fail during Spark JVM gateway launch on Windows (`PermissionError` on a Py4J temp connection-info file). That is an environment/concurrency issue, not a Bronze/Silver/Gold logic failure. Sequential isolation uses a unique warehouse and `spark.local.dir` per test class; it does not make overlapping suites supported. See `debugging-notes.md`.
+
 ### Gold aggregations
 
 Gold reads Silver only. Eligibility is explicit in each SQL file:
@@ -166,6 +168,12 @@ Tests (same local Spark stack):
 ```
 python -m unittest tests.test_gold_contract -v
 python -m unittest tests.test_gold_aggregations -v
+```
+
+Or one sequential relevant suite (do not start a second copy while this is running):
+
+```
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations -v
 ```
 
 Observed local fixture reconciliation: 17 qualifying orders, revenue 3330.00; duplicate order copies, NULL/orphan FKs, and FAIL rows excluded. Seed-42: Gold product/customer/daily/weekly/segment totals match eligible Silver; 10,000 canonical customers. Databricks Gold tables have **not** been written.
