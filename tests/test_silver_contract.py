@@ -1,5 +1,5 @@
 """
-Spark-free Silver completeness/uniqueness contract tests.
+Spark-free Silver quality contract tests.
 
 Always runnable. They assert field lists, code format, accumulation helpers,
 and that the Silver quality modules do not call row-dropping APIs.
@@ -28,6 +28,8 @@ for _path in (str(SRC_DIR), str(BRONZE_DIR), str(SILVER_DIR)):
 from quality_common import (  # noqa: E402
     COMBINED_FAILED_CHECKS_COLUMN,
     MODULE_COMPLETENESS,
+    MODULE_RI,
+    MODULE_TYPE,
     MODULE_UNIQUENESS,
     QUALITY_CHECK_RESULT_COLUMN,
     failed_checks_column_name,
@@ -50,6 +52,10 @@ def _load_silver(filename: str, module_name: str):
 
 completeness = _load_silver("01_quality_completeness.py", "quality_completeness")
 uniqueness = _load_silver("02_quality_uniqueness.py", "quality_uniqueness")
+type_validation = _load_silver("03_quality_type_validation.py", "quality_type_validation")
+referential_integrity = _load_silver(
+    "04_quality_referential_integrity.py", "quality_referential_integrity"
+)
 
 
 class TestQualityCodeRepresentation(unittest.TestCase):
@@ -74,6 +80,26 @@ class TestQualityCodeRepresentation(unittest.TestCase):
             quality_code("uniqueness", "orders", "order_id"),
             "uniqueness:orders.order_id",
         )
+        self.assertEqual(
+            quality_code("type", "orders", "order_status_domain"),
+            "type:orders.order_status_domain",
+        )
+        self.assertEqual(
+            quality_code("type", "customers", "customer_segment_domain"),
+            "type:customers.customer_segment_domain",
+        )
+        self.assertEqual(
+            quality_code("type", "orders", "quantity"),
+            "type:orders.quantity",
+        )
+        self.assertEqual(
+            quality_code("ri", "orders", "customer_id_orphan"),
+            "ri:orders.customer_id_orphan",
+        )
+        self.assertEqual(
+            quality_code("ri", "orders", "product_id_orphan"),
+            "ri:orders.product_id_orphan",
+        )
 
     def test_module_columns_do_not_collide(self) -> None:
         self.assertEqual(
@@ -86,9 +112,23 @@ class TestQualityCodeRepresentation(unittest.TestCase):
         )
         self.assertEqual(pass_column_name(MODULE_COMPLETENESS), "completeness_pass")
         self.assertEqual(pass_column_name(MODULE_UNIQUENESS), "uniqueness_pass")
+        self.assertEqual(
+            failed_checks_column_name(MODULE_TYPE),
+            "type_failed_checks",
+        )
+        self.assertEqual(pass_column_name(MODULE_TYPE), "type_validation_pass")
+        self.assertEqual(
+            failed_checks_column_name(MODULE_RI),
+            "referential_integrity_failed_checks",
+        )
+        self.assertEqual(pass_column_name(MODULE_RI), "referential_integrity_pass")
         self.assertNotEqual(
             failed_checks_column_name(MODULE_COMPLETENESS),
             failed_checks_column_name(MODULE_UNIQUENESS),
+        )
+        self.assertNotEqual(
+            failed_checks_column_name(MODULE_TYPE),
+            failed_checks_column_name(MODULE_RI),
         )
         self.assertNotEqual(
             pass_column_name(MODULE_COMPLETENESS),
@@ -125,6 +165,106 @@ class TestQualityCodeRepresentation(unittest.TestCase):
         self.assertEqual(uniqueness.UNIQUENESS_KEYS["products"], "product_id")
         self.assertNotEqual(uniqueness.UNIQUENESS_KEYS["customers"], "_ingest_row_id")
         self.assertNotEqual(uniqueness.UNIQUENESS_KEYS["orders"], "_ingest_row_id")
+
+
+class TestTypeAndRIContracts(unittest.TestCase):
+    def test_type_null_fields_exclude_completeness_and_payment_date(self) -> None:
+        self.assertEqual(
+            type_validation.COMPLETENESS_OWNED_NULL_FIELDS,
+            completeness.COMPLETENESS_FIELDS,
+        )
+        self.assertEqual(
+            type_validation.NULLABLE_TYPED_FIELDS["orders"],
+            ("payment_date",),
+        )
+        for table_name, fields in type_validation.TYPE_NULL_FIELDS.items():
+            owned = set(type_validation.COMPLETENESS_OWNED_NULL_FIELDS[table_name])
+            overlap = owned.intersection(fields)
+            self.assertFalse(
+                overlap,
+                f"{table_name} type-null fields overlap completeness: {overlap}",
+            )
+            self.assertNotIn("payment_date", fields)
+            self.assertEqual(fields, type_validation.derived_type_null_fields(table_name))
+
+    def test_declared_bronze_types_are_covered(self) -> None:
+        customers = dict(type_validation.declared_source_fields("customers"))
+        orders = dict(type_validation.declared_source_fields("orders"))
+        products = dict(type_validation.declared_source_fields("products"))
+        self.assertEqual(customers["customer_id"], "INT")
+        self.assertEqual(customers["customer_name"], "STRING")
+        self.assertEqual(customers["email"], "STRING")
+        self.assertEqual(customers["country"], "STRING")
+        self.assertEqual(customers["signup_date"], "DATE")
+        self.assertEqual(customers["customer_segment"], "STRING")
+        self.assertEqual(customers["lifetime_value"], "DECIMAL(18,2)")
+        self.assertEqual(orders["order_id"], "INT")
+        self.assertEqual(orders["customer_id"], "INT")
+        self.assertEqual(orders["order_date"], "DATE")
+        self.assertEqual(orders["product_id"], "INT")
+        self.assertEqual(orders["quantity"], "INT")
+        self.assertEqual(orders["unit_price"], "DECIMAL(18,2)")
+        self.assertEqual(orders["total_amount"], "DECIMAL(18,2)")
+        self.assertEqual(orders["order_status"], "STRING")
+        self.assertEqual(orders["payment_date"], "DATE")
+        self.assertEqual(products["product_id"], "INT")
+        self.assertEqual(products["product_name"], "STRING")
+        self.assertEqual(products["category"], "STRING")
+        self.assertEqual(products["price"], "DECIMAL(18,2)")
+        self.assertEqual(products["cost"], "DECIMAL(18,2)")
+        self.assertEqual(products["stock_quantity"], "INT")
+        self.assertEqual(products["reorder_level"], "INT")
+
+    def test_closed_domains_match_spec(self) -> None:
+        customer_domains = dict(type_validation.DOMAIN_ALLOWLISTS["customers"])
+        order_domains = dict(type_validation.DOMAIN_ALLOWLISTS["orders"])
+        self.assertEqual(
+            customer_domains["customer_segment"],
+            ("Premium", "Standard", "Basic"),
+        )
+        self.assertEqual(
+            order_domains["order_status"],
+            ("Pending", "Completed", "Cancelled"),
+        )
+        self.assertEqual(type_validation.DOMAIN_ALLOWLISTS["products"], ())
+        self.assertNotIn("country", customer_domains)
+        self.assertNotIn("category", dict(type_validation.DOMAIN_ALLOWLISTS["products"]))
+
+    def test_ri_orphan_codes_are_not_completeness_codes(self) -> None:
+        self.assertEqual(
+            referential_integrity.CUSTOMER_ORPHAN_CODE,
+            "ri:orders.customer_id_orphan",
+        )
+        self.assertEqual(
+            referential_integrity.PRODUCT_ORPHAN_CODE,
+            "ri:orders.product_id_orphan",
+        )
+        self.assertNotEqual(
+            referential_integrity.CUSTOMER_ORPHAN_CODE,
+            "completeness:orders.customer_id",
+        )
+        self.assertNotEqual(
+            referential_integrity.PRODUCT_ORPHAN_CODE,
+            "completeness:orders.product_id",
+        )
+
+    def test_ri_metrics_count_orphans_not_null_plus_orphan(self) -> None:
+        customer = metrics_from_counts(
+            table_name="orders",
+            check_name="ri:orders.customer_id_orphan",
+            total_evaluated=100020,
+            failed=50,
+        )
+        self.assertEqual(customer.failed, 50)
+        self.assertNotEqual(customer.failed, 150)
+        product = metrics_from_counts(
+            table_name="orders",
+            check_name="ri:orders.product_id_orphan",
+            total_evaluated=100020,
+            failed=30,
+        )
+        self.assertEqual(product.failed, 30)
+        self.assertNotEqual(product.failed, 230)
 
 
 class TestPhysicalRowMetrics(unittest.TestCase):
@@ -185,6 +325,8 @@ class TestNoRowDroppingInSilverQuality(unittest.TestCase):
             "quality_common.py",
             "01_quality_completeness.py",
             "02_quality_uniqueness.py",
+            "03_quality_type_validation.py",
+            "04_quality_referential_integrity.py",
         ):
             calls = self._call_names(SILVER_DIR / filename)
             forbidden = calls & self.FORBIDDEN_CALLS
@@ -193,20 +335,33 @@ class TestNoRowDroppingInSilverQuality(unittest.TestCase):
                 f"{filename} calls forbidden row-drop/dedupe APIs: {forbidden}",
             )
 
-    def test_modules_do_not_emit_ri_or_orphan_codes(self) -> None:
+    def test_modules_do_not_emit_cross_module_codes_or_last_writer_result(self) -> None:
         completeness_src = (SILVER_DIR / "01_quality_completeness.py").read_text(
             encoding="utf-8"
         )
         uniqueness_src = (SILVER_DIR / "02_quality_uniqueness.py").read_text(
             encoding="utf-8"
         )
+        type_src = (SILVER_DIR / "03_quality_type_validation.py").read_text(
+            encoding="utf-8"
+        )
+        ri_src = (SILVER_DIR / "04_quality_referential_integrity.py").read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn("ri:orders", completeness_src)
         self.assertNotIn("customer_id_orphan", completeness_src)
         self.assertNotIn("product_id_orphan", uniqueness_src)
-        self.assertNotIn('withColumn("quality_check_result"', completeness_src)
-        self.assertNotIn('withColumn("quality_check_result"', uniqueness_src)
+        self.assertNotIn("completeness:orders.customer_id", type_src)
+        self.assertNotIn("completeness:orders.customer_id", ri_src)
+        for src in (completeness_src, uniqueness_src, type_src, ri_src):
+            self.assertNotIn('withColumn("quality_check_result"', src)
         self.assertIn("completeness_failed_checks", completeness_src)
         self.assertIn("uniqueness_failed_checks", uniqueness_src)
+        self.assertIn("type_failed_checks", type_src)
+        self.assertIn("referential_integrity_failed_checks", ri_src)
+        self.assertIn("distinct()", ri_src)
+        self.assertIn("left", ri_src)
+        self.assertNotIn("dropDuplicates", ri_src)
 
 
 if __name__ == "__main__":

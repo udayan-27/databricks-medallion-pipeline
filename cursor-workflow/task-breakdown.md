@@ -65,14 +65,14 @@ Do not start Silver until that stage is requested.
 
 Implement and test in order, using frozen `data-quality-strategy.md`:
 
-1. Completeness — **done** (this increment). `01_quality_completeness.py` + `quality_common.py`. Local Spark: 50 NULL emails, 100 NULL order customer_ids, 200 NULL order product_ids; rows retained.
-2. Uniqueness — **done** (this increment). `02_quality_uniqueness.py`. Local Spark: 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows; all copies flagged; no survivor.
-3. Type validation — **not started**
-4. Referential integrity (NULL ≠ orphan) — **not started**
+1. Completeness — **done**. `01_quality_completeness.py` + `quality_common.py`. Local Spark: 50 NULL emails, 100 NULL order customer_ids, 200 NULL order product_ids; rows retained.
+2. Uniqueness — **done**. `02_quality_uniqueness.py`. Local Spark: 20 customer uniqueness-fail rows, 40 order uniqueness-fail rows; all copies flagged; no survivor.
+3. Type validation — **done** (this increment). `03_quality_type_validation.py`. Local Spark: 0 type failures on seed-42 committed data. Malformed INT/DATE/DECIMAL and domain fixtures fail without deleting rows. Completeness-owned NULLs and NULL `payment_date` are not type failures.
+4. Referential integrity (NULL ≠ orphan) — **done** (this increment). `04_quality_referential_integrity.py`. Local Spark: 50 customer orphans, 30 product orphans; 100/200 NULL FKs not orphans; distinct parent-key left join (no fan-out).
 5. Business logic — **not started**
 6. `create_silver_tables.py` combining flags on `_ingest_row_id` and metrics — **not started**
 
-Assert Silver row counts equal Bronze (completeness/uniqueness transforms already do this in tests). Multi-failure rows keep multiple per-module codes. `ai-prompts/silver-layer.md` Prompt 1 records this increment.
+Assert Silver row counts equal Bronze (four implemented transforms already do this in tests). Multi-failure rows keep multiple per-module codes. `ai-prompts/silver-layer.md` Prompts 1–2 record these increments.
 
 Do not start Gold until remaining Silver modules and the combiner are requested.
 
@@ -110,6 +110,6 @@ Do not start Gold until remaining Silver modules and the combiner are requested.
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after completeness/uniqueness
+## Explicitly not started after type validation / RI
 
-Type validation, referential integrity, business logic, `create_silver_tables.py`, Gold, Dashboard. Generator tests, Bronze tests, and Silver completeness/uniqueness tests exist and passed locally. Databricks tables have not been created.
+Business logic, `create_silver_tables.py`, Gold, Dashboard. Generator tests, Bronze tests, and Silver completeness/uniqueness/type/RI tests exist and passed locally. Databricks tables have not been created.

@@ -1,6 +1,6 @@
 # Data quality strategy
 
-Status: **strategy frozen**. Completeness and uniqueness are implemented as PySpark transforms (`src/silver/01_quality_completeness.py`, `src/silver/02_quality_uniqueness.py`, shared helper `src/silver/quality_common.py`). Type validation, referential integrity, business logic, and `create_silver_tables.py` are **not** implemented. Do not delete bad rows.
+Status: **strategy frozen**. Completeness, uniqueness, type validation, and referential integrity are implemented as PySpark transforms (`src/silver/01_quality_completeness.py`, `src/silver/02_quality_uniqueness.py`, `src/silver/03_quality_type_validation.py`, `src/silver/04_quality_referential_integrity.py`, shared helper `src/silver/quality_common.py`). Business logic and `create_silver_tables.py` are **not** implemented. Do not delete bad rows.
 
 This file is the source of truth for Silver modules. Implementation must copy these rules, not invent new ones silently.
 
@@ -49,7 +49,7 @@ A single order row can carry, at the same time:
 
 Gold’s default filter uses the **combined** `quality_check_result`, not a single module column. Metrics still break out each module so the 100 NULL `customer_id` rows remain visible even if some of those rows also fail business logic (generation will try to keep mandatory classes disjoint; overlap is still allowed by the combiner).
 
-### Representation used by the completeness/uniqueness increment
+### Representation used by implemented modules
 
 Each implemented module attaches its **own** columns and does not write `quality_check_result`:
 
@@ -57,6 +57,8 @@ Each implemented module attaches its **own** columns and does not write `quality
 |---|---|---|
 | completeness | `completeness_pass` | `completeness_failed_checks` |
 | uniqueness | `uniqueness_pass` | `uniqueness_failed_checks` |
+| type | `type_validation_pass` | `type_failed_checks` |
+| referential integrity | `referential_integrity_pass` | `referential_integrity_failed_checks` |
 
 `src/silver/quality_common.py` `attach_module_result` concatenates into the module’s array (`array_distinct`) so a later call cannot replace an earlier code on the same `_ingest_row_id`. Combined `failed_checks` remains the orchestrator’s job.
 
@@ -71,6 +73,10 @@ Observed local Spark counts on seed-42 Bronze (physical rows, not distinct keys)
 | `uniqueness:customers.customer_id` | 20 | 10,010 |
 | `uniqueness:orders.order_id` | 40 | 100,020 |
 | products completeness / uniqueness | 0 | 500 |
+| type (customers / orders / products) | 0 | 10,010 / 100,020 / 500 |
+| `ri:orders.customer_id_orphan` | 50 | 100,020 |
+| `ri:orders.product_id_orphan` | 30 | 100,020 |
+| orders RI module rollup | 80 | 100,020 |
 
 ## Thresholds (assignment meaning)
 
@@ -227,7 +233,9 @@ Closed domains:
 
 Also fail type if a non-null DATE/INT/DECIMAL column received a value Spark could not parse (column is null **and** the field is not in the completeness list). Example: malformed `unit_price` → null, code `type:orders.unit_price`. Completeness does not list `unit_price`, so type owns it.
 
-If extra malformed tokens are **not** injected, expected type fail_count is 0 aside from accidental generator bugs.
+If extra malformed tokens are **not** injected, expected type fail_count is 0 aside from accidental generator bugs. **Observed on seed-42 committed data: 0.** Malformed INT/DATE/DECIMAL and domain cases are covered by `tests/fixtures/silver/type_validation/` (not Stage 2 CSVs).
+
+Implementation: `apply_type_validation` flags closed-domain violations (`IS NOT NULL AND NOT IN allowlist`, case-sensitive, untrimmed) and PERMISSIVE NULLs on owned INT/DATE/DECIMAL fields (`signup_date`, `lifetime_value`, `order_date`, `quantity`, `unit_price`, `total_amount`, `price`, `cost`, `stock_quantity`, `reorder_level`). Completeness-critical NULLs and `payment_date` NULL are not type failures.
 
 Country, category, names, email format: **not** type-checked against an allowlist or RFC.
 
@@ -292,6 +300,8 @@ Customers and products have no FKs: every row `referential_integrity_pass = true
 Build distinct parent key sets from **Bronze** (all non-null parent ids, including duplicates).
 
 Anti-join children where `fk IS NOT NULL AND fk NOT IN parent_set`.
+
+**Implementation:** left-join each child FK to a **broadcast distinct existence set** of non-null parent keys (`SELECT DISTINCT parent_pk`). This is not a naïve `orders JOIN customers` on the full parent table. Duplicate parent IDs cannot multiply child rows because the parent side of the join key is unique. `assert_no_row_loss` refuses a count increase. Observed seed-42: 50 customer orphans, 30 product orphans; 100 NULL `customer_id` and 200 NULL `product_id` are RI pass.
 
 NULL FKs: **RI pass** for that FK. If the other FK is orphan, the row can still RI-fail on the other field.
 

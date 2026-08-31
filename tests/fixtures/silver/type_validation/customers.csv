@@ -1,0 +1,5 @@
+customer_id,customer_name,email,country,signup_date,customer_segment,lifetime_value
+1,Valid Customer,valid@example.com,India,2024-01-01,Premium,10.00
+2,Wrong Case Segment,wrongcase@example.com,India,2024-01-01,premium,10.00
+3,Malformed Date,baddate@example.com,India,13/01/2024,Standard,10.00
+4,Malformed Decimal,baddec@example.com,India,2024-01-01,Basic,not-a-decimal

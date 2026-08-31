@@ -95,3 +95,93 @@ No Silver runtime defect required a code fix after the first passing run. A pre-
 ### FINAL DECISION
 
 Accept this increment. Completeness and uniqueness are implemented and locally validated. Type / RI / business logic / Silver orchestration / Gold / Dashboard remain stubs. Commit: `feat: add Silver completeness and uniqueness validation`.
+
+## Prompt 2 — Stage 4 Silver type validation and referential integrity
+
+### PROMPT SENT
+
+Continue Stage 4 Silver. Implement only type validation (`src/silver/03_quality_type_validation.py`) and referential integrity (`src/silver/04_quality_referential_integrity.py`).
+
+Do not start business logic, Silver final orchestration, Gold, or Dashboard. Do not modify Stage 2 CSVs.
+
+Type validation: use Bronze schema contracts. Cover declared INT/STRING/DATE/DECIMAL fields and closed domains (`customer_segment`, `order_status`). Do not silently coerce malformed values. Do not drop malformed rows. If PERMISSIVE ingest represents malformed CSV tokens as NULL, do not call a completeness-owned NULL a type failure. Distinguish null/missing, valid typed value, and invalid/malformed. Use the existing quality accumulator. Do not overwrite completeness or uniqueness. If a malformed-type fixture is needed, keep it small and separate from Stage 2 data.
+
+Required type tests: valid rows pass; malformed integer; malformed date; malformed decimal; invalid domain; nullable `payment_date` NULL remains valid; type validation does not delete rows.
+
+RI: `orders.customer_id` → `customers.customer_id` and `orders.product_id` → `products.product_id`. NULL FKs are not orphans (completeness). Non-null absences are RI failures. Do not alter FKs, delete orphans, or deduplicate parent tables as tables. Do not allow parent duplicates to multiply child rows.
+
+Expected: 50 orphan customer IDs, 30 orphan product IDs. Completeness already established 100 NULL `customer_id` and 200 NULL `product_id` — those must not be classified as orphans.
+
+Join safety: a naïve `orders JOIN customers ON customer_id` can fan out because duplicate customer IDs exist. Prefer a semi-join / existence check / distinct existence set so input physical row count equals output. Use `_ingest_row_id`. Explicit regression test for no RI join fan-out.
+
+Semantic tests for both FKs, NULL-vs-orphan, valid FKs, row-count preservation, accumulation, unchanged business keys and `_ingest_row_id`.
+
+Reuse the shared accumulator. Avoid collect/UDF/Python loops over Spark rows. Run Silver contract, Silver quality, Bronze, then the combined suite. Record this interaction in `ai-prompts/silver-layer.md`. Commit: `feat: add Silver type and referential integrity validation`.
+
+### AI RESPONSE SUMMARY
+
+Inspected frozen spec, Bronze contracts, existing completeness/uniqueness modules, and Silver tests. Implemented type validation as Spark predicates over typed Bronze columns: closed-domain `NOT IN` allowlists (case-sensitive, untrimmed) plus `IS NULL` on INT/DATE/DECIMAL fields this module owns. Completeness-critical NULLs and `payment_date` NULL are excluded. Malformed CSV tokens become NULL under PERMISSIVE ingest; a dedicated fixture (`tests/fixtures/silver/type_validation/`) covers `xyz` quantity, `13/01/2024` date, `12.34.56` decimal, `Shipped` / `premium` domains.
+
+RI left-joins child FKs to a **broadcast distinct existence set** of non-null parent keys. That is not a naïve many-to-one join against the full parent table, so duplicate `customer_id` rows cannot multiply orders. `assert_no_row_loss` refuses a count increase. NULL FKs fail the orphan predicate (`fk IS NOT NULL AND parent_key IS NULL`). Shared `quality_common.py` gained `codes_for_domain_violation`, `codes_for_orphan_fk`, and `concat_code_arrays`; `attach_module_result` is unchanged.
+
+### ACCEPTED
+
+- Flag, do not delete. Physical counts remain 10,010 / 100,020 / 500 after type and RI.
+- Completeness-owned NULLs are not type failures. `payment_date` NULL is type-valid.
+- Domain checks: `Premium`/`Standard`/`Basic` and `Pending`/`Completed`/`Cancelled` only; country/category are free STRING.
+- Type fail_count 0 on seed-42 committed data (no extra malformed injection into Stage 2).
+- NULL FK ≠ orphan. Observed 50 / 30 orphans; 100 / 200 NULL FKs are RI pass.
+- Distinct parent-key left join (broadcast) so duplicate parents cannot fan out child rows.
+- Per-module arrays accumulate with completeness and uniqueness; no last-writer `quality_check_result`.
+- Malformed-type fixture separate from Stage 2 CSVs.
+
+### CHANGED
+
+- Small helpers in `quality_common.py` for domain, orphan, and concatenating code arrays (compatible with the existing accumulator; not a second status system).
+- Type-null ownership derived from Bronze contracts minus completeness fields minus `payment_date`; contract test asserts the lists stay aligned.
+- Modules still do not write `silver.*` tables or run `create_silver_tables.py`.
+
+### REJECTED
+
+- Business logic, `create_silver_tables.py`, Gold, Dashboard — out of this increment.
+- Naïve `orders JOIN customers ON customer_id` against the full parent table — would multiply rows where `customer_id` is duplicated.
+- Dropping orphan or malformed rows / `dropna` / `dropDuplicates` on the validation dataset.
+- Silently coercing or trimming malformed/domain values into valid values.
+- Last-writer `quality_check_result` from these modules.
+- Classifying NULL FKs as orphans (would make fail_count 150 / 230).
+- Double-counting completeness-critical NULLs as type failures.
+- Treating NULL `payment_date` as malformed.
+- Inventing extra malformed tokens in Stage 2 CSVs merely to produce type failures.
+- Collecting parent IDs to the driver / Python loops / UDFs for existence checks.
+- Deduplicating parent tables as tables (existence uses a derived distinct key set only).
+
+### VALIDATION
+
+Environment: Python 3.11.9 `.venv`, Temurin JDK 17.0.20.1, PySpark 3.5.6. Local parquet, not Databricks.
+
+Commands actually run:
+
+1. `python -m unittest tests.test_silver_contract -v` → **Ran 13 tests in 0.015s OK**
+2. `python -m unittest tests.test_silver_quality -v` → **Ran 35 tests in 149.265s OK** (0 skipped)
+3. `python -m unittest tests.test_bronze_contract tests.test_bronze_ingest -v` → **Ran 58 tests in 46.922s OK**
+4. `python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality -v` → **Ran 120 tests in 232.745s OK** (0 failed, 0 skipped)
+
+Observed physical-row counts on seed-42 committed data (after completeness + uniqueness + type + RI):
+
+| Check | failed | total_evaluated |
+|---|---|---|
+| type customers / orders / products | 0 | 10010 / 100020 / 500 |
+| `ri:orders.customer_id_orphan` | 50 | 100020 |
+| `ri:orders.product_id_orphan` | 30 | 100020 |
+| orders RI module rollup | 80 | 100020 |
+| NULL `customer_id` rows with customer-orphan code | 0 (of 100) | |
+| NULL `product_id` rows with product-orphan code | 0 (of 200) | |
+| physical rows after type+RI | 10010 / 100020 / 500 | unchanged |
+
+Fan-out regression: parent `customer_id=1` duplicated three times; two matching child orders plus NULL and orphan rows → **exactly one output row per original physical order row** (4 in, 4 out).
+
+Adversarial review (duplicate parents, NULL FKs, orphans, empty child dataset, all-valid committed data, all-invalid orphans, repeated RI execution, physical identity, row-count preservation, accumulation, malformed type fixture, domain violations): **no implementation defect required a code fix** after the first passing run. Pre-existing Windows `PYSPARK_PYTHON` warning (`'C1' is not recognized` because the repo path contains a space) still appears; tests still passed. Not treated as a Silver logic defect.
+
+### FINAL DECISION
+
+Accept this increment. Type validation and referential integrity are implemented and locally validated. Business logic / Silver orchestration / Gold / Dashboard remain stubs. Commit: `feat: add Silver type and referential integrity validation`.

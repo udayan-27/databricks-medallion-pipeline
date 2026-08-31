@@ -1,6 +1,6 @@
 # Data model
 
-Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). Completeness and uniqueness quality columns are produced by Silver transforms; combined Silver tables have not been written. Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). Completeness, uniqueness, type validation, and referential integrity quality columns are produced by Silver transforms; combined Silver tables have not been written. Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 

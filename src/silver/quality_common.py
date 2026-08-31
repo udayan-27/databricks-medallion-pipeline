@@ -17,9 +17,9 @@ Design constraints (frozen):
   failure is never replaced by a later one.
 - Metrics count physical rows, not distinct business keys.
 
-Type / RI / business-logic modules are not implemented here. Only the shared
-column names, code format, accumulation, and metrics helpers are defined so
-those later modules can attach compatible columns.
+Type and RI modules reuse these helpers. Business-logic is not implemented
+here. Shared column names, code format, accumulation, and metrics stay the
+single quality representation so later modules cannot overwrite earlier ones.
 """
 
 from __future__ import annotations
@@ -150,10 +150,12 @@ def codes_for_null_fields(
     module: str = MODULE_COMPLETENESS,
 ) -> Any:
     """
-    One completeness-style code per NULL field.
+    One code per NULL field (completeness, or type parse-null on owned fields).
 
     Empty string is **not** NULL (Spark ``IS NULL`` only). Concatenating empty
     arrays for passing fields does not drop the row and does not invent codes.
+    Callers choose ``module`` so completeness-critical NULLs are not emitted
+    as ``type:`` codes.
     """
     F, _Window = _import_pyspark()
     if not fields:
@@ -166,6 +168,57 @@ def codes_for_null_fields(
                 empty_string_array(F)
             )
         )
+    if len(parts) == 1:
+        return parts[0]
+    return F.array_distinct(F.concat(*parts))
+
+
+def codes_for_domain_violation(
+    table: str,
+    field: str,
+    allowed_values: Sequence[str],
+    *,
+    module: str = MODULE_TYPE,
+    rule: str | None = None,
+) -> Any:
+    """
+    Closed-domain failure: non-null value not in the allowlist.
+
+    NULL is not a domain violation (completeness or a typed-null rule owns it).
+    Comparison is case-sensitive and does not trim. ``isin`` is used only on a
+    tiny literal allowlist, never on collected dataset values.
+    """
+    F, _Window = _import_pyspark()
+    if not allowed_values:
+        raise QualityError(f"Empty allowlist for {module} on {table}.{field}.")
+    code = quality_code(module, table, rule or f"{field}_domain")
+    is_invalid = F.col(field).isNotNull() & (~F.col(field).isin(list(allowed_values)))
+    return F.when(is_invalid, F.array(F.lit(code))).otherwise(empty_string_array(F))
+
+
+def codes_for_orphan_fk(
+    table: str,
+    fk_field: str,
+    parent_key_column: str,
+    *,
+    module: str = MODULE_RI,
+    rule: str | None = None,
+) -> Any:
+    """
+    Orphan FK: child key is non-null and the left-joined distinct parent key
+    is null. NULL child FKs are not orphans (completeness owns them).
+    """
+    F, _Window = _import_pyspark()
+    code = quality_code(module, table, rule or f"{fk_field}_orphan")
+    is_orphan = F.col(fk_field).isNotNull() & F.col(parent_key_column).isNull()
+    return F.when(is_orphan, F.array(F.lit(code))).otherwise(empty_string_array(F))
+
+
+def concat_code_arrays(parts: Sequence[Any]) -> Any:
+    """Distinct-concat of already-typed ARRAY<STRING> column expressions."""
+    F, _Window = _import_pyspark()
+    if not parts:
+        return empty_string_array(F)
     if len(parts) == 1:
         return parts[0]
     return F.array_distinct(F.concat(*parts))

@@ -1,6 +1,6 @@
 # Design notes
 
-Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **Silver completeness and uniqueness transforms exist** (local Spark validated). Bronze/Silver tables have **not** been created in a Databricks workspace. Type / RI / business logic / Gold / Dashboard have not been built. No Databricks runtime results exist.
+Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **Silver completeness, uniqueness, type validation, and referential integrity transforms exist** (local Spark validated). Bronze/Silver tables have **not** been created in a Databricks workspace. Business logic / Gold / Dashboard have not been built. No Databricks runtime results exist.
 
 Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard guide. Rejected extras are listed at the end of this file.
 

@@ -6,10 +6,10 @@ If this is a **new chat**, read `cursor-workflow/project-context.md` first.
 
 ## Stage discipline
 
-- Current completed work: repository init + requirements/architecture/DQ design + Stage 2 sample data + Bronze ingest code + **Silver completeness and uniqueness**.
+- Current completed work: repository init + requirements/architecture/DQ design + Stage 2 sample data + Bronze ingest code + **Silver completeness, uniqueness, type validation, and referential integrity**.
 - Do not regenerate sample data unless asked.
-- Do not implement remaining Silver modules (type / RI / business logic / combiner), Gold, or Dashboard until those stages are requested.
-- Local Spark completeness/uniqueness tests passed in this environment; Databricks tables have not been created. Do not claim Databricks execution passed.
+- Do not implement remaining Silver modules (business logic / combiner), Gold, or Dashboard until those stages are requested.
+- Local Spark completeness/uniqueness/type/RI tests passed in this environment; Databricks tables have not been created. Do not claim Databricks execution passed.
 
 ## Frozen analysis (do not silently reverse)
 

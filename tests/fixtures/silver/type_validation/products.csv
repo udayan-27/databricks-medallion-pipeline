@@ -1,0 +1,4 @@
+product_id,product_name,category,price,cost,stock_quantity,reorder_level
+100,Valid Widget,Electronics,10.00,4.00,50,5
+101,Malformed Price,Electronics,abc,4.00,50,5
+102,Malformed Stock,Electronics,10.00,4.00,n/a,5

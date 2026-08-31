@@ -1,0 +1,8 @@
+order_id,customer_id,order_date,product_id,quantity,unit_price,total_amount,order_status,payment_date
+1,1,2024-01-01,100,1,10.00,10.00,Completed,2024-01-02
+2,1,2024-01-01,100,xyz,10.00,10.00,Pending,
+3,1,13/01/2024,100,1,10.00,10.00,Completed,2024-01-02
+4,1,2024-01-01,100,1,12.34.56,10.00,Completed,2024-01-02
+5,1,2024-01-01,100,1,10.00,10.00,Shipped,2024-01-02
+6,1,2024-01-01,100,1,10.00,10.00,Pending,
+7,,2024-01-01,100,1,10.00,10.00,Completed,2024-01-02
