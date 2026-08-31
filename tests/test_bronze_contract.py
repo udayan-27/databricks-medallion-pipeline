@@ -35,6 +35,7 @@ sys.path.insert(0, str(BRONZE_DIR))
 
 from config import (  # noqa: E402
     DEFAULT_BRONZE_SCHEMA,
+    DEFAULT_GOLD_SCHEMA,
     DEFAULT_TABLE_FORMAT,
     ConfigError,
     default_data_path,
@@ -197,13 +198,16 @@ class TestConfig(IsolatedMedallionEnvMixin, unittest.TestCase):
     def test_load_config_defaults(self) -> None:
         cfg = load_config()
         self.assertEqual(cfg.bronze_schema, DEFAULT_BRONZE_SCHEMA)
+        self.assertEqual(cfg.gold_schema, DEFAULT_GOLD_SCHEMA)
         self.assertEqual(cfg.table_format, DEFAULT_TABLE_FORMAT)
         self.assertIsNone(cfg.catalog)
         self.assertEqual(cfg.bronze_table("customers"), "bronze.customers")
+        self.assertEqual(cfg.gold_table("sales_by_product"), "gold.sales_by_product")
 
     def test_catalog_qualification(self) -> None:
         cfg = load_config(catalog="dev", bronze_schema="bronze")
         self.assertEqual(cfg.bronze_table("orders"), "dev.bronze.orders")
+        self.assertEqual(cfg.gold_table("weekly_trends"), "dev.gold.weekly_trends")
 
     def test_rejects_unsafe_identifiers(self) -> None:
         with self.assertRaises(ConfigError):

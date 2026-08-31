@@ -25,6 +25,16 @@ This machine now has a project-local Python 3.11 `.venv` with PySpark 3.5.6 and 
 
 Rerun overwrites `bronze.customers|orders|products` and appends to `bronze.ingest_metadata`.
 
+## Gold job (code exists; local parquet tested; Databricks not run)
+
+After Bronze and Silver tables exist:
+
+```
+python src/gold/create_gold_tables.py --table-format parquet
+```
+
+Databricks: omit `--table-format` (default `delta`) and set `--catalog` / `--silver-schema` / `--gold-schema` as needed. This environment has **not** written Gold Delta tables.
+
 ## Secrets
 
 Do not put workspace tokens, personal access tokens, or production connection strings in this file. Use environment variables or Databricks secrets.

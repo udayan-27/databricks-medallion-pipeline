@@ -1,6 +1,6 @@
 # Data model
 
-Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`). Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`). Gold SQL aggregations and `create_gold_tables.py` produce Gold tables locally. Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 
@@ -185,9 +185,13 @@ Do not invent extra metric dimensions (workspace, cluster id). `distinct_key` un
 
 Gold contains **no source-grain orders**. Only aggregations required by the assignment plus daily/weekly trends.
 
-Default fact filter (documented again in each SQL file when implemented):
+Default fact filter (also stated in each SQL file header):
 
 `silver.orders.order_status = 'Completed' AND silver.orders.quality_check_result = 'PASS'`
+
+Failed-quality rows stay in Bronze and Silver for audit. Gold excludes them so duplicate copies, NULL/orphan keys, and business-logic failures cannot inflate order counts or revenue. Reconciliation tests assert Gold `SUM(total_revenue)` and `SUM(total_orders)` equal the same predicates applied to Silver.
+
+Rounding: `avg_order_value` / `avg_revenue` are `CAST(total / NULLIF(count, 0) AS DECIMAL(18, 2))`. Spark DECIMAL casts use half-up to scale 2. Zero-order customers have `avg_order_value` NULL, not zero.
 
 ### gold.sales_by_product
 
@@ -268,4 +272,4 @@ Not in this model unless a later spec change says so:
 
 ## Current files on disk
 
-`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied to a warehouse. Bronze and Silver job code write the same names when Spark is available (local parquet validated; Databricks not run).
+`data/*.csv` contain the Stage 2 generated datasets (10,010 / 100,020 / 500 rows, seed 42). `database/schema.sql` is the intended DDL and has **not** been applied to a warehouse. Bronze, Silver, and Gold job code write the same names when Spark is available (local parquet validated; Databricks not run).

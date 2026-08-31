@@ -123,6 +123,34 @@ Two independent defects blocked file-based Bronze tests. In-memory Spark already
 - **Files changed:** docstring/comment wording in `05_quality_business_logic.py`.
 - **Not a runtime defect.**
 
+## Stage 5 Gold (2026-08-31)
+
+Local Spark / parquet. Databricks Gold was not run.
+
+### 12. Contract tests matched documentation comments, not executable SQL
+
+- **Symptom:** `test_sales_by_product_columns_and_eligibility` failed on comment text `(not SUM(quantity))`. `test_orchestrator_does_not_reimplement_aggregations` failed because the orchestrator docstring mentioned ``F.sum``.
+- **Expected vs actual:** executable Gold SQL must not `SUM(quantity)`; the orchestrator must not call PySpark `groupBy`/`F.sum`. Comments explaining those prohibitions are not violations.
+- **Root cause:** naive substring checks over the whole file, including headers.
+- **Files changed:** `src/gold/01_sales_by_product.sql` comment wording; `src/gold/create_gold_tables.py` docstring; `tests/test_gold_contract.py` strips `--` comments before the quantity-sum check. AST test already proved no `groupBy`.
+- **Not a Gold aggregation defect.** Tests were not weakened: executable SQL is still checked.
+
+### 13. Holding `spark.table()` DataFrames across a Gold overwrite
+
+- **Symptom:** `test_repeated_gold_execution_is_stable` overwrote Gold parquet; later fixture tests (and the exceptAll in that test) raised `SparkFileNotFoundException` on the previous `part-*.snappy.parquet`.
+- **Expected vs actual:** a second Gold run must replace files; readers must use the new snapshot. Holding a `spark.table()` scan from `setUpClass` keeps the old file list.
+- **Root cause:** test harness, not double-counting in SQL. Gold overwrite is the documented full-refresh behaviour.
+- **Files changed:** `tests/test_gold_aggregations.py` re-reads tables via `_gold()` after each write; repeated-run test snapshots rows with `collect()` before overwrite.
+- **Tests re-run:** Gold suite **27/27 OK**, then combined **174/174 OK**.
+
+### 14. Overwriting Silver orders while reading the same table
+
+- **Symptom:** `TestGoldZeroEligibleOrders.setUpClass` failed with `UNSUPPORTED_OVERWRITE.TABLE` on `gzero_silver.orders`.
+- **Expected vs actual:** the zero-eligible case needs an empty orders table; Spark refuses `saveAsTable` of a DataFrame that still reads that table (`limit(0)` is still a scan of the target).
+- **Root cause:** overwrite-while-reading. Not a Gold SQL defect.
+- **Files changed:** `tests/test_gold_aggregations.py` builds `createDataFrame([], schema=...)` so the write does not read the target.
+- **Rejected:** deleting Silver FAIL rows to create a zero-eligible population.
+
 Use this file during later stages to capture:
 
 - Symptom

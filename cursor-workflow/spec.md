@@ -114,6 +114,8 @@ Dimension joins must not fan out on duplicate parent keys (`row_number` canonica
 
 `create_gold_tables.py` executes SQL files; it must not replace them with undocumented PySpark aggregations.
 
+**Implemented locally** (parquet). Databricks / Delta / UC Gold tables have not been written from this environment.
+
 ## 7. Dashboard
 
 `dashboard_queries.sql` must include at least:

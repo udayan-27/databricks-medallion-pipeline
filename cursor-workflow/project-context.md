@@ -23,7 +23,7 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 9. `data-quality-strategy.md`
 10. Matching `ai-prompts/<area>.md` before changing that area
 
-## Current stage (as of Stage 4 Silver complete: business logic + orchestration)
+## Current stage (as of Stage 5 Gold complete)
 
 | Stage | Status |
 |---|---|
@@ -34,12 +34,13 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 3 Bronze ingest | **Code complete.** Local Python 3.11 `.venv` + JDK 17 + PySpark 3.5.6. Local parquet ingest tests **passed**. Databricks / Delta / UC **not** run. |
 | 4 Silver completeness + uniqueness | **Done**. |
 | 4 Silver type validation + referential integrity | **Done**. |
-| 4 Silver business logic + `create_silver_tables.py` | **Code complete** for this increment. Local Spark tests **passed** (30 future signups; other BL 0 on seed-42; Bronze=Silver row counts; quality metrics written). Gold / Dashboard **not** started. |
-| 5–10 Gold through submission | **Not started** |
+| 4 Silver business logic + `create_silver_tables.py` | **Done**. Local Spark tests **passed**. |
+| 5 Gold | **Code complete** for this increment. Local Spark tests **passed** (fixture reconciliation, seed-42 Gold vs eligible Silver, exclusive segmentation). Databricks / Delta / UC Gold **not** run. Dashboard **not** started. |
+| 6–10 Dashboard through submission | **Not started** |
 
-`data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). All five Silver modules plus the combiner write combined flags locally. Gold / Dashboard remain stubs.
+`data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). All five Silver modules plus the combiner write combined flags locally. Gold SQL files plus `create_gold_tables.py` write Gold aggregations locally. Dashboard remains a stub.
 
-**Next requested stage should be Gold only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver tables exist until that runtime is executed.
+**Next requested stage should be Dashboard only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold tables exist until that runtime is executed.
 
 ## Frozen decisions (do not reopen unless the user or official spec contradicts them)
 
@@ -109,9 +110,11 @@ In the matching `ai-prompts/*.md` file:
 
 ## Tests
 
-Required by the assignment but **missing from the official file tree**. `tests/` holds Stage 2 generator tests, Stage 3 Bronze tests, and Stage 4 Silver tests (all five modules + orchestration):
+Required by the assignment but **missing from the official file tree**. `tests/` holds Stage 2 generator tests, Stage 3 Bronze tests, Stage 4 Silver tests (all five modules + orchestration), and Stage 5 Gold tests:
 
 - `tests/test_bronze_contract.py` — always runnable (schema, CSV options, no-drop AST, config, fixtures, path helper)
 - `tests/test_bronze_ingest.py` — PySpark runtime; skipped when Spark is unavailable
 - `tests/test_silver_contract.py` — always runnable (code format, field lists, no-drop AST, physical-row metrics, type/RI/BL/orchestrator contracts)
 - `tests/test_silver_quality.py` — PySpark runtime; skipped when Spark is unavailable
+- `tests/test_gold_contract.py` — always runnable (SQL eligibility, DECIMAL, segmentation priority, no source LTV, orchestrator does not reimplement aggregations)
+- `tests/test_gold_aggregations.py` — PySpark runtime; skipped when Spark is unavailable

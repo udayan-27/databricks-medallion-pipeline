@@ -1,0 +1,4 @@
+product_id,product_name,category,price,cost,stock_quantity,reorder_level
+100,Test Widget,Electronics,200.00,50.00,50,5
+101,Test Gadget,Home,1000.00,100.00,10,2
+102,Unused Spare,Clothing,5.00,1.00,0,1

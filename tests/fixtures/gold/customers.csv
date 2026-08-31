@@ -1,0 +1,14 @@
+customer_id,customer_name,email,country,signup_date,customer_segment,lifetime_value
+1,High Value Alice,alice@example.com,India,2024-01-01,Premium,1.00
+2,One Time Bob,bob@example.com,United States,2024-01-01,Standard,2.00
+3,Repeat Carol,carol@example.com,Germany,2024-01-01,Basic,3.00
+4,Inactive Dan,dan@example.com,India,2024-01-01,Premium,4.00
+5,Failed Only Eve,eve@example.com,United States,2024-01-01,Standard,5.00
+6,Dup Frank,frank@example.com,Germany,2024-01-01,Basic,6.00
+6,Dup Frank,frank@example.com,Germany,2024-01-01,Basic,6.00
+7,Null Email Grace,,India,2024-01-01,Premium,7.00
+8,Source LTV Iris,iris@example.com,United States,2024-01-01,Standard,99999.00
+9,Decimal Jake,jake@example.com,Germany,2024-01-01,Basic,9.00
+10,Week Kim,kim@example.com,India,2024-01-01,Premium,10.00
+11,One Order Nora,nora@example.com,United States,2024-01-01,Premium,11.00
+12,Round Pat,pat@example.com,Germany,2024-01-01,Basic,12.00

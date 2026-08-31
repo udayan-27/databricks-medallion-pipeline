@@ -4,7 +4,7 @@ This repository is the DE C1 AI Capability Exercise submission. It implements (w
 
 `CSV -> Bronze -> Silver -> Gold -> Dashboard`
 
-Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** **All five Silver quality modules and Silver table orchestration are implemented** (local Spark / parquet). Gold / Dashboard code is still stubs. Bronze/Silver tables have **not** been created in a Databricks workspace from this environment.
+Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** **All five Silver quality modules and Silver table orchestration are implemented** (local Spark / parquet). **Gold SQL aggregations and `create_gold_tables.py` are implemented** (local Spark / parquet). Dashboard is still a stub. Bronze/Silver/Gold tables have **not** been created in a Databricks workspace from this environment.
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 
@@ -17,13 +17,14 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Sample CSV data | Generated (10,010 / 100,020 / 500 rows; seed 42) |
 | Bronze ingest code | Implemented (`src/bronze/`, `src/config.py`) |
 | Local Spark runtime | Python 3.11 `.venv` + Temurin JDK 17 + PySpark 3.5.6 (isolated from system Python 3.12) |
-| Local Spark validation | In-memory smoke **passed**. Local parquet Bronze ingest tests **passed** (21/21). Silver Spark tests **passed** (55/55, including business logic and orchestration). Not Databricks. |
+| Local Spark validation | In-memory smoke **passed**. Local parquet Bronze ingest tests **passed** (21/21). Silver Spark tests **passed** (55/55). Gold Spark tests **passed** (16/16 aggregations + 11/11 contract). Not Databricks. |
 | Bronze Databricks / Delta / Unity Catalog | **Not run** from this environment |
 | Silver completeness / uniqueness / type / RI / business logic | Implemented (`src/silver/01_quality_completeness.py` through `05_quality_business_logic.py`, `quality_common.py`, `create_silver_tables.py`). Local Spark validated. Combined Silver tables written in tests as parquet. |
-| Gold / Dashboard | Stubs only |
-| Tests | Generator **14/14 OK**; Bronze contract **37/37 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; combined relevant set **147/147 OK** (0 skipped) |
+| Gold aggregations | Implemented (`src/gold/01_sales_by_product.sql` through `04_customer_segmentation.sql`, `create_gold_tables.py`). Local Spark / parquet validated. Databricks Gold **not** run. |
+| Dashboard | Stubs only |
+| Tests | Generator **14/14 OK**; Bronze contract **37/37 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; combined relevant set **174/174 OK** (0 skipped) |
 
-Do not treat placeholder Gold SQL as a working pipeline. Completeness, uniqueness, type validation, RI, and business logic run on Bronze DataFrames locally. `create_silver_tables.py` writes combined Silver tables and `silver.quality_metrics` (local parquet in tests). The CSVs in `data/` are real generated inputs.
+Completeness, uniqueness, type validation, RI, and business logic run on Bronze DataFrames locally. `create_silver_tables.py` writes combined Silver tables and `silver.quality_metrics` (local parquet in tests). `create_gold_tables.py` executes the Gold SQL files against Silver and overwrites Gold tables (local parquet in tests). The CSVs in `data/` are real generated inputs.
 
 ## What this exercise evaluates
 
@@ -33,7 +34,7 @@ The submission must demonstrate requirement analysis, architecture, AI-assisted 
 
 - **Bronze:** raw, unchanged CSV ingest into `bronze.customers`, `bronze.orders`, `bronze.products`, plus append-only `bronze.ingest_metadata`. Source columns are not cleaned. `_ingest_row_id` is ingest lineage (unique per physical row of a write; regenerated each run).
 - **Silver:** five quality modules (completeness, uniqueness, type validation, referential integrity, business logic). Bad rows are flagged, not deleted. **All five modules plus `create_silver_tables.py` are implemented.** They preserve every Bronze physical row and write combined `quality_check_result` / `failed_checks` plus `silver.quality_metrics`. Local parquet validated; Databricks Silver is **not** run.
-- **Gold:** business aggregations in SQL (sales by product, revenue by customer, daily/weekly trends, customer segmentation). **Not implemented yet.**
+- **Gold:** business aggregations in SQL (sales by product, revenue by customer, daily/weekly trends, customer segmentation). **Implemented.** Qualifying orders: `order_status = 'Completed' AND quality_check_result = 'PASS'`. Local parquet validated; Databricks Gold is **not** run.
 - **Dashboard:** Databricks SQL dashboard with at least three tiles and filters. **Not implemented yet.**
 
 ## Repository layout
@@ -139,10 +140,40 @@ python -m unittest tests.test_silver_contract -v
 python -m unittest tests.test_silver_quality -v
 ```
 
+### Gold aggregations
+
+Gold reads Silver only. Eligibility is explicit in each SQL file:
+
+`order_status = 'Completed' AND quality_check_result = 'PASS'`
+
+`lifetime_value_actual` is the customer's qualifying order revenue, not source `customers.lifetime_value`. `revenue_by_customer` includes every canonical customer (including zero qualifying orders). Segmentation uses Inactive → High-Value (>= 1000.00) → Repeat → One-Time.
+
+| Setting | Purpose | Default |
+|---|---|---|
+| `--silver-schema` | Schema of the Silver tables to read | `silver` |
+| `--gold-schema` | Schema of the Gold tables to write | `gold` |
+| `--table-format` | Must match the Silver write format | `delta` (use `parquet` locally) |
+| `--catalog` | Unity Catalog name | unset |
+
+After a local Bronze + Silver parquet run:
+
+```
+python src/gold/create_gold_tables.py --table-format parquet
+```
+
+Tests (same local Spark stack):
+
+```
+python -m unittest tests.test_gold_contract -v
+python -m unittest tests.test_gold_aggregations -v
+```
+
+Observed local fixture reconciliation: 17 qualifying orders, revenue 3330.00; duplicate order copies, NULL/orphan FKs, and FAIL rows excluded. Seed-42: Gold product/customer/daily/weekly/segment totals match eligible Silver; 10,000 canonical customers. Databricks Gold tables have **not** been written.
+
 ### Tests that run without Spark
 
 ```
-python -m unittest tests.test_bronze_contract tests.test_silver_contract -v
+python -m unittest tests.test_bronze_contract tests.test_silver_contract tests.test_gold_contract -v
 ```
 
 No real PII, credentials, secrets, tokens, or private production connection details belong in this repository.

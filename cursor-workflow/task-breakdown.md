@@ -76,13 +76,16 @@ Assert Silver row counts equal Bronze. Multi-failure rows keep multiple per-modu
 
 Do not start Gold until requested.
 
-## Stage 6 — Gold
+## Stage 6 — Gold (done as the user-requested "Stage 5 — Gold Layer")
 
-- Implement the four SQL files with documented filters (Completed + PASS).
-- Prevent join fan-out; NULLIF averages; segmentation priority list.
-- Orchestrate with `create_gold_tables.py` without replacing SQL logic.
-- Tests: columns present; queries execute; duplicate orders do not double revenue.
-- Update `ai-prompts/gold-layer.md` and commit.
+Commit message (this stage): `feat: add Gold analytical aggregations`
+
+- SQL: `01_sales_by_product.sql`, `02_revenue_by_customer.sql`, `03_daily_weekly_trends.sql` (daily + weekly), `04_customer_segmentation.sql`.
+- Orchestrator: `create_gold_tables.py` executes those files; does not replace them with PySpark aggregations.
+- Eligibility: Completed + PASS. `lifetime_value_actual` from orders. All canonical customers including zeros. Segmentation exclusive priority; threshold 1000.00 unchanged.
+- Tests: `tests/test_gold_contract.py`, `tests/test_gold_aggregations.py`. Combined relevant set **174/174 OK** locally. Databricks Gold **not** written.
+
+Do not start Dashboard until that stage is requested.
 
 ## Stage 7 — Dashboard
 
@@ -110,6 +113,6 @@ Do not start Gold until requested.
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after Silver complete
+## Explicitly not started after Gold complete
 
-Gold, Dashboard. Generator tests, Bronze tests, and all Silver tests exist and passed locally. Databricks tables have not been created.
+Dashboard. Generator, Bronze, Silver, and Gold tests exist and passed locally. Databricks tables have not been created.

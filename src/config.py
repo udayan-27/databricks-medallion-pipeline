@@ -97,6 +97,9 @@ class PipelineConfig:
     def silver_table(self, table: str) -> str:
         return self.qualified_table(self.silver_schema, table)
 
+    def gold_table(self, table: str) -> str:
+        return self.qualified_table(self.gold_schema, table)
+
 
 def load_config(
     *,
