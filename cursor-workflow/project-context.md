@@ -23,7 +23,7 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 9. `data-quality-strategy.md`
 10. Matching `ai-prompts/<area>.md` before changing that area
 
-## Current stage (as of Stage 5 Gold complete)
+## Current stage (as of Stage 6 Dashboard complete)
 
 | Stage | Status |
 |---|---|
@@ -35,12 +35,13 @@ Candidate: Udayan Mahajan. Project root is this folder (it fulfils the required 
 | 4 Silver completeness + uniqueness | **Done**. |
 | 4 Silver type validation + referential integrity | **Done**. |
 | 4 Silver business logic + `create_silver_tables.py` | **Done**. Local Spark tests **passed**. |
-| 5 Gold | **Code complete** for this increment. Local Spark tests **passed** (fixture reconciliation, seed-42 Gold vs eligible Silver, exclusive segmentation). Databricks / Delta / UC Gold **not** run. Dashboard **not** started. |
-| 6–10 Dashboard through submission | **Not started** |
+| 5 Gold | **Code complete.** Local Spark tests **passed**. Databricks / Delta / UC Gold **not** run. |
+| 6 Dashboard | **Queries + guide complete** for this increment. Local Spark tests run against Gold parquet. Databricks SQL Dashboard UI **not** rendered. |
+| 7–10 Debugging closeout through submission | **Not started** |
 
-`data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). All five Silver modules plus the combiner write combined flags locally. Gold SQL files plus `create_gold_tables.py` write Gold aggregations locally. Dashboard remains a stub.
+`data/*.csv` are generated synthetic files. Bronze modules under `src/bronze/` are implemented (PySpark). All five Silver modules plus the combiner write combined flags locally. Gold SQL files plus `create_gold_tables.py` write Gold aggregations locally. Dashboard SQL plus `DASHBOARD_GUIDE.md` are implemented; the Databricks dashboard product has not been used.
 
-**Next requested stage should be Dashboard only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold tables exist until that runtime is executed.
+**Next requested stage should be debugging/hardening or documentation closeout only when the user asks.** Do not skip ahead. Do not regenerate sample data unless asked. Do not claim Databricks Bronze/Silver/Gold/dashboard exist until that runtime is executed.
 
 ## Frozen decisions (do not reopen unless the user or official spec contradicts them)
 
@@ -118,5 +119,9 @@ Required by the assignment but **missing from the official file tree**. `tests/`
 - `tests/test_silver_quality.py` — PySpark runtime; skipped when Spark is unavailable
 - `tests/test_gold_contract.py` — always runnable (SQL eligibility, DECIMAL, segmentation priority, no source LTV, orchestrator does not reimplement aggregations)
 - `tests/test_gold_aggregations.py` — PySpark runtime; skipped when Spark is unavailable
+- `tests/test_dashboard_contract.py` — always runnable (Gold-only sources, Top-N, histogram grain, no SQL bins, filter fields)
+- `tests/test_dashboard_queries.py` — PySpark runtime; skipped when Spark is unavailable
+
+Spark runtime modules start an isolated local session (`spark.sql.warehouse.dir` + `spark.local.dir` unique per class). Run **one** Spark unittest process at a time. Overlapping full suites are unsupported on Windows (Py4J temp-file `PermissionError` during JVM gateway launch; also a shared CWD Derby `metastore_db`). See `debugging-notes.md`.
 
 Spark runtime modules start an isolated local session (`spark.sql.warehouse.dir` + `spark.local.dir` unique per class). Run **one** Spark unittest process at a time. Overlapping full suites are unsupported on Windows (Py4J temp-file `PermissionError` during JVM gateway launch; also a shared CWD Derby `metastore_db`). See `debugging-notes.md`.

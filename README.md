@@ -4,7 +4,7 @@ This repository is the DE C1 AI Capability Exercise submission. It implements (w
 
 `CSV -> Bronze -> Silver -> Gold -> Dashboard`
 
-Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** **All five Silver quality modules and Silver table orchestration are implemented** (local Spark / parquet). **Gold SQL aggregations and `create_gold_tables.py` are implemented** (local Spark / parquet). Dashboard is still a stub. Bronze/Silver/Gold tables have **not** been created in a Databricks workspace from this environment.
+Requirements and architecture are written. Stage 2 sample data has been generated. **Bronze ingest code is implemented.** **All five Silver quality modules and Silver table orchestration are implemented** (local Spark / parquet). **Gold SQL aggregations and `create_gold_tables.py` are implemented** (local Spark / parquet). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` are implemented** (local Spark / parquet). A Databricks SQL dashboard has **not** been rendered. Bronze/Silver/Gold tables have **not** been created in a Databricks workspace from this environment.
 
 Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 
@@ -21,8 +21,8 @@ Canonical requirements: [`DE_C1_REQUIREMENTS.md`](DE_C1_REQUIREMENTS.md).
 | Bronze Databricks / Delta / Unity Catalog | **Not run** from this environment |
 | Silver completeness / uniqueness / type / RI / business logic | Implemented (`src/silver/01_quality_completeness.py` through `05_quality_business_logic.py`, `quality_common.py`, `create_silver_tables.py`). Local Spark validated. Combined Silver tables written in tests as parquet. |
 | Gold aggregations | Implemented (`src/gold/01_sales_by_product.sql` through `04_customer_segmentation.sql`, `create_gold_tables.py`). Local Spark / parquet validated. Databricks Gold **not** run. |
-| Dashboard | Stubs only |
-| Tests | Generator **14/14 OK**; Bronze contract **38/38 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; sequential generator/Bronze/Silver **148/148 OK**; sequential Gold **27/27 OK**; combined relevant **175** (0 skipped). Prior combined 174 plus 1 Spark-free helper contract test. |
+| Dashboard | Queries + guide implemented (`src/dashboard/dashboard_queries.sql`, `DASHBOARD_GUIDE.md`). Local Spark query tests against Gold parquet. Databricks SQL Dashboard UI **not** rendered. |
+| Tests | Generator **14/14 OK**; Bronze contract **38/38 OK**; Spark ingest **21/21 OK**; Silver contract **20/20 OK**; Silver Spark **55/55 OK**; Gold contract **11/11 OK**; Gold Spark **16/16 OK**; Dashboard contract **15/15 OK**; Dashboard Spark **13/13 OK**. Sequential generator/Bronze/Silver **148/148 OK**; sequential Gold **27/27 OK**; sequential Dashboard **28/28 OK**; combined relevant **203/203 OK** (0 failed, 0 errors, 0 skipped) in **548.539s**. |
 
 Completeness, uniqueness, type validation, RI, and business logic run on Bronze DataFrames locally. `create_silver_tables.py` writes combined Silver tables and `silver.quality_metrics` (local parquet in tests). `create_gold_tables.py` executes the Gold SQL files against Silver and overwrites Gold tables (local parquet in tests). The CSVs in `data/` are real generated inputs.
 
@@ -35,7 +35,7 @@ The submission must demonstrate requirement analysis, architecture, AI-assisted 
 - **Bronze:** raw, unchanged CSV ingest into `bronze.customers`, `bronze.orders`, `bronze.products`, plus append-only `bronze.ingest_metadata`. Source columns are not cleaned. `_ingest_row_id` is ingest lineage (unique per physical row of a write; regenerated each run).
 - **Silver:** five quality modules (completeness, uniqueness, type validation, referential integrity, business logic). Bad rows are flagged, not deleted. **All five modules plus `create_silver_tables.py` are implemented.** They preserve every Bronze physical row and write combined `quality_check_result` / `failed_checks` plus `silver.quality_metrics`. Local parquet validated; Databricks Silver is **not** run.
 - **Gold:** business aggregations in SQL (sales by product, revenue by customer, daily/weekly trends, customer segmentation). **Implemented.** Qualifying orders: `order_status = 'Completed' AND quality_check_result = 'PASS'`. Local parquet validated; Databricks Gold is **not** run.
-- **Dashboard:** Databricks SQL dashboard with at least three tiles and filters. **Not implemented yet.**
+- **Dashboard:** Databricks SQL dashboard queries for three required tiles (bar / histogram / pie) plus two Gold-field filters. **Queries implemented and locally tested.** Databricks SQL Dashboard UI has **not** been rendered from this environment. See `src/dashboard/DASHBOARD_GUIDE.md`.
 
 ## Repository layout
 
@@ -173,15 +173,44 @@ python -m unittest tests.test_gold_aggregations -v
 Or one sequential relevant suite (do not start a second copy while this is running):
 
 ```
-python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations -v
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
 ```
 
 Observed local fixture reconciliation: 17 qualifying orders, revenue 3330.00; duplicate order copies, NULL/orphan FKs, and FAIL rows excluded. Seed-42: Gold product/customer/daily/weekly/segment totals match eligible Silver; 10,000 canonical customers. Databricks Gold tables have **not** been written.
 
+### Dashboard queries
+
+Dashboard datasets read Gold only. Queries live in `src/dashboard/dashboard_queries.sql`. Workspace click-path, viz types, histogram binning, and filters are in `src/dashboard/DASHBOARD_GUIDE.md`.
+
+| Tile | Gold table | Visualization |
+|---|---|---|
+| Top 10 products by revenue | `gold.sales_by_product` | bar |
+| Customer revenue distribution | `gold.revenue_by_customer` (`lifetime_value_actual`, all canonical customers including zeros) | histogram (bins in the Databricks viz, not SQL) |
+| Customer segmentation | `gold.customer_segmentation` | pie |
+
+Filters (Gold fields only): `category` on Tile 1 as a query parameter **before** `LIMIT 10`; `customer_segment` on Tile 2. Date range is not a filter on these tiles (no date grain on those Gold tables).
+
+Local tests:
+
+```
+python -m unittest tests.test_dashboard_contract -v
+python -m unittest tests.test_dashboard_queries -v
+```
+
+Or one sequential relevant suite (do not start a second copy while this is running):
+
+```
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
+```
+
+A Databricks SQL dashboard has **not** been created or rendered from this environment. Local `spark.sql` against parquet is not Databricks SQL / Delta / Unity Catalog validation.
+
+This cycle’s sequential full suite: **Ran 203 tests in 548.539s OK**.
+
 ### Tests that run without Spark
 
 ```
-python -m unittest tests.test_bronze_contract tests.test_silver_contract tests.test_gold_contract -v
+python -m unittest tests.test_bronze_contract tests.test_silver_contract tests.test_gold_contract tests.test_dashboard_contract -v
 ```
 
 No real PII, credentials, secrets, tokens, or private production connection details belong in this repository.
@@ -200,3 +229,5 @@ Every meaningful change must be derived from the written spec, tested, reviewed 
 - `ai-prompts/` — actual prompt history (not fabricated)
 - `src/bronze/ingest_core.py` — Bronze CSV options, lineage, local vs Databricks, rerun behaviour
 - `src/silver/quality_common.py` — shared Silver accumulation and physical-row metrics helpers
+- `src/dashboard/dashboard_queries.sql` — Gold-only tile queries and filter-value lookups
+- `src/dashboard/DASHBOARD_GUIDE.md` — workspace steps; local vs Databricks

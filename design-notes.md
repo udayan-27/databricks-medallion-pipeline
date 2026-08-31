@@ -1,6 +1,6 @@
 # Design notes
 
-Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated). **Gold SQL aggregations and `create_gold_tables.py` exist** (local Spark / parquet validated). Bronze/Silver/Gold tables have **not** been created in a Databricks workspace. Dashboard has not been built. No Databricks runtime results exist.
+Status: architecture and design decisions for implementation. **Bronze ingest code exists.** **All five Silver quality modules and `create_silver_tables.py` exist** (local Spark / parquet validated). **Gold SQL aggregations and `create_gold_tables.py` exist** (local Spark / parquet validated). **Dashboard SQL queries and `DASHBOARD_GUIDE.md` exist** (local Spark / parquet validated). Bronze/Silver/Gold tables have **not** been created in a Databricks workspace. A Databricks SQL dashboard has **not** been rendered. No Databricks runtime results exist.
 
 Keep this design inside the assignment’s roughly **20–25 hour** core: batch full-refresh PySpark + SQL, five Silver modules, four Gold queries, one dashboard guide. Rejected extras are listed at the end of this file.
 
@@ -277,11 +277,16 @@ The 1000.00 threshold is a design default. After generation, change it only with
 
 Tiles read Gold, not Silver:
 
-1. Top 10 products by revenue — `gold.sales_by_product` `ORDER BY total_revenue DESC LIMIT 10` (bar).
-2. Customer revenue distribution — `gold.revenue_by_customer.lifetime_value_actual` (histogram in Databricks SQL).
-3. Customer segmentation — `gold.customer_segmentation` (pie on `customer_count`).
+1. Top 10 products by revenue — `gold.sales_by_product` `ORDER BY total_revenue DESC, product_id ASC LIMIT 10` (bar). Tie-break is `product_id` so Top-N is deterministic.
+2. Customer revenue distribution — `gold.revenue_by_customer.lifetime_value_actual` (histogram in Databricks SQL). Population is all canonical customers, including zeros. Binning is a visualization setting, not SQL.
+3. Customer segmentation — `gold.customer_segmentation` (pie on `customer_count`). SQL does not recompute the 1000.00 / Repeat / One-Time CASE.
 
-Filters (planned): order date range (trends +, if parameterized, facts rebuilt or views with placeholders); `customer_segment` (source segment, not Gold segment_type) on customer tiles. Exact widget steps go in `DASHBOARD_GUIDE.md` when built. No fake screenshots.
+Filters (implemented in the guide; Databricks widgets not attached in this environment):
+
+- `category` on Tile 1 as a query parameter **before** `LIMIT 10`
+- `customer_segment` on Tile 2
+
+Rejected for these tiles: order date range (no date grain), `country` (not on Gold), `segment_type` on the pie (would hide the four-way mix). Exact widget steps: `DASHBOARD_GUIDE.md`. No fake screenshots.
 
 ---
 
@@ -494,7 +499,7 @@ Reviewer stance: this design is sufficient for the assignment if the failure mod
 
 - Exact Unity Catalog catalog name in the candidate’s workspace (config at runtime).
 - Whether local tests use a temp SparkSession or Databricks Connect.
-- Histogram binning if Databricks visualization cannot histogram the raw measure.
+- Histogram binning if Databricks visualization cannot histogram the raw measure (fallback not implemented; viz-side binning remains the contract).
 - High-Value threshold sanity check after real generated distributions exist.
 
 Stage 2 closed: 30 future signup dates **were injected** (see `DATA_GENERATION_NOTES.md`).

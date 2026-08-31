@@ -88,11 +88,17 @@ Commit message (this stage): `feat: add Gold analytical aggregations`
 
 Do not start Dashboard until that stage is requested.
 
-## Stage 7 — Dashboard
+## Stage 7 — Dashboard (done as the user-requested "Stage 6 — Dashboard")
 
-- Write `dashboard_queries.sql` for the three required tiles plus filters.
-- Write `DASHBOARD_GUIDE.md` with actual workspace steps (no fake screenshots).
-- Update `ai-prompts/dashboard.md` and commit.
+Commit message (this stage): `feat: add Databricks SQL dashboard queries and guide`
+
+- SQL: `src/dashboard/dashboard_queries.sql` — Top 10 products, customer revenue distribution (raw `lifetime_value_actual` for a Databricks histogram), customer segmentation (`segment_type` + `customer_count`), plus filter-value queries.
+- Guide: `src/dashboard/DASHBOARD_GUIDE.md` — prerequisites, catalog/schema, Gold tables, tile mapping, viz/axis/histogram/filter configuration, QA checklist, local vs Databricks.
+- Filters: `category` before LIMIT on Tile 1; `customer_segment` on Tile 2. Date range rejected for these tiles (no date grain on those Gold tables).
+- Tests: `tests/test_dashboard_contract.py`, `tests/test_dashboard_queries.py`. Local Spark against Gold parquet. Databricks SQL Dashboard UI **not** rendered.
+- Gold production SQL/orchestrator unchanged. Stage 2 CSVs unchanged.
+
+Do not start final submission audit until requested.
 
 ## Stage 8 — Debugging and hardening
 
@@ -100,7 +106,7 @@ Do not start Dashboard until that stage is requested.
 - Fix against spec; re-test; record results.
 - Update `ai-prompts/debugging.md`.
 
-Gold QA (this increment): concurrent/overlapping Spark suites vs sequential. Root cause is PySpark `launch_gateway` Windows `PermissionError` on a unique temp connection-info file — not Gold logic. Test helper isolates `spark.local.dir` / Py4J temp per class and retries that gateway error only. Dashboard still not started.
+Gold QA (prior increment): concurrent/overlapping Spark suites vs sequential. Root cause is PySpark `launch_gateway` Windows `PermissionError` on a unique temp connection-info file — not Gold logic. Test helper isolates `spark.local.dir` / Py4J temp per class and retries that gateway error only.
 
 ## Stage 9 — Documentation closeout
 
@@ -116,6 +122,6 @@ Gold QA (this increment): concurrent/overlapping Spark suites vs sequential. Roo
 - Confirm no secrets.
 - Organizational Git account/email process (not stored as a secret in-repo).
 
-## Explicitly not started after Gold complete
+## Explicitly not started after Dashboard complete
 
-Dashboard. Generator, Bronze, Silver, and Gold tests exist and passed locally. Databricks tables have not been created.
+Databricks SQL Dashboard UI rendering. Generator, Bronze, Silver, Gold, and Dashboard query tests exist. Databricks tables have not been created.

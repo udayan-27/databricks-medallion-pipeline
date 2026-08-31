@@ -1,6 +1,6 @@
 # Data model
 
-Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`). Gold SQL aggregations and `create_gold_tables.py` produce Gold tables locally. Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
+Status: **Bronze contracts implemented in code** (`src/bronze/`, `src/config.py`). All five Silver quality modules and combined Silver tables are produced locally (`src/silver/`, including `create_silver_tables.py`). Gold SQL aggregations and `create_gold_tables.py` produce Gold tables locally. Dashboard queries read those Gold tables (`src/dashboard/`). Tables have not been created in a Databricks workspace from this environment. CSV files are generated (Stage 2). No columns were added beyond source fields, required quality flags, ingest lineage, and Gold measures named by the assignment.
 
 Logical layers:
 

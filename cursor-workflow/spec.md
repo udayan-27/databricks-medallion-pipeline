@@ -118,13 +118,15 @@ Dimension joins must not fan out on duplicate parent keys (`row_number` canonica
 
 ## 7. Dashboard
 
-`dashboard_queries.sql` must include at least:
+`dashboard_queries.sql` includes:
 
-- Top 10 products by revenue (bar)
-- Customer revenue distribution (histogram)
-- Customer segmentation (pie)
+- Top 10 products by revenue (bar) — `gold.sales_by_product`, `ORDER BY total_revenue DESC, product_id ASC LIMIT 10`
+- Customer revenue distribution (histogram) — one Gold customer row with `lifetime_value_actual`; Databricks viz bins
+- Customer segmentation (pie) — `segment_type`, `customer_count` from `gold.customer_segmentation`
 
-Plus filter-supporting queries or WHERE placeholders (date range, customer_segment). Guide describes how to attach them in Databricks SQL. No fabricated screenshots.
+Filters: `category` on Tile 1 as a query parameter before LIMIT; `customer_segment` on Tile 2. Date range is not a filter on these tiles. Guide: `src/dashboard/DASHBOARD_GUIDE.md`. No fabricated screenshots. Databricks UI not rendered from this environment.
+
+**Implemented locally** (Spark SQL against parquet Gold). Databricks SQL Dashboard product has not been used.
 
 ## 8. Testing (later)
 

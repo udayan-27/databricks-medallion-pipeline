@@ -217,7 +217,7 @@ Classification: Spark environment / Windows temp-file race, with concurrency as 
 2. Sequential command (from repo root, project `.venv`, `JAVA_HOME` set):
 
 ```
-python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations -v
+python -m unittest tests.test_generate_sample_data tests.test_bronze_contract tests.test_bronze_ingest tests.test_silver_contract tests.test_silver_quality tests.test_gold_contract tests.test_gold_aggregations tests.test_dashboard_contract tests.test_dashboard_queries -v
 ```
 
 3. Test infrastructure now isolates `spark.local.dir` (and Py4J temp) per Spark test class, retries **only** gateway `PermissionError`, and deletes the warehouse on teardown. That does not authorize concurrent suites.
@@ -233,6 +233,27 @@ Sequential re-run after the isolation helper (this cycle; not the previous 174):
    → **Ran 27 tests in 122.986s OK** (0 failed, 0 skipped). Gold reconciliation remaining green.
 
 Stage 2 CSV SHA-256 unchanged vs `DATA_GENERATION_NOTES.md`. No Gold SQL change. Databricks not run.
+
+## Stage 6 / Dashboard — local query validation (2026-08-31)
+
+### 11. Fresh shell had no JAVA_HOME
+
+- **Symptom:** `python -m unittest tests.test_dashboard_queries -v` failed in `setUpClass` with `Java not found and JAVA_HOME environment variable is not set` / `JAVA_GATEWAY_EXITED`.
+- **Expected vs actual:** Same local Spark stack as Bronze/Silver/Gold (Temurin 17 + `.venv` PySpark). A new agent shell does not inherit the previous session `JAVA_HOME`.
+- **Root cause:** Environment, not dashboard SQL.
+- **Files changed:** none of `src/dashboard/` for this item.
+- **Action:** Set `JAVA_HOME` to `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot` and prepend `%JAVA_HOME%\bin` as documented in README.
+- **AI suggestion:** rejected as a dashboard logic bug.
+
+### 12. Histogram test `AMBIGUOUS_REFERENCE` on `lifetime_value_actual`
+
+- **Symptom:** `test_histogram_uses_gold_customer_population` errored: `Reference lifetime_value_actual is ambiguous` after joining the dashboard result to `gold.revenue_by_customer`.
+- **Expected vs actual:** Dashboard query ran; Top 10, segmentation, and edge tests passed (12 OK). The join compared `lifetime_value_actual` to `total_revenue` without aliases, so Spark saw two Gold `lifetime_value_actual` columns.
+- **Root cause:** Test join, not dashboard SQL (the histogram SELECT is a single-table Gold read).
+- **Files changed:** `tests/test_dashboard_queries.py` (alias `dash_ltv` / `gold_rev` / `gold_ltv`).
+- **Dashboard SQL:** unchanged.
+- **AI suggestion:** accepted the alias fix; rejected rewriting the histogram query.
+- **Tests re-run:** `python -m unittest tests.test_dashboard_queries -v` → **Ran 13 tests in 70.184s OK**. Combined dashboard: **Ran 28 tests in 69.924s OK**. Combined relevant suite: **Ran 203 tests in 548.539s OK**.
 
 Use this file during later stages to capture:
 
